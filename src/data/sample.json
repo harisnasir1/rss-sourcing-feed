@@ -1,0 +1,31 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "title": "Dior CD Icon Hooded Sweatshirt Pink/Cream",
+      "price": "USD 1,450 • UK8 • DS",
+      "image": "/assets/sample1.jpg",
+      "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F",
+      "group": "London Luxury Resale",
+      "time": "2h"
+    },
+    {
+      "id": "2",
+      "title": "Dior CD Icon Hooded Sweatshirt Navy",
+      "price": "USD 1,450 • UK8 • DS",
+      "image": "/assets/sample2.jpg",
+      "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F",
+      "group": "EU Streetwear Traders",
+      "time": "5h"
+    },
+    {
+      "id": "3",
+      "title": "Denim Tears x Off-White Hoodie Black",
+      "price": "USD 420 • L • 9/10",
+      "image": "/assets/sample3.jpg",
+      "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F",
+      "group": "Sneaker & Street Market",
+      "time": "12h"
+    }
+  ]
+}
