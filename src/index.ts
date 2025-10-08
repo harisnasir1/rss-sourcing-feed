@@ -5,6 +5,8 @@ dotenv.config();
 
 //exports 
 import {query} from './utils/db_connection'
+import { ImgProcessing } from "./services/Message_processing/imgpros";
+
 
 const app = express();
 const PORT = 4000;
@@ -14,6 +16,7 @@ app.use("/api",allroutes)
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 try {
+ 
     await query('SELECT NOW()');
     console.log('✅ PostgreSQL connected successfully');
   } catch (err) {

@@ -44,6 +44,5 @@ build/
 coverage/
 
 # Ignore everything except auth and auth_info
-
-!auth/
-!auth_info/
+auth/
+auth_info/

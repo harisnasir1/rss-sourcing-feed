@@ -22,6 +22,10 @@ export const query=async(text:string,params?: any[])=>{
     const res=await client.query(text,params);
     return res.rows;
   }
+   catch (err) {
+    console.error('❌ Query error:', err);
+    throw err;
+  } 
   finally{
     client.release();
   }

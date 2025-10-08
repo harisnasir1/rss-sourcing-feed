@@ -15,9 +15,11 @@ export class WhatsAppClient {
   private sock!: WASocket;
   private saveCreds!: () => Promise<void>;
   private readonly authFolder: string;
-  private msg_p:Message_processing=new Message_processing(this.sock);
+  private msg_p:Message_processing;
   constructor(authFolder: string = 'auth_info') {
-    this.authFolder = authFolder;
+  this.authFolder = authFolder;
+  this.initialize()
+  this.msg_p=new Message_processing(this.sock)
   }
 
   public async initialize(): Promise<WASocket> {
@@ -35,6 +37,7 @@ export class WhatsAppClient {
     console.log('✅ WhatsApp client initialized');
     return this.sock;
   }
+
   private bindEvents(): void {
     this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
   }
@@ -49,22 +52,22 @@ export class WhatsAppClient {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log('📱 QR code received, saving to qr.png...');
+      console.log('QR code received, saving to qr.png...');
       await QRCode.toFile('qr.png', qr);
     }
 
     if (connection === 'close') {
       const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
       if (reason === DisconnectReason.restartRequired) {
-        console.log('♻️ Restart required, reconnecting...');
+        console.log('Restart required, reconnecting...');
         await this.reconnect();
       } else {
-        console.warn('⚠️ Connection closed:', reason);
+        console.warn('Connection closed:', reason);
       }
     }
 
     if (connection === 'open') {
-      console.log('✅ Connected to WhatsApp Web');
+      console.log('Connected to WhatsApp Web');
     }
   }
 
