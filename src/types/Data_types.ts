@@ -50,7 +50,8 @@ export interface Listing {
   likeCount: number;                 // bigint, default 0
   messageCount: number;              // bigint, default 0
   status?: ListingStatus;            // enum: listing_status
-  isWTB: boolean;                    // boolean, default false
+  isWTB: boolean;
+  isWTS:boolean;                    // boolean, default false
   createdAt?: Date;                   // timestamp without time zone, default now()
   updatedAt?: Date;                   // timestamp without time zone, default now()
 }
@@ -68,3 +69,14 @@ export type ListingStatus =
   | 'sold'
   | 'archived'
   | 'hidden';
+
+  export type AI_Response={
+        price: number,
+        brand: string,
+        productType: string,
+        gender: ListingGender,
+        size: string,
+        condition: ListingCondition,
+        isWTB:boolean,
+        isWTS:boolean
+      }

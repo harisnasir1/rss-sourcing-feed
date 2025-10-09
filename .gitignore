@@ -43,6 +43,7 @@ build/
 # Coverage reports
 coverage/
 
+qr.png
 
 auth/
 auth_info/

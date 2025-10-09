@@ -35,7 +35,7 @@ export class ImgProcessing{
         ContentType: "image/png",
       };
       (await this.s3).send(new PutObjectCommand(uploadParams));
-      return `https://${this.Bucketname}.s3.${this.Region}.amazonaws.com/${key}`;
+      return [`https://${this.Bucketname}.s3.${this.Region}.amazonaws.com/${key}`];
     }
    
 

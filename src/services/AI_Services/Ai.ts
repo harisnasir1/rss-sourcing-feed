@@ -1,23 +1,7 @@
 
 
 import Groq from "groq-sdk";
-
-interface ProductInfo {
-  price: number;
-  brand: string;
-  productType: string;
-  gender: string;
-  size: string;
-  condition: string;
-}
-
-interface GrokResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
-  }>;
-}
+import { ListingGender,ListingCondition, AI_Response } from "../../types/Data_types";
 
 export class AI {
   private api_key: string;
@@ -32,13 +16,24 @@ export class AI {
 
   }
 
-  async extractProductInfo(description: string) {
+  async extractProductInfo(description: string):Promise<AI_Response> {
     try {
-      const chatCompletion = await this.getGroqChatCompletion(description);;
+      const chatCompletion = await this.getGroqChatCompletion(description);
       const content =chatCompletion.choices[0]?.message?.content;
-     
-      console.log(content)
-      return content;
+      console.log("ai response=>",content)
+    if(!content)  throw new Error("data coming from ai is wrong!") 
+    const parsed = JSON.parse(content);
+  
+  return {
+    price: parsed.price ?? 0,
+    brand: parsed.brand ?? "",
+    productType: parsed.productType ?? "",
+    gender: parsed.gender ?? "unisex",
+    size: parsed.size ?? "",
+    condition: parsed.condition ?? "new",
+    isWTB:parsed.iswtb??false,
+    isWTS:parsed.iswts??true
+  };
 
     } catch (error) {
       console.error("Error extracting product info:", error);
@@ -47,9 +42,11 @@ export class AI {
         price: 0,
         brand: "",
         productType: "",
-        gender: "men",
+        gender: "unisex",
         size: "",
-        condition: "new"
+        condition: "new",
+        isWTB:false,
+        isWTS:true
       };
     }
   }
@@ -94,7 +91,7 @@ export class AI {
            - price: 0
            - brand: ""
            - productType: ""
-           - gender: "men"
+           - gender: "unisex"
            - size: ""
            - condition: "new"
            - iswtb: false

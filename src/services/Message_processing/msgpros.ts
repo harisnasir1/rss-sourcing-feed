@@ -5,9 +5,11 @@ import {
 } from '@whiskeysockets/baileys';
 import P from 'pino'
 import { VendorRepo } from '../../repositories/vendors_repo';
-import { MessageBuffer, Listing, Vendor, msgtype } from '../../types/Data_types';
+import { MessageBuffer, Listing, Vendor, msgtype,AI_Response } from '../../types/Data_types';
 import { listing_repo } from '../../repositories/listing_repo';
 import { ImgProcessing } from './imgpros';
+import {AI} from '../AI_Services/Ai'
+import { stringify } from 'querystring';
 export class Message_processing {
 
     private _sock: WASocket;
@@ -15,12 +17,14 @@ export class Message_processing {
     private _rvendor: VendorRepo;
     private _rlist: listing_repo;
     private _imgpro: ImgProcessing;
+    private _ai:AI;
     constructor(sock: WASocket) {
         this._sock = sock
         this.groupMetadataCache = new Map()
         this._rvendor = new VendorRepo()
         this._rlist = new listing_repo()
         this._imgpro = new ImgProcessing()
+        this._ai=new AI()
     }
 
 
@@ -39,16 +43,16 @@ export class Message_processing {
         let imgcheck = msg.message?.imageMessage;
         let textcheck = msg.message?.extendedTextMessage?.text;
         if (imgcheck && !textcheck) {
-           console.log("passed image + caption:-> moving to download image")
+            console.log("passed image + caption:-> moving to download image")
             let imgbuff: Buffer | null = await this.downloadimage(msg)
             
             if (!imgbuff) return
             console.log("downloadedimage passed:-> uploading it")
-           const img_url= await this._imgpro.upload_image(imgbuff)
+            const img_url= await this._imgpro.upload_image(imgbuff)
 
             console.log("uploding completed url is ->",img_url)
             //Step 2:- check if there is caption or not
-            if (imgcheck?.caption && imgcheck.caption.length > 0 && img_url) {
+            if (imgcheck?.caption && imgcheck.caption.length > 0 && img_url.length>0) {
                 //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
                 //we are not storing all the albumb we are only getting firs image for now in future we need to add images with caption in the
                 //buffer as well
@@ -73,7 +77,7 @@ export class Message_processing {
                
               venderget =   await this._rvendor.updateVendor(venderifo.vdata.phoneNumber,d)
                 }
-                   await this.creates_listings(msg, venderget[0], "mixed")
+                   await this.creates_listings(msg, venderget[0], "mixed",img_url)
                 }
                 else {
                     //here add message buffer with type image
@@ -90,44 +94,41 @@ export class Message_processing {
 
 
     //need to add ai on this function
-    public async creates_listings(msg: WAMessage, vinfo: Vendor, msg_type: msgtype) {
-        const gid = this.getgroupid(msg)
+    public async creates_listings(msg: WAMessage, vinfo: Vendor, msg_type: msgtype,imgs:string[]) {
+        try{const gid = this.getgroupid(msg)
         let gname = await this.getgroupname(msg.key.remoteJid || "");
-      
         const gt = msg.key.remoteJid
         if (gid == null || gname == null) return
+        const pdesc= this.getdescription(msg) || ""
+        if(!pdesc||pdesc=="")return
+        const aidata:AI_Response =await this._ai.extractProductInfo(pdesc)
+        if(!aidata ||(aidata && (aidata.isWTB==aidata.isWTS))) throw new Error(aidata?stringify(aidata):"something wrong with data")
+         console.log(aidata)
         const list: Listing = {
             vendorId: vinfo.id,
             groupId: gid,
             groupName: gname,
             rawMessage: msg,
-            description: this.getdescription(msg) || "",
-            images: [""],
-            price: 0,//ai
-            brand: "",//ai
-            productType: "",//ai
-            gender: "men",//ai
-            size: "",//ai
-            condition: "new",//ai
+            description:pdesc,
+            images: imgs,
+            price: aidata.price,//ai
+            brand: aidata.brand,//ai
+            productType: aidata.productType,//ai
+            gender: aidata.gender||"",//ai
+            size: aidata.size,//ai
+            condition: aidata.condition,//ai
             viewCount: 0,
             likeCount: 0,
             messageCount: 0,
             status: 'active',//ai
-            isWTB: true,//ai
+            isWTB: aidata.isWTB || false,//ai,
+            isWTS:aidata.isWTS || true
         }
        console.log("Listing trying to be created with ->",list)
-       await this._rlist.create_listing(list)
+      const re= await this._rlist.create_listing(list)
 
         //now update the vendor
-
-       
-
-
-
-
-
-
-
+      return re;
         //  const mb:MessageBuffer={ 
         //        vendorId: vinfo.id,
         //        groupId: this.getgroupid(msg), 
@@ -138,6 +139,11 @@ export class Message_processing {
         //        shouldCombine: true,
         //        whatsappMessageId: "",
         //  }
+        }
+        catch(e)
+        {
+            console.log("Error on creating :->")
+        }
     }
 
 
