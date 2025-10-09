@@ -6,7 +6,7 @@ export class listing_repo{
     public async create_listing(listing:Listing): Promise<Listing[]>
     {
      const sql = `
-    INSERT INTO listing (
+    INSERT INTO "Listing" (
       id, vendorid, groupid, groupname, rawmessage, description,
       images, price, currency, brand, producttype, gender, size,
       condition, viewcount, likecount, messagecount, status,

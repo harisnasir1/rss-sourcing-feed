@@ -1,3 +1,4 @@
+import {WAMessage} from '@whiskeysockets/baileys';
 export interface Vendor {
   id?: string;                 // UUID
   whatsappId: string;         // varchar(50)
@@ -29,73 +30,13 @@ export type msgtype='text' | 'image' | 'mixed'
 
 
 
-export interface WhatsAppMessage {
-  key: {
-    remoteJid: string;              
-    remoteJidAlt?: string;          
-    fromMe: boolean;                
-    id: string;                     
-    participant?: string;           
-    participantAlt?: string;        
-    addressingMode?: 'pn' | 'lid';  
-  };
-
-  messageTimestamp: number;         
-  pushName?: string;                
-  broadcast?: boolean;
-
-
-  message?: {
-    conversation?: string;
-    extendedTextMessage?: {
-      text?: string;
-      contextInfo?: Record<string, any>;
-      inviteLinkGroupTypeV2?: number;
-    };
-
-    imageMessage?: {
-      url?: string;
-      mimetype?: string;
-      caption?: string;
-      fileSha256?: Buffer;
-      fileLength?: number | Record<string, any>;
-      height?: number;
-      width?: number;
-      mediaKey?: Buffer;
-      fileEncSha256?: Buffer;
-      directPath?: string;
-      mediaKeyTimestamp?: number | Record<string, any>;
-      jpegThumbnail?: Buffer;
-      contextInfo?: Record<string, any>;
-      viewOnce?: boolean;
-    };
-
-
-    senderKeyDistributionMessage?: {
-      groupId?: string;
-      axolotlSenderKeyDistributionMessage?: Buffer;
-    };
-
-
-    messageContextInfo?: {
-      deviceListMetadata?: Record<string, any>;
-      deviceListMetadataVersion?: number;
-      messageSecret?: Buffer;
-      limitSharingV2?: Record<string, any>;
-    };
-
-    [key: string]: any;
-  };
-}
-
-
 
 export interface Listing {
   id?: string;                        // uuid
   vendorId?: string;                 // uuid, nullable
   groupId?: string;                  // varchar(50)
   groupName?: string;                // text
-  rawMessage?: WhatsAppMessage;      // text
+  rawMessage?: WAMessage;      // text
   description?: string;              // text
   images?: string[];                 // text[]
   price?: number;                    // numeric

@@ -22,18 +22,16 @@ export class ImgProcessing{
         console.log("s3 established!",this.Region)
     }
 
-    public async upload_image(image_url:string)
+    public async upload_image(image_url:Buffer)
     {
-        const res=await fetch(image_url);
-          if (!res.ok) throw new Error(`Failed to fetch image: ${res.statusText}`);
-        const arrayBuffer = await res.arrayBuffer();
-        const blob = Buffer.from(arrayBuffer);
+     
+        
         const fileName = `${Date.now()}-${uuidv4()}`;
         const key = `FeedSourcing/${fileName}.png`;
         const uploadParams = {
         Bucket:this.Bucketname,
         Key: key,
-        Body: blob,
+        Body: image_url,  //<-buffer write  
         ContentType: "image/png",
       };
       (await this.s3).send(new PutObjectCommand(uploadParams));

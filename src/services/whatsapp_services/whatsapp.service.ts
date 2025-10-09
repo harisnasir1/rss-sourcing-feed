@@ -15,31 +15,44 @@ export class WhatsAppClient {
   private sock!: WASocket;
   private saveCreds!: () => Promise<void>;
   private readonly authFolder: string;
-  private msg_p:Message_processing;
+  public msg_p:Message_processing|null=null;
+  private messageQueue: any[] = [];
+  private isProcessingQueue = false;
   constructor(authFolder: string = 'auth_info') {
   this.authFolder = authFolder;
-  this.initialize()
-  this.msg_p=new Message_processing(this.sock)
   }
 
   public async initialize(): Promise<WASocket> {
     const { state, saveCreds } = await useMultiFileAuthState(this.authFolder);
     this.saveCreds = saveCreds;
-
-    this.sock = makeWASocket({
+    this.sock = await makeWASocket({
       auth: state,
       logger: P({ level: 'silent' }),
       browser: Browsers.ubuntu('My App'),
       generateHighQualityLinkPreview: true,
+    // ✅ These options prevent history sync
+    syncFullHistory: false,           // Don't sync full message history
+    markOnlineOnConnect: false,       // Don't show as "online" when connecting
+    shouldSyncHistoryMessage: () => false, // Disable history message sync
     });
-
-    this.bindEvents();
     console.log('✅ WhatsApp client initialized');
+    await new Promise<void>((resolve) => {
+    this.sock.ev.on('connection.update', (update) => {
+      const { connection } = update;
+      if (connection === 'open') {
+        console.log('✅ Connected to WhatsApp Web');
+        resolve();
+      }
+    });
+  });
+  this.msg_p=new Message_processing(this.sock)
+   this.bindEvents();
     return this.sock;
   }
 
   private bindEvents(): void {
     this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+    this.sock.ev.on("connection.update",this.handleConnectionUpdate.bind(this))
   }
 
 
@@ -47,10 +60,9 @@ export class WhatsAppClient {
     if (this.saveCreds) await this.saveCreds();
   }
 
-
   private async handleConnectionUpdate(update: BaileysEventMap['connection.update']): Promise<void> {
     const { connection, lastDisconnect, qr } = update;
-
+  
     if (qr) {
       console.log('QR code received, saving to qr.png...');
       await QRCode.toFile('qr.png', qr);
@@ -65,29 +77,35 @@ export class WhatsAppClient {
         console.warn('Connection closed:', reason);
       }
     }
-
-    if (connection === 'open') {
-      console.log('Connected to WhatsApp Web');
-    }
   }
 
   private async handleMessagesUpsert({ messages }: BaileysEventMap['messages.upsert']): Promise<void> {
     const msg = messages[0];
-    if (!msg.key.fromMe) {
-      const text = this.getMessageText(msg);
-      console.log('Received message:', text);
-      
+    if (!msg.key.fromMe && this.msg_p) {
+      this.messageQueue.push(msg)
+      console.log('Received message:', msg);
+      this.processQueue()
     }
   }
+  private async processQueue():Promise<void>{
+    
+    if(this.isProcessingQueue) return;
+    this.isProcessingQueue=true;
 
+    while(this.messageQueue.length>0)
+    {
+     try{ const popmsg=this.messageQueue.shift();
+     await  this.msg_p?.messageparser(popmsg)
+      console.log('Processed message from------->', popmsg?.key?.remoteJid);}
+      catch(e)
+      {
+          console.error('Error processing message:', e);
+      }
+    }
+    this.isProcessingQueue=false;
 
-  private getMessageText(msg: proto.IWebMessageInfo): string | undefined {
-    const message = msg.message;
-    if (!message) return undefined;
-    if (message.conversation) return message.conversation;
-    if (message.extendedTextMessage?.text) return message.extendedTextMessage.text;
-    return undefined;
   }
+
 
   private async reconnect(): Promise<void> {
     console.log('Reconnecting ...');

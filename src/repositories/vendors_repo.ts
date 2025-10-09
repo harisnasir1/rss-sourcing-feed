@@ -15,6 +15,7 @@ export class VendorRepo {
 
  
   public async getVendorByPhone(phone: string): Promise<Vendor[]> {
+    console.log("phone number which its getting ->", phone)
     return await query(`SELECT * FROM "Vendor" WHERE phonenumber = $1`, [phone]);
   }
 
@@ -45,14 +46,14 @@ export class VendorRepo {
     return await this.getVendorByPhone(vendata.phoneNumber);
   }
 
-  public async updateVendor(phone: string, data: Partial<Vendor>): Promise<Vendor[]> {
+  public async updateVendor(phone: string, data:{totallistings:number,lastmessageat:Date}): Promise<Vendor[]> {
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
 
    
     for (const [key, value] of Object.entries(data)) {
-      if (key === 'id' || key === 'createdAt') continue;
+      if (key === 'id' || key === 'createdat') continue;
       fields.push(`"${key}" = $${idx}`);
       values.push(value);
       idx++;
@@ -61,7 +62,7 @@ export class VendorRepo {
     if (fields.length === 0) return []; 
 
    
-    fields.push(`"updatedAt" = NOW()`);
+    fields.push(`"updatedat" = NOW()`);
     
     const sql = `UPDATE "Vendor" SET ${fields.join(', ')} WHERE phonenumber = $${idx}`;
     values.push(phone);
