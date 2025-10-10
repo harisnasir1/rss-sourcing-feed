@@ -50,7 +50,6 @@ export class VendorRepo {
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
-
    
     for (const [key, value] of Object.entries(data)) {
       if (key === 'id' || key === 'createdat') continue;
@@ -60,7 +59,6 @@ export class VendorRepo {
     }
 
     if (fields.length === 0) return []; 
-
    
     fields.push(`"updatedat" = NOW()`);
     

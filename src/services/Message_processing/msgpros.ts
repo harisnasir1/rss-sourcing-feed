@@ -9,7 +9,7 @@ import { MessageBuffer, Listing, Vendor, msgtype,AI_Response } from '../../types
 import { listing_repo } from '../../repositories/listing_repo';
 import { ImgProcessing } from './imgpros';
 import {AI} from '../AI_Services/Ai'
-import { stringify } from 'querystring';
+import { Message_Buffer } from './msgbuff';
 export class Message_processing {
 
     private _sock: WASocket;
@@ -18,6 +18,7 @@ export class Message_processing {
     private _rlist: listing_repo;
     private _imgpro: ImgProcessing;
     private _ai:AI;
+    private _msgbuff:Message_Buffer;
     constructor(sock: WASocket) {
         this._sock = sock
         this.groupMetadataCache = new Map()
@@ -25,11 +26,14 @@ export class Message_processing {
         this._rlist = new listing_repo()
         this._imgpro = new ImgProcessing()
         this._ai=new AI()
+        this._msgbuff=new Message_Buffer()
     }
 
 
     public async messageparser(msg: WAMessage) {
+          if (!this.isValidMessage(msg)) return;
         //lets decide whiter it is image or text or mixed
+        
         const venderifo = await this.extractVendorInfo(msg)
         console.log("get vendor information :->",venderifo)
         if (!venderifo) return
@@ -42,46 +46,35 @@ export class Message_processing {
 
         let imgcheck = msg.message?.imageMessage;
         let textcheck = msg.message?.extendedTextMessage?.text;
-        if (imgcheck && !textcheck) {
-            console.log("passed image + caption:-> moving to download image")
-            let imgbuff: Buffer | null = await this.downloadimage(msg)
-            
-            if (!imgbuff) return
-            console.log("downloadedimage passed:-> uploading it")
-            const img_url= await this._imgpro.upload_image(imgbuff)
 
+        if (imgcheck && !textcheck)
+             {
+           
+            const img_url=await this.handle_image(msg)
+            
             console.log("uploding completed url is ->",img_url)
+            console.log("Vendor update or created step:->")
+            let venderget =await this.vendor_handling(venderifo,msg)
+            if(!venderget|| venderget?.length==0) return
+            let vendor = Array.isArray(venderget) ? venderget[0] : venderget;//normalize that
             //Step 2:- check if there is caption or not
-            if (imgcheck?.caption && imgcheck.caption.length > 0 && img_url.length>0) {
+            if (imgcheck?.caption && imgcheck.caption.length > 0&&imgcheck.caption!="" &&Array.isArray(img_url)&& img_url.length>0) {
                 //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
                 //we are not storing all the albumb we are only getting firs image for now in future we need to add images with caption in the
                 //buffer as well
-                console.log("Vendor update or created step:->")
-                let venderget = await this._rvendor.getVendorByPhone(venderifo.vdata.phoneNumber);
-                console.log("vendor info from db->",venderget)
-                if (!venderget || venderget.length === 0) {
-                console.log("new vendor created with ->",venderifo.vdata)
-                venderget = await this._rvendor.createVendor(venderifo.vdata)
+                   await this.creates_listings(msg, vendor, "mixed",img_url)
                 }
-                else
-                {
-                const d = {
-                           totallistings: venderifo.vdata.totalListings + 1,
-                           lastmessageat: 
-                           msg.messageTimestamp != null
-                             ? new Date(Number(msg.messageTimestamp) * 1000)
-                             : new Date()
-                          }
-                console.log("vendor update which is get from query ->",venderget)
-                console.log("update vendor created with ->",d)
-               
-              venderget =   await this._rvendor.updateVendor(venderifo.vdata.phoneNumber,d)
-                }
-                   await this.creates_listings(msg, venderget[0], "mixed",img_url)
-                }
-                else {
+        else {
+          console.log("comming in image buffer section")
+            if(Array.isArray(img_url)&& img_url.length>0)
+            {
+                
                     //here add message buffer with type image
-                }
+                     let gname = await this.getgroupname(msg.key.remoteJid || "");
+                     if(!gname||gname=="")return null
+                     console.log("get the name for image buffer of group->", gname)
+                    await this._msgbuff.addimagetobuffer(vendor,msg,gname,"image",img_url)
+                }}
         }
         else if (!imgcheck && textcheck && textcheck.length > 0) {
             // step3:- check here in message buffer with the whatsapp number or id and check if the last message buffer is image.
@@ -98,11 +91,11 @@ export class Message_processing {
         try{const gid = this.getgroupid(msg)
         let gname = await this.getgroupname(msg.key.remoteJid || "");
         const gt = msg.key.remoteJid
-        if (gid == null || gname == null) return
+        if (gid == null || gname == null) return null
         const pdesc= this.getdescription(msg) || ""
-        if(!pdesc||pdesc=="")return
+        if(!pdesc||pdesc=="")return null
         const aidata:AI_Response =await this._ai.extractProductInfo(pdesc)
-        if(!aidata ||(aidata && (aidata.isWTB==aidata.isWTS))) throw new Error(aidata?stringify(aidata):"something wrong with data")
+        if(!aidata ||(aidata && (aidata.isWTB==aidata.isWTS))) throw new Error(aidata?JSON.stringify(aidata):"something wrong with data")
          console.log(aidata)
         const list: Listing = {
             vendorId: vinfo.id,
@@ -124,25 +117,25 @@ export class Message_processing {
             isWTB: aidata.isWTB || false,//ai,
             isWTS:aidata.isWTS || true
         }
+        
        console.log("Listing trying to be created with ->",list)
-      const re= await this._rlist.create_listing(list)
-
+       const re= await this._rlist.create_listing(list)
+        
         //now update the vendor
+        const d = {
+                       totallistings: (vinfo.totalListings || 0) + 1 + 1,
+                       lastmessageat: 
+                       msg.messageTimestamp != null
+                         ? new Date(Number(msg.messageTimestamp) * 1000)
+                         : new Date()
+                      }
+               
+        let venderget =   await this._rvendor.updateVendor(vinfo.phoneNumber,d)
       return re;
-        //  const mb:MessageBuffer={ 
-        //        vendorId: vinfo.id,
-        //        groupId: this.getgroupid(msg), 
-        //        messageType: msg_type ,
-        //        description: this.getdescription(msg),
-        //        images: [""], 
-        //        isProcessed:true,
-        //        shouldCombine: true,
-        //        whatsappMessageId: "",
-        //  }
         }
         catch(e)
         {
-            console.log("Error on creating :->")
+            console.log("Error on creating :->",e)
         }
     }
 
@@ -151,7 +144,7 @@ export class Message_processing {
     private async extractVendorInfo(msg: WAMessage) {
         const isGroup = msg.key.remoteJid?.endsWith('@g.us')
          console.log("is group or not -> ",isGroup )
-        if(!isGroup) return
+        if(!isGroup) return null
        
         let vendorWhatsappId: string = ""
         let vendorPhoneNumber: string = ""
@@ -161,13 +154,13 @@ export class Message_processing {
         if (isGroup) {
             groupid = this.getgroupid(msg);
              console.log("groupid -> ",groupid )
-            if (groupid == null) return
+            if (!groupid||groupid=="") return null
             let k = await this.getgroupname(msg.key.remoteJid||"")
-            if (k == "" || k == null) return
+            if (k == "" || k == null) return null
             groupname = k;
             vendorWhatsappId = msg.key.participant ? msg.key.participant.split("@")[0] : ""
             console.log("vendorWhatsappId -> ",vendorWhatsappId )
-            if (vendorName == "") return
+            if (vendorName == "") return null
             if (msg.key.participantAlt) {
                 vendorPhoneNumber = msg.key.participantAlt.split(':')[0]
                   console.log("vendorPhoneNumber -> ",vendorPhoneNumber )
@@ -246,5 +239,59 @@ export class Message_processing {
             console.error('Error downloading image:', e)
             return null
         }
+    }
+
+    private async handle_image(msg:WAMessage)
+    {
+ console.log("passed image + caption:-> moving to download image")
+            let imgbuff: Buffer | null = await this.downloadimage(msg)
+            
+            if (!imgbuff) return
+            console.log("downloadedimage passed:-> uploading it")
+            return await this._imgpro.upload_image(imgbuff)
+            
+    }
+
+    private isValidMessage(msg: WAMessage): boolean {
+    if (msg.key.fromMe) {
+        console.log('⏭️ Skipping own message');
+        return false;
+    }
+    
+    if ((msg as any).messageStubType) {
+        console.log('⏭️ Skipping system message');
+        return false;
+    }
+    
+    const isGroup = msg.key.remoteJid?.endsWith('@g.us');
+    if (!isGroup) {
+        console.log('⏭️ Skipping non-group message');
+        return false;
+    }
+    
+    // Check message age
+    const messageTimestamp = (msg.messageTimestamp as number) * 1000;
+    const messageAge = Date.now() - messageTimestamp;
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    
+    if (messageAge > FIVE_MINUTES) {
+        console.log('⏭️ Skipping old message');
+        return false;
+    }
+
+    
+    
+    return true;
+    }
+
+    private async vendor_handling(venderifo:any,msg:WAMessage)
+    {
+        let venderget= await this._rvendor.getVendorByPhone(venderifo.vdata.phoneNumber);
+            console.log("vendor info from db->",venderget)
+            if (!venderget || venderget.length === 0) {
+            console.log("new vendor created with ->",venderifo.vdata)
+            venderget = await this._rvendor.createVendor(venderifo.vdata)
+            }
+         return venderget       
     }
 }

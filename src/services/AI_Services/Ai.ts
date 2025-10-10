@@ -22,7 +22,20 @@ export class AI {
       const content =chatCompletion.choices[0]?.message?.content;
       console.log("ai response=>",content)
     if(!content)  throw new Error("data coming from ai is wrong!") 
-    const parsed = JSON.parse(content);
+    
+    let cleaned = content.trim();
+
+    
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")       
+      .replace(/,\s*]/g, "]")        
+      .replace(/\\"/g, '"')          
+      .replace(/"\s*}/g, '"}')       
+      .replace(/true\"/g, "true")    
+      .replace(/false\"/g, "false")  
+      .replace(/}\s*}$/g, "}");      
+    
+    const parsed = JSON.parse(cleaned)
   
   return {
     price: parsed.price ?? 0,
@@ -58,49 +71,78 @@ export class AI {
     model: "openai/gpt-oss-20b",
               messages: [
             {
-              role: "system",
-              content: `You are a product information extraction assistant. Extract the following from product descriptions:
-           - price: numeric value only (extract numbers, if no price found use 0)
-           - brand: brand name
-           - productType: type of product (e.g., "shoes", "shirt", "jeans", "hoodie")
-           - gender: target gender ("men", "women", "unisex", or "kids")
-           - size: size information
-           - condition: condition ("new", "used", "like new", "good", "fair", etc.)
-           - iswtb: true if text indicates the person WANTS TO BUY something. Look for phrases like:
-             * "wtb" (want to buy)
-             * "want to buy"
-             * "i wanted to buy"
-             * "looking for"
-             * "anyone have this"
-             * "anybody have this"
-             * "does anyone have"
-             * "ISO" (in search of)
-             * "searching for"
-           - iswts: true if text indicates the person WANTS TO SELL something. Look for phrases like:
-             * "wts" (want to sell)
-             * "want to sell"
-             * "i wanted to sell"
-             * "selling this"
-             * "i am selling"
-             * "for sale"
-             * "available to order"
-             * "it's available"
-             * "available for purchase"
-           
-           If any field cannot be determined, use these defaults:
-           - price: 0
-           - brand: ""
-           - productType: ""
-           - gender: "unisex"
-           - size: ""
-           - condition: "new"
-           - iswtb: false
-           - iswts: false
-             `
-            },
-            {
-              role: "user",
-              content: message
+                 role: "system",
+    content: `You are a product information extraction assistant for a resale marketplace. 
+        Extract the following information from product descriptions:
+        
+        **Product Details:**
+        - price: Extract the numeric value only. Look for currency symbols (£, $, €, ₹) or keywords like "price", "cost". If no price found, return 0.
+        - brand: Brand name (Nike, Adidas, Dior, Gucci, Supreme, etc.). Return empty string if not found.
+        - productType: Type of product. Common types include:
+          * Footwear: "sneakers", "trainers", "shoes", "boots", "slides"
+          * Clothing: "shirt", "t-shirt", "hoodie", "jacket", "jeans", "pants", "shorts"
+          * Accessories: "bag", "backpack", "watch", "hat", "belt"
+          * Luxury: "handbag", "wallet", "sunglasses"
+        - gender: Target gender - "men", "women", "unisex", or "kids"
+        - size: Size information (UK/EU/US sizes, S/M/L/XL, numeric sizes like 9, 10, 42, etc.)
+        - condition: Product condition:
+          * "new" - brand new, unworn, with tags/box
+          * "like new" - barely used, perfect condition
+          * "used" - worn but good condition
+          * "fair" - signs of wear
+          * "poor" - heavy wear
+        
+        **Intent Detection (CRITICAL):**
+        - iswtb: true ONLY if the person is looking to BUY. Look for:
+          * "WTB" (want to buy)
+          * "want to buy" / "wanted to buy"
+          * "looking for" / "searching for"
+          * "ISO" (in search of)
+          * "anyone have" / "does anyone have"
+          * "anybody selling"
+          * "need to buy"
+          
+        - iswts: true ONLY if the person is looking to SELL. Look for:
+          * "WTS" (want to sell)
+          * "want to sell" / "selling"
+          * "for sale"
+          * "available" / "in stock"
+          * "selling this"
+          * "DM to buy" / "message to purchase"
+          * Price mentioned with product (usually indicates selling)
+        
+        **Important Rules:**
+        1. A post can ONLY be WTB OR WTS, never both.
+        2. If unclear, check if there's a price → likely WTS
+        3. If asking questions about availability → likely WTB
+        4. If neither intent is clear → set both to false
+        
+        **Return JSON format:**
+        {
+          "price": number,
+          "brand": string,
+          "productType": string,
+          "gender": string,
+          "size": string,
+          "condition": string,
+          "iswtb": boolean,
+          "iswts": boolean
+        }
+        
+        **Defaults if field cannot be determined:**
+        - price: 0
+        - brand: ""
+        - productType: ""
+        - gender: "unisex"
+        - size: ""
+        - condition: "new"
+        - iswtb: false
+        - iswts: false
+                     `
+                 },
+                 {
+                   role: "user",
+                   content: message
             }
           ],
           response_format: {

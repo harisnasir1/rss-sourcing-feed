@@ -26,10 +26,8 @@ export interface MessageBuffer {
   whatsappTimestamp?: Date; 
   createdAt?: Date; 
 }
+
 export type msgtype='text' | 'image' | 'mixed'
-
-
-
 
 export interface Listing {
   id?: string;                        // uuid
