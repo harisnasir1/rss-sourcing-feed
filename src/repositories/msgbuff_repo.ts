@@ -37,14 +37,14 @@ export class MessageBufferRepo {
     const res = await query(sql, [id]);
     return res.length > 0 ? res[0] : null;
   }
-    // ✅ Get by ID
-  public async getByVendorId(id: string): Promise<MessageBuffer | null> {
-    const sql = `SELECT * FROM "MessageBuffer" WHERE vendorid = $1 AND isprocessed =false`;
-    const res = await query(sql, [id]);
+  
+  public async getByVendorId(id: string,groupid:string): Promise<MessageBuffer | null> {
+    const sql = `SELECT * FROM "MessageBuffer" WHERE vendorid = $1 AND groupid=$2 AND shouldcombine = true AND isprocessed =false`;
+    const res = await query(sql, [id,groupid]);
     return res.length > 0 ? res[0] : null;
   }
 
-  // ✅ Get unprocessed messages (for queue processing)
+
   public async getUnprocessed(limit = 50): Promise<MessageBuffer[]> {
     const sql = `
       SELECT * FROM "MessageBuffer"
@@ -55,7 +55,7 @@ export class MessageBufferRepo {
     return await query(sql, [limit]);
   }
 
-  // ✅ Update a record
+
   public async update(id: string, fields: Partial<MessageBuffer>): Promise<MessageBuffer | null> {
     const keys = Object.keys(fields);
     if (keys.length === 0) return await this.getById(id);
@@ -97,6 +97,21 @@ export class MessageBufferRepo {
       RETURNING *;
     `;
     const result = await query(queryText, [imageUrl, id]);
+    return result[0];
+  } catch (error) {
+    console.error("Error appending image to MessageBuffer:", error);
+    throw error;
+  }
+}
+public async appendtext(id: string, desc: string): Promise<MessageBuffer> {
+  try {
+    const queryText = `
+      UPDATE "MessageBuffer"
+      SET description = $1 , shouldcombine =false , isprocessed =true 
+      WHERE id = $2
+      RETURNING *;
+    `;
+    const result = await query(queryText, [desc, id]);
     return result[0];
   } catch (error) {
     console.error("Error appending image to MessageBuffer:", error);

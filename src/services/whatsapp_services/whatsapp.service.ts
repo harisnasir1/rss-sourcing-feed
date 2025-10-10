@@ -83,7 +83,6 @@ export class WhatsAppClient {
     const msg = messages[0];
     if (!msg.key.fromMe && this.msg_p) {
       this.messageQueue.push(msg)
-      console.log('Received message:', msg);
       this.processQueue()
     }
   }
@@ -96,7 +95,7 @@ export class WhatsAppClient {
     {
      try{ const popmsg=this.messageQueue.shift();
      await  this.msg_p?.messageparser(popmsg)
-      console.log('Processed message from------->', popmsg?.key?.remoteJid);}
+      console.log('Processed message ------->', popmsg);}
       catch(e)
       {
           console.error('Error processing message:', e);

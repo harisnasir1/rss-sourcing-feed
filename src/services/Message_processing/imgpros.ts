@@ -24,8 +24,6 @@ export class ImgProcessing{
 
     public async upload_image(image_url:Buffer)
     {
-     
-        
         const fileName = `${Date.now()}-${uuidv4()}`;
         const key = `FeedSourcing/${fileName}.png`;
         const uploadParams = {

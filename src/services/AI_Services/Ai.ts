@@ -13,7 +13,6 @@ export class AI {
       console.warn("Warning: Grok API key not found in environment variables");
     }
     this.groq= new Groq({ apiKey:this.api_key });
-
   }
 
   async extractProductInfo(description: string):Promise<AI_Response> {

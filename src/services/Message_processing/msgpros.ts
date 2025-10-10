@@ -19,6 +19,7 @@ export class Message_processing {
     private _imgpro: ImgProcessing;
     private _ai:AI;
     private _msgbuff:Message_Buffer;
+
     constructor(sock: WASocket) {
         this._sock = sock
         this.groupMetadataCache = new Map()
@@ -28,8 +29,7 @@ export class Message_processing {
         this._ai=new AI()
         this._msgbuff=new Message_Buffer()
     }
-
-
+    
     public async messageparser(msg: WAMessage) {
           if (!this.isValidMessage(msg)) return;
         //lets decide whiter it is image or text or mixed
@@ -46,48 +46,65 @@ export class Message_processing {
 
         let imgcheck = msg.message?.imageMessage;
         let textcheck = msg.message?.extendedTextMessage?.text;
-
+        if(!imgcheck && !textcheck) return null;
+        let venderget =await this.vendor_handling(venderifo,msg)
+        if(!venderget|| venderget?.length==0) return
+        let vendor = Array.isArray(venderget) ? venderget[0] : venderget;
         if (imgcheck && !textcheck)
-             {
-           
+        {
             const img_url=await this.handle_image(msg)
-            
             console.log("uploding completed url is ->",img_url)
             console.log("Vendor update or created step:->")
-            let venderget =await this.vendor_handling(venderifo,msg)
-            if(!venderget|| venderget?.length==0) return
-            let vendor = Array.isArray(venderget) ? venderget[0] : venderget;//normalize that
+
             //Step 2:- check if there is caption or not
             if (imgcheck?.caption && imgcheck.caption.length > 0&&imgcheck.caption!="" &&Array.isArray(img_url)&& img_url.length>0) {
                 //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
                 //we are not storing all the albumb we are only getting firs image for now in future we need to add images with caption in the
                 //buffer as well
-                   await this.creates_listings(msg, vendor, "mixed",img_url)
+                   await this.creates_listings(msg, vendor,img_url)
                 }
-        else {
+             else {
             console.log("comming in image buffer section")
             if(Array.isArray(img_url)&& img_url.length>0)
             {
                 
-                    //here add message buffer with type image
-                     let gname = await this.getgroupname(msg.key.remoteJid || "");
-                     if(!gname||gname=="")return null
-                     console.log("get the name for image buffer of group->", gname)
-                    await this._msgbuff.addimagetobuffer(vendor,msg,gname,"image",img_url)
-                }}
+             //here add message buffer with type image
+              let gname = await this.getgroupname(msg.key.remoteJid || "");
+              if(!gname||gname=="")return null
+              console.log("get the name for image buffer of group->", gname)
+             await this._msgbuff.addimagetobuffer(vendor,msg,gname,"image",img_url)
+            
+            }}
         }
         else if (!imgcheck && textcheck && textcheck.length > 0) {
+              let desc=await this.getdescription(msg)
+              if(!desc) return null
+              const re:MessageBuffer|null|undefined = await this._msgbuff.addtexttobuffer(vendor,msg,"text",desc)
+              if(!re || (!Array.isArray(re.images))||(Array.isArray(re.images)&&re.images.length==0)  ) return null
+               
+            //create listing from here if we have messagebuffer which says shouldcombine false and isprocessed true
+             await this.creates_listings(msg,vendor,re.images)
+
+            
+
+
+
+
+              
+            //!!!IMOPRTANT LOOK AT THIS ASAP
+            //GET THE BUFFER ALSO ON GROUPID WHICH WILL HELP YOU TO JOIN TEXT AND DESCRIPTION EVEN IF THE LISITNG HAPPEN IN DIFFERENT GROUPS.
+
+
             // step3:- check here in message buffer with the whatsapp number or id and check if the last message buffer is image.
-            //1-> if the last isProcessed is falsed then ignore that message.
+            //1-> if the last isProcessed is true then ignore that message.
             //2->if the last message of that vendor is image then add text to it (after ai) and then create the listing from that data.
             //3->delete that messagebuffer.
         }
 
     }
-
-
+    
     //need to add ai on this function
-    public async creates_listings(msg: WAMessage, vinfo: any, msg_type: msgtype,imgs:string[]) {
+    public async creates_listings(msg: WAMessage, vinfo: any,imgs:string[]) {
         try{
             
         const gid = this.getgroupid(msg)
@@ -142,9 +159,7 @@ export class Message_processing {
             console.log("Error on creating :->",e)
         }
     }
-
-
-
+    
     private async extractVendorInfo(msg: WAMessage) {
         const isGroup = msg.key.remoteJid?.endsWith('@g.us')
          console.log("is group or not -> ",isGroup )
@@ -167,8 +182,7 @@ export class Message_processing {
             if (msg.key.participantAlt) {
                 vendorPhoneNumber = msg.key.participantAlt.split(':')[0]
                 vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
-                  console.log("vendorPhoneNumber -> ",vendorPhoneNumber )
-                  
+                console.log("vendorPhoneNumber -> ",vendorPhoneNumber)
             }
         }
         if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" ) return null
@@ -184,7 +198,7 @@ export class Message_processing {
 
         return { vdata, isGroup }
     }
-
+    
     private getgroupid(msg: WAMessage) {
         if (!msg.key.remoteJid) return null
         return msg.key.remoteJid.split("@")[0];
