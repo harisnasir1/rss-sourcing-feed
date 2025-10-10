@@ -65,7 +65,7 @@ export class Message_processing {
                    await this.creates_listings(msg, vendor, "mixed",img_url)
                 }
         else {
-          console.log("comming in image buffer section")
+            console.log("comming in image buffer section")
             if(Array.isArray(img_url)&& img_url.length>0)
             {
                 
@@ -87,8 +87,10 @@ export class Message_processing {
 
 
     //need to add ai on this function
-    public async creates_listings(msg: WAMessage, vinfo: Vendor, msg_type: msgtype,imgs:string[]) {
-        try{const gid = this.getgroupid(msg)
+    public async creates_listings(msg: WAMessage, vinfo: any, msg_type: msgtype,imgs:string[]) {
+        try{
+            
+        const gid = this.getgroupid(msg)
         let gname = await this.getgroupname(msg.key.remoteJid || "");
         const gt = msg.key.remoteJid
         if (gid == null || gname == null) return null
@@ -123,14 +125,16 @@ export class Message_processing {
         
         //now update the vendor
         const d = {
-                       totallistings: (vinfo.totalListings || 0) + 1 + 1,
+                       totallistings: (vinfo.totallistings || 0) + 1,
                        lastmessageat: 
                        msg.messageTimestamp != null
                          ? new Date(Number(msg.messageTimestamp) * 1000)
                          : new Date()
                       }
+               console.log("updating vendor with ->",d)
+               console.log("checking vender info which is sending in update vendor ->",vinfo)
                
-        let venderget =   await this._rvendor.updateVendor(vinfo.phoneNumber,d)
+        let venderget =   await this._rvendor.updateVendor(vinfo.phonenumber,d)
       return re;
         }
         catch(e)
@@ -145,7 +149,6 @@ export class Message_processing {
         const isGroup = msg.key.remoteJid?.endsWith('@g.us')
          console.log("is group or not -> ",isGroup )
         if(!isGroup) return null
-       
         let vendorWhatsappId: string = ""
         let vendorPhoneNumber: string = ""
         let groupname: string = ""
@@ -163,9 +166,12 @@ export class Message_processing {
             if (vendorName == "") return null
             if (msg.key.participantAlt) {
                 vendorPhoneNumber = msg.key.participantAlt.split(':')[0]
+                vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
                   console.log("vendorPhoneNumber -> ",vendorPhoneNumber )
+                  
             }
         }
+        if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" ) return null
         const vdata = {
             whatsappId: vendorWhatsappId,
             phoneNumber: vendorPhoneNumber,
@@ -261,6 +267,10 @@ export class Message_processing {
     if ((msg as any).messageStubType) {
         console.log('⏭️ Skipping system message');
         return false;
+    }
+    if((msg as any).remoteJidAlt)
+    {
+
     }
     
     const isGroup = msg.key.remoteJid?.endsWith('@g.us');

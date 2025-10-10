@@ -19,9 +19,9 @@ export class Message_Buffer{
           console.log("getting in image to buffer class passed first condition.")
           const pbuff=await this._buffrepo.getByVendorId(vinfo.id)
           console.log("getting buffer data=>",pbuff)
-          if(pbuff&& Array.isArray(pbuff)&&pbuff.length>0 &&Array.isArray(img)&&img.length>0 )
+          if(pbuff && pbuff.id )
           {
-             await this._buffrepo.appendImage(pbuff[0].id,img);
+             await this._buffrepo.appendImage(pbuff.id,img);
           }
           else{
             const mb:MessageBuffer={ 
