@@ -95,12 +95,16 @@ export class WhatsAppClient {
     {
      try{ const popmsg=this.messageQueue.shift();
      await  this.msg_p?.messageparser(popmsg)
-      console.log('Processed message ------->', popmsg);}
+      console.log('Processed message ------->', popmsg);
+     await this.sleep(500);
+    }
       catch(e)
       {
           console.error('Error processing message:', e);
+           await this.sleep(1000);
       }
     }
+
     this.isProcessingQueue=false;
 
   }
@@ -109,6 +113,10 @@ export class WhatsAppClient {
   private async reconnect(): Promise<void> {
     console.log('Reconnecting ...');
     await this.initialize();
+  }
+  
+  private sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
   }
 
 }

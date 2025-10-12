@@ -43,5 +43,64 @@ export class listing_repo{
     const res = await query(sql, values);
   return res;
     } 
-    
+    public async getlisting(searchTerm:string,page:number,limit:number,offset:number)
+    {
+      
+       try {
+        let sql = `
+            SELECT 
+                l.id,
+                l.vendorid AS "vendorId",
+                l.groupid AS "groupId",
+                l.groupname AS "groupName",
+                l.description,
+                l.images,
+                l.price,
+                l.brand,
+                l.producttype AS "productType",
+                l.gender,
+                l.size,
+                l.condition,
+                l.status,
+                l.createdat AS "createdAt",
+                v.displayname AS "vendorName",
+                v.phonenumber AS "vendorPhone"
+            FROM "Listing" l
+            INNER JOIN "Vendor" v ON l.vendorid = v.id
+            WHERE l.status = 'active' 
+            
+        `;
+
+        const params: any[] = [];
+
+        
+        if (searchTerm.trim()) {
+            sql += ` AND (
+                l.brand ILIKE $1 OR
+                l.size ILIKE $1 OR
+                l.producttype ILIKE $1 OR
+                l.description ILIKE $1 OR
+                v.displayname ILIKE $1
+            )`;
+            params.push(`%${searchTerm.trim()}%`);
+        }
+
+        
+        sql += ` ORDER BY l.createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(limit, offset);
+        console.log(sql)
+
+        const result = await query(sql, params);
+
+       return({
+            success: true,
+            data: result,
+            count: result.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching listings:', error);
+    }
+
+    }
 }

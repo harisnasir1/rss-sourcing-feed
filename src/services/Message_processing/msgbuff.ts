@@ -7,10 +7,12 @@ import { MessageBufferRepo } from '../../repositories/msgbuff_repo';
 export class Message_Buffer{
     
     private _buffrepo:MessageBufferRepo;
+
     constructor()
     {
       this._buffrepo=new MessageBufferRepo()
     }
+
     public async addimagetobuffer(vinfo:Vendor,msg:WAMessage,groupname:string,buffertype:msgtype,img:string[])
     {
       try  {  console.log("getting in image to buffer class")
@@ -42,6 +44,7 @@ export class Message_Buffer{
             console.log("error while processing message buffer-> image: ->",e)
           }
     }
+
     public async addtexttobuffer(vinfo:Vendor,msg:WAMessage,buffertype:msgtype,desc:string)
     {
          try{ 
@@ -59,5 +62,10 @@ export class Message_Buffer{
           {
             console.log("error while processing message buffer-> text: ->",e)
           }
+    }
+    
+    public async deleteghostdata()
+    {
+      await this._buffrepo.deleteOldUnprocessed()
     }
 }

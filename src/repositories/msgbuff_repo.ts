@@ -83,7 +83,7 @@ export class MessageBufferRepo {
     return res.length > 0;
   }
 
-  // ✅ Helper: Convert camelCase → snake_case
+ 
   private toSnakeCase(str: string): string {
     return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }
@@ -118,4 +118,19 @@ public async appendtext(id: string, desc: string): Promise<MessageBuffer> {
     throw error;
   }
 }
+
+  public async deleteOldUnprocessed(): Promise<void> {
+    const sql = `
+      DELETE FROM "MessageBuffer"
+      WHERE isprocessed = false
+        AND shouldcombine = true
+        AND whatsapptimestamp < NOW() - INTERVAL '10 minutes'
+    `;
+    try {
+      await query(sql);
+      console.log("🧹 Old unprocessed messages cleaned up from MessageBuffer");
+    } catch (error) {
+      console.error("❌ Error cleaning MessageBuffer:", error);
+    }
+  }
 }

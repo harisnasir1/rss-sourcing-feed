@@ -1,6 +1,7 @@
 
 
 import Groq from "groq-sdk";
+import { jsonrepair } from 'jsonrepair';
 import { ListingGender,ListingCondition, AI_Response } from "../../types/Data_types";
 
 export class AI {
@@ -22,18 +23,7 @@ export class AI {
       console.log("ai response=>",content)
     if(!content)  throw new Error("data coming from ai is wrong!") 
     
-    let cleaned = content.trim();
-
-    
-    cleaned = cleaned
-      .replace(/,\s*}/g, "}")       
-      .replace(/,\s*]/g, "]")        
-      .replace(/\\"/g, '"')          
-      .replace(/"\s*}/g, '"}')       
-      .replace(/true\"/g, "true")    
-      .replace(/false\"/g, "false")  
-      .replace(/}\s*}$/g, "}");      
-    
+    let cleaned =jsonrepair(content)     
     const parsed = JSON.parse(cleaned)
   
   return {
@@ -71,72 +61,86 @@ export class AI {
               messages: [
             {
                  role: "system",
-    content: `You are a product information extraction assistant for a resale marketplace. 
-        Extract the following information from product descriptions:
-        
-        **Product Details:**
-        - price: Extract the numeric value only. Look for currency symbols (£, $, €, ₹) or keywords like "price", "cost". If no price found, return 0.
-        - brand: Brand name (Nike, Adidas, Dior, Gucci, Supreme, etc.). Return empty string if not found.
-        - productType: Type of product. Common types include:
-          * Footwear: "sneakers", "trainers", "shoes", "boots", "slides"
-          * Clothing: "shirt", "t-shirt", "hoodie", "jacket", "jeans", "pants", "shorts"
-          * Accessories: "bag", "backpack", "watch", "hat", "belt"
-          * Luxury: "handbag", "wallet", "sunglasses"
-        - gender: Target gender - "men", "women", "unisex", or "kids"
-        - size: Size information (UK/EU/US sizes, S/M/L/XL, numeric sizes like 9, 10, 42, etc.)
-        - condition: Product condition:
-          * "new" - brand new, unworn, with tags/box
-          * "like new" - barely used, perfect condition
-          * "used" - worn but good condition
-          * "fair" - signs of wear
-          * "poor" - heavy wear
-        
-        **Intent Detection (CRITICAL):**
-        - iswtb: true ONLY if the person is looking to BUY. Look for:
-          * "WTB" (want to buy)
-          * "want to buy" / "wanted to buy"
-          * "looking for" / "searching for"
-          * "ISO" (in search of)
-          * "anyone have" / "does anyone have"
-          * "anybody selling"
-          * "need to buy"
-          
-        - iswts: true ONLY if the person is looking to SELL. Look for:
-          * "WTS" (want to sell)
-          * "want to sell" / "selling"
-          * "for sale"
-          * "available" / "in stock"
-          * "selling this"
-          * "DM to buy" / "message to purchase"
-          * Price mentioned with product (usually indicates selling)
-        
-        **Important Rules:**
-        1. A post can ONLY be WTB OR WTS, never both.
-        2. If unclear, check if there's a price → likely WTS
-        3. If asking questions about availability → likely WTB
-        4. If neither intent is clear → set both to false
-        
-        **Return JSON format:**
-        {
-          "price": number,
-          "brand": string,
-          "productType": string,
-          "gender": string,
-          "size": string,
-          "condition": string,
-          "iswtb": boolean,
-          "iswts": boolean
-        }
-        
-        **Defaults if field cannot be determined:**
-        - price: 0
-        - brand: ""
-        - productType: ""
-        - gender: "unisex"
-        - size: ""
-        - condition: "new"
-        - iswtb: false
-        - iswts: false
+    content: `You are a product information extraction assistant for a resale marketplace.
+
+             Your job is to extract structured product details from text descriptions and return a **strict JSON object only** — with no extra characters, explanations, or markdown.
+             
+             ---
+             
+             **Product Details to Extract:**
+             - price: Extract the numeric value only. Detect currency symbols (£, $, €, ₹) or keywords like "price" or "cost". If no price is found, return 0.
+             - brand: Brand name (Nike, Adidas, Dior, Gucci, Supreme, etc.). Return an empty string if not found.
+             - productType: Product type (e.g., sneakers, hoodie, jeans, bag). Common categories:
+               * Footwear: "sneakers", "trainers", "shoes", "boots", "slides"
+               * Clothing: "shirt", "t-shirt", "hoodie", "jacket", "jeans", "pants", "shorts"
+               * Accessories: "bag", "backpack", "watch", "hat", "belt"
+               * Luxury: "handbag", "wallet", "sunglasses"
+             - gender: Target gender — one of "men", "women", "unisex", or "kids".
+             - size: Extract UK/EU/US shoe or clothing sizes (e.g., 9, 10, 42, S, M, L, XL, etc.)
+             - condition: Product condition — one of:
+               * "new" - brand new, unworn, with tags/box
+               * "like new" - barely used, perfect condition
+               * "used" - worn but good condition
+               * "fair" - signs of wear
+               * "poor" - heavy wear
+             
+             ---
+             
+             **Intent Detection (Critical):**
+             - iswtb: true ONLY if the person is looking to BUY. Trigger phrases include:
+               * "WTB" (want to buy)
+               * "want to buy", "wanted to buy"
+               * "looking for", "searching for"
+               * "ISO" (in search of)
+               * "anyone have", "does anyone have"
+               * "anybody selling"
+               * "need to buy"
+             - iswts: true ONLY if the person is looking to SELL. Trigger phrases include:
+               * "WTS" (want to sell)
+               * "want to sell", "selling"
+               * "for sale"
+               * "available", "in stock"
+               * "selling this"
+               * "DM to buy", "message to purchase"
+               * presence of a price
+             
+             ---
+             
+             **Important Rules:**
+             1. A post can ONLY be WTB OR WTS, never both.
+             2. If unclear, and a price exists → assume WTS.
+             3. If asking questions about availability → assume WTB.
+             4. If neither intent is clear → set both to false.
+             5. The JSON format must be exact — no markdown, no explanation, no text before or after.
+             
+             ---
+             
+             **Return JSON format (exactly this structure):**
+             {
+               "price": number,
+               "brand": string,
+               "productType": string,
+               "gender": string,
+               "size": string,
+               "condition": string,
+               "iswtb": boolean,
+               "iswts": boolean
+             }
+             
+             ---
+             
+             **Defaults if unknown:**
+             - price: 0  
+             - brand: ""  
+             - productType: ""  
+             - gender: "unisex"  
+             - size: ""  
+             - condition: "new"  
+             - iswtb: false  
+             - iswts: false  
+             
+             Return ONLY the JSON. No explanations, no markdown, no commentary.
+             
                      `
                  },
                  {
@@ -148,7 +152,7 @@ export class AI {
             type: "json_schema",
             json_schema: {
               name: "product_extraction",
-              strict: true,
+              strict: false,
               schema: {
                 type: "object",
                 properties: {
