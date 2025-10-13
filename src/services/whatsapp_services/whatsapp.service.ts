@@ -36,6 +36,7 @@ export class WhatsAppClient {
     shouldSyncHistoryMessage: () => false, // Disable history message sync
     });
     console.log('✅ WhatsApp client initialized');
+    this.bindEvents();
     await new Promise<void>((resolve) => {
     this.sock.ev.on('connection.update', (update) => {
       const { connection } = update;
@@ -46,7 +47,7 @@ export class WhatsAppClient {
     });
   });
   this.msg_p=new Message_processing(this.sock)
-   this.bindEvents();
+   
     return this.sock;
   }
 
