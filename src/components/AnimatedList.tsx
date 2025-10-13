@@ -6,10 +6,12 @@ export default function AnimatedList({
   items,
   renderItem,
   removeDelay = 320,
+  className,
 }: {
   items: Item[]
   renderItem: (item: Item) => React.ReactNode
   removeDelay?: number
+  className?: string
 }) {
   // local copy that can hold 'removing' items while they animate out
   const [local, setLocal] = useState<{ item: Item; id: string; removing?: boolean }[]>(
@@ -105,7 +107,7 @@ export default function AnimatedList({
   }, [local, removeDelay])
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className={className ?? ''}>
       {local.map((l) => (
         <div key={l.id} data-id={l.id} className={"animated-item" + (l.removing ? ' removing' : '')}>
           {renderItem(l.item)}

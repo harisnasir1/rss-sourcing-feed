@@ -36,20 +36,7 @@ Notes:
 Backend integration
 -------------------
 
-This frontend expects a simple JSON API and an optional Server-Sent Events (SSE) stream to receive new items in real-time. The WhatsApp ingestion backend can implement the following endpoints:
-
-- GET /api/items
-	- Response: 200 OK
-	- Body: JSON object { items: Item[] }
-	- Used by the frontend on load to populate the initial feed. If this endpoint is unavailable, the app falls back to the bundled `src/data/sample.json`.
-
-- SSE /api/stream
-	- Content-Type: text/event-stream
-	- Each event's data should be a single Item serialized as JSON (one item per event). Example event payload:
-
-		data: {"id":"abc123","title":"Yeezy Boost 350","price":"$250","image":"/assets/sample1.jpg","whatsapp":"https://wa.me/....","group":"Sneaker Group","time":"2h"}
-
-	- The frontend prepends received items to the top of the list so they animate on entry.
+This frontend expects a simple JSON API to return a list of items and can optionally subscribe to a real-time stream if your backend provides one. The frontend will normalize common payload shapes (array, { items }, { data: { items } }, { results }).
 
 Item JSON shape
 

@@ -31,17 +31,19 @@ export default function FeedCard({
   return (
     <div
       className={
-        `feed-card transform-gpu transition-all duration-300 ease-out flex items-center gap-4 bg-gray-900/40 p-4 rounded-lg border border-gray-800 hover:shadow-lg hover:bg-gray-900`
+        `feed-card transform-gpu transition-all duration-300 ease-out flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-gray-900/40 p-4 rounded-lg border border-gray-800 hover:shadow-lg hover:bg-gray-900`
         + (entered ? ' feed-card-enter' : ' feed-card-initial')
       }
     >
-      <img src={item.image} alt={item.title} className="w-20 h-20 object-cover rounded" />
-      <div className="flex-1">
-        <div className="font-medium text-animate">{item.title}</div>
+      {item.image && item.image !== '/assets/placeholder_img.png' ? (
+        <img src={item.image} alt={item.title} className="flex-none w-20 h-20 object-cover rounded" />
+      ) : null}
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-animate break-words">{item.title}</div>
         <div className={"text-sm text-gray-400 price" + (locked ? ' locked-blur' : '')}>{item.price}</div>
-        <div className="text-xs text-gray-500 mt-1 meta text-animate">{item.group} · {item.time}</div>
+        <div className="text-xs text-gray-500 mt-1 meta text-animate">{item.group}  {item.time}</div>
       </div>
-      <div>
+      <div className="self-end sm:self-auto">
         <a
           href={item.whatsapp}
           target="_blank"

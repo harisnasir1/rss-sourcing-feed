@@ -6,6 +6,24 @@ html, body, #root {
   height: 100%;
 }
 
+/* Do not force #root to be a flex container — allow the whole page to scroll naturally */
+
+
+.nav-backdrop {
+  backdrop-filter: blur(6px);
+}
+
+/* Primary blue CTA button used in the design */
+.btn-blue {
+  border-radius: 0.5rem;
+  background: #105A89;
+  box-shadow: 0 8.333px 27.778px 0 rgba(105, 197, 255, 0.25), 0 0 10px 0 #69C5FF inset;
+  color: white;
+}
+.btn-blue:hover {
+  filter: brightness(1.05);
+}
+
 /* small UI tweaks */
 .bg-gradient-to-b { background-image: linear-gradient(to bottom, #000000, #0b0b0b); }
 
