@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+/* small UI tweaks */
+.bg-gradient-to-b { background-image: linear-gradient(to bottom, #000000, #0b0b0b); }
+
+/* Feed card enter animation */
+.feed-card {
+  /* ensure transform & opacity are animated */
+  will-change: transform, opacity;
+}
+.feed-card-initial {
+  opacity: 0;
+  transform: translateY(8px) scale(0.995);
+}
+.feed-card-enter {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Smooth layout transitions for the containing list */
+.space-y-4 > * {
+  transition: margin 250ms ease, transform 250ms ease, opacity 250ms ease;
+}
+
+/* Animated list wrapper items (enter/exit) */
+.animated-item {
+  transition: opacity 280ms cubic-bezier(.2,.9,.25,1), transform 280ms cubic-bezier(.2,.9,.25,1), filter 280ms ease;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.animated-item.removing {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.995);
+  filter: blur(6px) saturate(.8);
+}
+
+/* text entrance animation for titles/meta */
+.text-animate {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 380ms ease, transform 380ms ease;
+}
+.feed-card-enter .text-animate {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* locked blur for price and button */
+.locked-blur {
+  filter: blur(6px);
+}
+
+
+/* CTA wrapper FLIP-friendly transition: animate transform/opacity when it moves */
+.cta-wrapper {
+  transition: transform 280ms cubic-bezier(.2,.9,.25,1), opacity 220ms ease;
+}
+
+.fixed-modal { z-index: 60 }
