@@ -36,23 +36,16 @@ export class WhatsAppClient {
     shouldSyncHistoryMessage: () => false, // Disable history message sync
     });
     console.log('✅ WhatsApp client initialized');
-    this.bindEvents();
-    await new Promise<void>((resolve) => {
-    this.sock.ev.on('connection.update', (update) => {
-      const { connection } = update;
-      if (connection === 'open') {
-        console.log('✅ Connected to WhatsApp Web');
-        resolve();
-      }
-    });
-  });
+    
+
+  this.bindEvents();
   this.msg_p=new Message_processing(this.sock)
    
     return this.sock;
   }
 
   private bindEvents(): void {
-    this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+      this.sock.ev.on('creds.update', this.saveCreds);
     this.sock.ev.on("connection.update",this.handleConnectionUpdate.bind(this))
   }
 
@@ -64,20 +57,26 @@ export class WhatsAppClient {
   private async handleConnectionUpdate(update: BaileysEventMap['connection.update']): Promise<void> {
     const { connection, lastDisconnect, qr } = update;
   
-    if (qr) {
-      console.log('QR code received, saving to qr.png...');
-      await QRCode.toFile('qr.png', qr);
-    }
+     if (connection === 'open') {
+        console.log('✅ Connected to WhatsApp Web');
+        this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+
+      }
 
     if (connection === 'close') {
       const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
       if (reason === DisconnectReason.restartRequired) {
         console.log('Restart required, reconnecting...');
-        await this.reconnect();
+        this.reconnect();
       } else {
         console.warn('Connection closed:', reason);
       }
     }
+    if (qr) {
+      console.log('QR code received, saving to qr.png...');
+      await QRCode.toFile('qr.png', qr);
+    }
+    
   }
 
   private async handleMessagesUpsert({ messages }: BaileysEventMap['messages.upsert']): Promise<void> {
@@ -113,7 +112,7 @@ export class WhatsAppClient {
 
   private async reconnect(): Promise<void> {
     console.log('Reconnecting ...');
-    await this.initialize();
+     this.initialize();
   }
   
   private sleep(ms: number): Promise<void> {

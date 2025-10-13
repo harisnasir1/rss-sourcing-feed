@@ -25,7 +25,14 @@ try {
     if(k){
     console.log('✅ PostgreSQL connected successfully');
     const whatsapp=new WhatsAppClient()
-    await whatsapp.initialize()
+               try {
+                await whatsapp.initialize();
+                console.log('✅ WhatsApp initialized successfully');
+            } catch (whatsappError) {
+                console.error('❌ WhatsApp initialization failed:', whatsappError);
+                console.log('⚠️ Server running but WhatsApp not connected');
+                // Don't exit - server can still run
+            }
    
   }
   } catch (err) {
