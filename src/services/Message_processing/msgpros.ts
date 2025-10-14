@@ -133,8 +133,8 @@ export class Message_processing {
             likeCount: 0,
             messageCount: 0,
             status: 'active',//ai
-            isWTB: aidata.iswtb || false,//ai,
-            isWTS:aidata.iswts || true
+            isWTB: aidata.iswtb ?? false,//ai,
+            isWTS:aidata.iswts ?? true
         }
         
        console.log("Listing trying to be created with ->",list)
