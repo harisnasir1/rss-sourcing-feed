@@ -57,7 +57,7 @@ export class AI {
 
   return this.groq.chat.completions.create({
 
-    model: "openai/gpt-oss-20b",
+    model: "moonshotai/kimi-k2-instruct-0905",
               messages: [
             {
                  role: "system",
@@ -152,7 +152,8 @@ export class AI {
             type: "json_schema",
             json_schema: {
               name: "product_extraction",
-              strict: false,
+              description:"extract information from product description",
+              strict: true,
               schema: {
                 type: "object",
                 properties: {
@@ -170,7 +171,8 @@ export class AI {
                   },
                   gender: {
                     type: "string",
-                    description: "Target gender: men, women, unisex, or kids"
+                    description: "Target gender: men, women, unisex, or kids",
+                    enum: ["men", "women", "unisex", "kids"]
                   },
                   size: {
                     type: "string",

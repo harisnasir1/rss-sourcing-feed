@@ -122,8 +122,7 @@ public async appendtext(id: string, desc: string): Promise<MessageBuffer> {
   public async deleteOldUnprocessed(): Promise<void> {
     const sql = `
       DELETE FROM "MessageBuffer"
-      WHERE isprocessed = false
-        AND shouldcombine = true
+      WHERE  shouldcombine = false
         AND whatsapptimestamp < NOW() - INTERVAL '10 minutes'
     `;
     try {

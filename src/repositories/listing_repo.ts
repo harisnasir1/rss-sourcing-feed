@@ -67,8 +67,7 @@ export class listing_repo{
                 v.phonenumber AS "vendorPhone"
             FROM "Listing" l
             INNER JOIN "Vendor" v ON l.vendorid = v.id
-            WHERE l.status = 'active' 
-            
+            WHERE l.status = 'active' AND l.wts=true
         `;
 
         const params: any[] = [];
@@ -88,7 +87,7 @@ export class listing_repo{
         
         sql += ` ORDER BY l.createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(limit, offset);
-        console.log(sql)
+        
 
         const result = await query(sql, params);
 
