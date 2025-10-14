@@ -27,8 +27,9 @@ export class WhatsAppClient {
     this.saveCreds = saveCreds;
     this.sock = await makeWASocket({
       auth: state,
+      version : [2, 3000, 1025190524],
       logger: P({ level: 'silent' }),
-      browser: Browsers.ubuntu('My App'),
+      browser: Browsers.ubuntu('ack'),
       generateHighQualityLinkPreview: true,
     // ✅ These options prevent history sync
     syncFullHistory: false,           // Don't sync full message history
@@ -62,20 +63,20 @@ export class WhatsAppClient {
         this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
 
       }
-
+ if (qr) {
+      console.log('QR code received, saving to qr.png...');
+      await QRCode.toFile('qr.png', qr);
+    }
     if (connection === 'close') {
       const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
       if (reason === DisconnectReason.restartRequired) {
         console.log('Restart required, reconnecting...');
         this.reconnect();
       } else {
-        console.warn('Connection closed:', reason);
+        console.warn('Connection closed:', lastDisconnect);
       }
     }
-    if (qr) {
-      console.log('QR code received, saving to qr.png...');
-      await QRCode.toFile('qr.png', qr);
-    }
+   
     
   }
 
