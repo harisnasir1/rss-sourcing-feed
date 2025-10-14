@@ -180,7 +180,8 @@ export class AI {
                   },
                   condition: {
                     type: "string",
-                    description: "The condition of the product"
+                    description: "The condition of the product",
+                    enum: ["new", "used", "like_new"]
                   },
                   iswtb: {
                     type: "boolean",
