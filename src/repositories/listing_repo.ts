@@ -10,11 +10,11 @@ export class listing_repo{
       id, vendorid, groupid, groupname, rawmessage, description,
       images, price, currency, brand, producttype, gender, size,
       condition, viewcount, likecount, messagecount, status,
-      iswtb, createdat, updatedat
+      iswtb,iswts, createdat, updatedat
     )
     VALUES (
       gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9,
-      $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+      $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,$21
     )
     RETURNING *;
   `;
@@ -37,6 +37,7 @@ export class listing_repo{
     listing.messageCount ?? 0,
     listing.status,
     listing.isWTB ?? false,
+    listing.isWTS??false,
     listing.createdAt ?? new Date(),
     listing.updatedAt ?? new Date(),
   ];
@@ -67,7 +68,7 @@ export class listing_repo{
                 v.phonenumber AS "vendorPhone"
             FROM "Listing" l
             INNER JOIN "Vendor" v ON l.vendorid = v.id
-            WHERE l.status = 'active' AND l.wts=true
+            WHERE l.status = 'active' AND l.iswts=true
         `;
 
         const params: any[] = [];

@@ -179,8 +179,8 @@ export class Message_processing {
             vendorWhatsappId = msg.key.participant ? msg.key.participant.split("@")[0] : ""
             console.log("vendorWhatsappId -> ",vendorWhatsappId )
             if (vendorName == "") return null
-            if (msg.key.participantAlt) {
-                vendorPhoneNumber = msg.key.participantAlt.split(':')[0]
+            if (msg.key.participantPn) {
+                vendorPhoneNumber = msg.key.participantPn.split(':')[0]
                 vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
                 console.log("vendorPhoneNumber -> ",vendorPhoneNumber)
             }
