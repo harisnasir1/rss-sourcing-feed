@@ -33,6 +33,20 @@ Notes:
 - This is a UI scaffold. The data in `src/data/sample.json` is static. Replace with your API or ingestion pipeline that processes WhatsApp group posts.
 - Tailwind is configured in `tailwind.config.cjs` and PostCSS in `postcss.config.cjs`.
 
+Local dev and external API notes
+--------------------------------
+
+If you're testing against the external RunPod endpoint directly, set `VITE_RUNPOD_URL` in the project's `.env` file (already added) to:
+
+```
+VITE_RUNPOD_URL=https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/product/getlisting
+```
+
+Notes:
+- If you run the dev server and still see HTML instead of JSON, it's likely a CORS or proxy issue. Check the browser console network tab for the response body.
+- If the endpoint requires an API key, set `VITE_RUNPOD_KEY` in `.env` and the app will include it in requests.
+- When using external endpoints in development, make sure the endpoint allows requests from your origin or use a proxy.
+
 Backend integration
 -------------------
 

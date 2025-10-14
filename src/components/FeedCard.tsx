@@ -1,24 +1,23 @@
 import React, { useEffect, useState } from 'react'
 
-type Item = {
-  id: string
-  title: string
-  price: string
-  image: string
-  whatsapp: string
-  group?: string
-  time?: string
-}
+import { Item as NormalizedItem } from '../utils/normalizeItem'
+
+type Item = NormalizedItem
 
 export default function FeedCard({
   item,
-  locked = false,
-  onRequestLogin,
 }: {
   item: Item
-  locked?: boolean
-  onRequestLogin?: () => void
 }) {
+  const formatDate = (iso?: string) => {
+    if (!iso) return { date: '', time: '' }
+    const d = new Date(iso)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const date = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+    const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+    return { date, time }
+  }
+  const { date, time } = formatDate(item.createdAt)
   // local state used to trigger enter animation when the component mounts
   const [entered, setEntered] = useState(false)
 
@@ -31,30 +30,47 @@ export default function FeedCard({
   return (
     <div
       className={
-        `feed-card transform-gpu transition-all duration-300 ease-out flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-gray-900/40 p-4 rounded-lg border border-gray-800 hover:shadow-lg hover:bg-gray-900`
+        `feed-card transform-gpu transition-all duration-300 ease-out flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-lg`
         + (entered ? ' feed-card-enter' : ' feed-card-initial')
       }
     >
-      {item.image && item.image !== '/assets/placeholder_img.png' ? (
-        <img src={item.image} alt={item.title} className="flex-none w-20 h-20 object-cover rounded" />
+      {item.images && item.images[0] ? (
+        <img
+          src={item.images[0]}
+          alt={item.name || item.description}
+          className="flex-none w-20 h-20 object-cover rounded"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
       ) : null}
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-animate break-words">{item.title}</div>
-        <div className={"text-sm text-gray-400 price" + (locked ? ' locked-blur' : '')}>{item.price}</div>
-        <div className="text-xs text-gray-500 mt-1 meta text-animate">{item.group}  {item.time}</div>
+        {/* Title: only show the concise item name */}
+        <div className="font-medium text-animate break-words">{item.name || item.description}</div>
+
+        {/* Price: always visible */}
+        <div className="text-sm text-gray-400 price">{item.displayPrice}</div>
+
+        {/* Meta: brand | date | time, shown only when unlocked */}
+        {/* Meta: always visible (brand | date | time when available) */}
+        <div className="text-xs text-gray-500 mt-1 meta text-animate">
+          {item.meta?.brand ? <span className="brand">{item.meta.brand}</span> : null}
+          {item.meta?.brand && item.createdAt ? <span className="mx-1">|</span> : null}
+          {item.createdAt ? (
+            <>
+              <span className="date">{date}</span>
+              <span className="mx-1">|</span>
+              <span className="time">{time}</span>
+            </>
+          ) : null}
+        </div>
       </div>
       <div className="self-end sm:self-auto">
         <a
-          href={item.whatsapp}
+          href={item.whatsappUrl || item.raw?.whatsapp || '#'}
           target="_blank"
           rel="noreferrer"
-          onClick={(e) => {
-            if (locked) {
-              e.preventDefault()
-              onRequestLogin?.()
-            }
-          }}
-          className="inline-block px-4 py-2 bg-sky-600 hover:bg-sky-700 rounded text-sm"
+          onClick={() => { /* no gating */ }}
+          className="btn-blue px-5 py-2.5 text-sm"
         >
           Message on WhatsApp
         </a>
