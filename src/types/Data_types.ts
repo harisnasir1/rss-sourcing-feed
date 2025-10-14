@@ -75,6 +75,6 @@ export type ListingStatus =
         gender: ListingGender,
         size: string,
         condition: ListingCondition,
-        isWTB:boolean,
-        isWTS:boolean
+        iswtb:boolean,
+        iswts:boolean
       }

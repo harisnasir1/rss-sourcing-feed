@@ -114,7 +114,7 @@ export class Message_processing {
         const pdesc= this.getdescription(msg) || ""
         if(!pdesc||pdesc=="")return null
         const aidata:AI_Response =await this._ai.extractProductInfo(pdesc)
-        if(!aidata ||(aidata && (aidata.isWTB==aidata.isWTS))) throw new Error(aidata?JSON.stringify(aidata):"something wrong with data")
+        if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))) throw new Error(aidata?JSON.stringify(aidata):"something wrong with data")
          console.log(aidata)
         const list: Listing = {
             vendorId: vinfo.id,
@@ -133,8 +133,8 @@ export class Message_processing {
             likeCount: 0,
             messageCount: 0,
             status: 'active',//ai
-            isWTB: aidata.isWTB || false,//ai,
-            isWTS:aidata.isWTS || true
+            isWTB: aidata.iswtb || false,//ai,
+            isWTS:aidata.iswts || true
         }
         
        console.log("Listing trying to be created with ->",list)

@@ -33,8 +33,8 @@ export class AI {
     gender: parsed.gender ?? "unisex",
     size: parsed.size ?? "",
     condition: parsed.condition ?? "new",
-    isWTB:parsed.iswtb??false,
-    isWTS:parsed.iswts??true
+    iswtb:parsed.iswtb??false,
+    iswts:parsed.iswts??true
   };
 
     } catch (error) {
@@ -47,8 +47,8 @@ export class AI {
         gender: "unisex",
         size: "",
         condition: "new",
-        isWTB:false,
-        isWTS:true
+        iswtb:false,
+        iswts:true
       };
     }
   }
