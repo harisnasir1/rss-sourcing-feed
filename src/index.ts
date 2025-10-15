@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express from "express";
 import allroutes from "./utils/all.routes";
-
+import cors from 'cors'
 
 //file imports 
 import {query} from './utils/db_connection'
@@ -10,7 +10,18 @@ import {WhatsAppClient} from './services/whatsapp_services/whatsapp.service'
 import "./cronjobs/bufferjobs"
 const app = express();
 const PORT = 4000;
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173/',
+   'https://sourcing-feed-rdgqa6e68-harisnasir1s-projects.vercel.app',
+   'https://ai-feed.resellersync.io/'
 
+];
+app.use(cors({
+  origin: allowedOrigins, // Your frontend URL
+  credentials: true, // If you're using cookies/auth
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+}));
 
 app.use(express.json());
 app.get('/qr.png', (req, res) => {

@@ -136,7 +136,7 @@ export class Message_processing {
             isWTB: aidata.iswtb ?? false,//ai,
             isWTS:aidata.iswts ?? true
         }
-        //just testing
+    
        console.log("Listing trying to be created with ->",list)
        const re= await this._rlist.create_listing(list)
         
