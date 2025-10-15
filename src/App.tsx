@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import gsap from 'gsap';
 import FeedCard from './components/FeedCard';
 import AnimatedList from './components/AnimatedList';
 import ErrorBanner from './components/ErrorBanner';
@@ -38,6 +40,33 @@ export default function App() {
 
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileBackdropRef = useRef<HTMLDivElement | null>(null);
+  const mobilePanelRef = useRef<HTMLDivElement | null>(null);
+
+  // Animate mobile menu open/close
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(mobileBackdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.22, ease: 'power2.out' })
+      gsap.fromTo(mobilePanelRef.current, { y: 16, opacity: 0, filter: 'blur(8px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.32, ease: 'power3.out' })
+    })
+    // lock body scroll
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { ctx.revert(); document.body.style.overflow = prevOverflow }
+  }, [mobileMenuOpen])
+
+  const closeMobileMenu = () => {
+    try {
+      const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } })
+      tl.to(mobilePanelRef.current, { y: -12, opacity: 0, filter: 'blur(6px)', duration: 0.2 })
+      tl.to(mobileBackdropRef.current, { opacity: 0, duration: 0.18 }, '<')
+      tl.eventCallback('onComplete', () => setMobileMenuOpen(false))
+    } catch {
+      setMobileMenuOpen(false)
+    }
+  }
   const pollingMs = Number(import.meta.env.VITE_REFRESH_MS || 10000);
   const fetchAbort = useRef<AbortController | null>(null);
 
@@ -261,15 +290,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-black via-gray-900 to-gray-800 text-gray-100 noise-bg">
-      <nav className="w-full">
+      <nav className="w-full border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center">
             <img src="/assets/rrs_logo_light.svg" alt="RRS" className="w-[70px] h-auto object-contain" />
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Desktop actions */}
+          <div className="hidden md:flex items-center gap-3">
             {!loggedIn ? (
-              <div className="hidden md:flex gap-2">
+              <div className="flex gap-2">
                 <button className="px-3 py-2 bg-transparent border border-gray-700 rounded" onClick={() => setLoginOpen(true)}>
                   Log in
                 </button>
@@ -295,7 +325,58 @@ export default function App() {
               </div>
             )}
           </div>
+
+          {/* Mobile menu toggle */}
+          <button className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded border border-white/10" onClick={() => setMobileMenuOpen(true)} aria-label="Menu">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
         </div>
+
+        {/* Mobile menu overlay (full-screen via portal) */}
+        {mobileMenuOpen && createPortal(
+          <div className="fixed inset-0 z-[1000] md:hidden">
+            <div ref={mobileBackdropRef} className="absolute inset-0 modal-backdrop bg-black/40" onClick={() => closeMobileMenu()} />
+            <div
+              ref={mobilePanelRef}
+              className="absolute inset-0 h-full w-full flex flex-col bg-gradient-to-b from-[#070606] to-[#0F0F0F] text-gray-100"
+            >
+              <div className="px-4 py-4 flex items-center justify-between border-b border-white/10">
+                <img src="/assets/rrs_logo_light.svg" alt="RRS" className="w-[70px] h-auto object-contain" />
+                <button className="inline-flex items-center justify-center w-10 h-10 rounded border border-white/10" onClick={() => closeMobileMenu()} aria-label="Close menu">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+              </div>
+              <div className="px-4 py-6 flex flex-col gap-3">
+                {!loggedIn ? (
+                  <>
+                    <button className="px-4 py-3 bg-transparent border border-gray-700 rounded text-left" onClick={() => { setLoginOpen(true); closeMobileMenu(); }}>
+                      Log in
+                    </button>
+                    <button className="px-4 py-3 btn-blue text-left" onClick={() => { setSignupOpen(true); closeMobileMenu(); }}>
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm text-gray-300">{user?.name}</div>
+                    <button
+                      className="px-4 py-3 bg-red-600 rounded text-left"
+                      onClick={() => {
+                        setLoggedIn(false);
+                        setUser(null);
+                        try { localStorage.removeItem('user'); } catch {}
+                        closeMobileMenu();
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </nav>
 
       <header className="w-full grid-top-bg">

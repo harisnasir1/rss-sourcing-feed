@@ -95,13 +95,13 @@ export default function FeedCard({
           ) : null}
         </div>
       </div>
-      <div className="self-end sm:self-auto">
+      <div className="w-full sm:w-auto">
         {loggedIn ? (
           <a
             href={messageHref}
             target="_blank"
             rel="noreferrer"
-            className="btn-blue px-5 py-2.5 text-sm"
+            className="btn-blue px-5 py-2.5 text-sm w-full sm:w-auto block text-center"
           >
             Message on WhatsApp
           </a>
@@ -109,7 +109,7 @@ export default function FeedCard({
           <button
             type="button"
             onClick={() => onRequireAuth?.()}
-            className="btn-blue px-5 py-2.5 text-sm"
+            className="btn-blue px-5 py-2.5 text-sm w-full sm:w-auto block text-center"
             title="Login or sign up to contact on WhatsApp"
           >
             Sign up to message
