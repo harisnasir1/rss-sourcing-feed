@@ -12,13 +12,13 @@ const app = express();
 const PORT = 4000;
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5173/',
+  'http://localhost:5173',
    'https://sourcing-feed-rdgqa6e68-harisnasir1s-projects.vercel.app',
-   'https://ai-feed.resellersync.io/'
+   'https://ai-feed.resellersync.io'
 
 ];
 app.use(cors({
-  origin: allowedOrigins, // Your frontend URL
+  origin: '*', // Your frontend URL
   credentials: true, // If you're using cookies/auth
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
 }));
