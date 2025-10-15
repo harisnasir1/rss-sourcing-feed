@@ -6,14 +6,16 @@ export default function AnimatedList({
   items,
   renderItem,
   removeDelay = 320,
+  className,
 }: {
   items: Item[]
   renderItem: (item: Item) => React.ReactNode
   removeDelay?: number
+  className?: string
 }) {
   // local copy that can hold 'removing' items while they animate out
-  const [local, setLocal] = useState<{ item: Item; id: string; removing?: boolean }[]>(
-    items.map((it) => ({ item: it, id: String(it.id) }))
+  const [local, setLocal] = useState<{ item: Item; id: string; removing?: boolean; fresh?: boolean }[]>(
+    items.map((it) => ({ item: it, id: String(it.id), fresh: false }))
   )
   const timers = useRef<Record<string, number>>({})
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -38,16 +40,17 @@ export default function AnimatedList({
     // compute next local array with removing flags
     setLocal((prev) => {
       const prevById = new Map(prev.map((p) => [p.id, p]))
-      const next: { item: Item; id: string; removing?: boolean }[] = []
+      const next: { item: Item; id: string; removing?: boolean; fresh?: boolean }[] = []
 
       for (const it of items) {
         const id = String(it.id)
         const existing = prevById.get(id)
         if (existing) {
-          next.push({ ...existing, item: it })
+          next.push({ ...existing, item: it, fresh: false })
           prevById.delete(id)
         } else {
-          next.push({ item: it, id })
+          // Newly inserted item: mark as fresh for highlight/fade-in
+          next.push({ item: it, id, fresh: true })
         }
       }
 
@@ -105,9 +108,9 @@ export default function AnimatedList({
   }, [local, removeDelay])
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className={className ?? ''}>
       {local.map((l) => (
-        <div key={l.id} data-id={l.id} className={"animated-item" + (l.removing ? ' removing' : '')}>
+        <div key={l.id} data-id={l.id} className={"animated-item" + (l.removing ? ' removing' : '') + (l.fresh && !l.removing ? ' is-new' : '')}>
           {renderItem(l.item)}
         </div>
       ))}

@@ -1,171 +1,503 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import localData from './data/sample.json'
-import FeedCard from './components/FeedCard'
-import AnimatedList from './components/AnimatedList'
-import LoginModal from './components/LoginModal'
-import SignupModal from './components/SignupModal'
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import gsap from 'gsap';
+import FeedCard from './components/FeedCard';
+import AnimatedList from './components/AnimatedList';
+import ErrorBanner from './components/ErrorBanner';
+import AnimatedHeight from './components/AnimatedHeight';
+import LoginModal from './components/LoginModal';
+import SignupModal from './components/SignupModal';
+import { normalizeItem, Item as NormalizedItem } from './utils/normalizeItem';
+import { within72Hours } from './utils/time';
 
-type Item = {
-  id: string
-  title: string
-  price: string
-  image: string
-  whatsapp: string
-  group?: string
-  time?: string
-}
+type Item = NormalizedItem;
 
 export default function App() {
-  const [query, setQuery] = useState('')
-  const [items, setItems] = useState<Item[]>(localData.items)
+  const [query, setQuery] = useState('');
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Auto-refresh is always enabled; UI toggle removed
+  
+
   const [loggedIn, setLoggedIn] = useState<boolean>(() => {
-    try { const raw = localStorage.getItem('user'); return !!raw } catch { return false }
-  })
+    try {
+      const raw = localStorage.getItem('user');
+      return !!raw;
+    } catch {
+      return false;
+    }
+  });
+
   const [user, setUser] = useState<{ name: string; email?: string } | null>(() => {
-    try { const raw = localStorage.getItem('user'); return raw ? JSON.parse(raw) : null } catch { return null }
-  })
-  const [loginOpen, setLoginOpen] = useState(false)
-  const [signupOpen, setSignupOpen] = useState(false)
+    try {
+      const raw = localStorage.getItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
 
-  // Fetch initial items from backend, fallback to bundled sample.json
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileBackdropRef = useRef<HTMLDivElement | null>(null);
+  const mobilePanelRef = useRef<HTMLDivElement | null>(null);
+
+  // Animate mobile menu open/close
   useEffect(() => {
-    let didCancel = false
-    const tryFetch = async (url: string) => {
-      try {
-        const res = await fetch(url)
-        if (!res.ok) throw new Error('bad')
-        const payload = await res.json()
-        if (!didCancel && Array.isArray(payload.items)) setItems(payload.items)
-        return true
-      } catch (e) {
-        return false
+    if (!mobileMenuOpen) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(mobileBackdropRef.current, { opacity: 0 }, { opacity: 1, duration: 0.22, ease: 'power2.out' })
+      gsap.fromTo(mobilePanelRef.current, { y: 16, opacity: 0, filter: 'blur(8px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.32, ease: 'power3.out' })
+    })
+    // lock body scroll
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { ctx.revert(); document.body.style.overflow = prevOverflow }
+  }, [mobileMenuOpen])
+
+  const closeMobileMenu = () => {
+    try {
+      const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } })
+      tl.to(mobilePanelRef.current, { y: -12, opacity: 0, filter: 'blur(6px)', duration: 0.2 })
+      tl.to(mobileBackdropRef.current, { opacity: 0, duration: 0.18 }, '<')
+      tl.eventCallback('onComplete', () => setMobileMenuOpen(false))
+    } catch {
+      setMobileMenuOpen(false)
+    }
+  }
+  const pollingMs = Number(import.meta.env.VITE_REFRESH_MS || 10000);
+  const fetchAbort = useRef<AbortController | null>(null);
+
+  // --- Helpers to normalize API payloads ---
+  const looksLikeItem = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return false;
+    const keys = Object.keys(obj);
+    return (
+      keys.includes('id') ||
+      keys.includes('title') ||
+      keys.includes('price') ||
+      keys.includes('image') ||
+      keys.includes('whatsapp')
+    );
+  };
+
+  const findItemsArray = (val: any, depth = 3): any[] | null => {
+    if (depth < 0 || val == null) return null;
+    if (Array.isArray(val)) {
+      if (val.length > 0 && val.every((el) => typeof el === 'object' && looksLikeItem(el))) return val;
+      for (const el of val) {
+        const found = findItemsArray(el, depth - 1);
+        if (found) return found;
+      }
+      return null;
+    }
+    if (typeof val === 'object') {
+      if (Array.isArray(val.items) && val.items.every((el: any) => typeof el === 'object')) return val.items;
+      if (val.data && Array.isArray(val.data.items)) return val.data.items;
+      if (Array.isArray(val.results)) return val.results;
+      for (const k of Object.keys(val)) {
+        try {
+          const found = findItemsArray(val[k], depth - 1);
+          if (found) return found;
+        } catch {
+          // ignore
+        }
       }
     }
+    return null;
+  };
 
-    ;(async () => {
-      const ok = await tryFetch('/api/items')
-      if (!ok) await tryFetch('http://localhost:4000/api/items')
-    })()
-
-    return () => {
-      didCancel = true
+  const normalizeAndSet = (payload: any) => {
+    if (!payload) return false;
+    if (Array.isArray(payload) && payload.length > 0 && payload.every((el) => typeof el === 'object')) {
+      setItems(payload);
+      return true;
     }
-  }, [])
+    const found = findItemsArray(payload, 4);
+    if (found && Array.isArray(found)) {
+      setItems(found);
+      return true;
+    }
+    console.debug('[feed] normalizeAndSet could not find items array. payload:', payload);
+    return false;
+  };
 
-  // Subscribe to server-sent events for new items (prepending)
-  useEffect(() => {
-    let es: EventSource | null = null
-    ;(async () => {
-      try {
-        // try main endpoint first, then fallback to mock server
-        const streamUrl = '/api/stream'
-        const mockUrl = 'http://localhost:4000/api/stream'
+  // --- API Configuration ---
+  const configuredRunpodUrl =
+    (import.meta.env.VITE_RUNPOD_URL as string) ||
+    'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/product/getlisting';
+  const runpodKey = (import.meta.env.VITE_RUNPOD_KEY as string) || '';
 
-        // quick connectivity probe for /api/stream
-        const probe = await fetch(streamUrl, { method: 'HEAD' }).then((r) => r.ok).catch(() => false)
-        const useUrl = probe ? streamUrl : mockUrl
-        es = new EventSource(useUrl)
-        es.onmessage = (ev) => {
-          try {
-            const item = JSON.parse(ev.data) as Item
-            // prepend the new item — it will mount and animate via FeedCard
-            setItems((prev) => {
-              // avoid duplicates
-              if (prev.find((p) => p.id === item.id)) return prev
-              return [item, ...prev]
-            })
-          } catch (e) {
-            // ignore malformed events
-          }
-        }
-        es.onerror = () => {
-          // server closed or errored — close and cleanup
-          if (es) {
-            es.close()
-            es = null
-          }
-        }
-      } catch (e) {
-        // EventSource not available or connection failed — no-op
+  // --- Fetch data ---
+  const fetchItems = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
+
+    try {
+      // Abort any in-flight request before starting a new one
+      try { fetchAbort.current?.abort(); } catch {}
+      fetchAbort.current = new AbortController();
+
+      const headers: Record<string, string> = {};
+      if (runpodKey) {
+        headers['Authorization'] = `Bearer ${runpodKey}`;
+        headers['x-api-key'] = runpodKey;
       }
-    })()
 
-    return () => {
-      if (es) es.close()
+  // Always fetch full dataset; search input filters locally (type-to-filter)
+  const base = import.meta.env.DEV ? '/api/product/getlisting' : configuredRunpodUrl.replace(/\?.*$/, '');
+    const fetchUrl = base;
+
+      console.debug('[feed] fetching', fetchUrl, { dev: import.meta.env.DEV });
+
+      const res = await fetch(fetchUrl, { headers, signal: fetchAbort.current.signal });
+      if (!res.ok) {
+        const text = await res.text().catch(() => res.statusText);
+        setError(`Fetch failed: ${res.status} ${text}`);
+        return;
+      }
+
+      // Prefer JSON; fall back to text->JSON attempt
+      let payload: any = null;
+      try {
+        payload = await res.json();
+      } catch {
+        try {
+          const txt = await res.text();
+          payload = JSON.parse(txt);
+        } catch {
+          payload = null;
+        }
+      }
+
+      if (payload) {
+        // Try to resolve an array of items from common API shapes
+        let arr: any[] = [];
+        if (Array.isArray(payload)) arr = payload;
+        else if (Array.isArray(payload?.data?.data)) arr = payload.data.data;
+        else if (Array.isArray(payload?.data)) arr = payload.data;
+        else if (Array.isArray(payload?.results)) arr = payload.results;
+        else {
+          const found = findItemsArray(payload, 4);
+          if (Array.isArray(found)) arr = found;
+        }
+
+        if (Array.isArray(arr)) {
+          if (arr.length === 0) {
+            // Empty is a valid response — just show "No results" state
+            setItems([]);
+            return;
+          }
+          const normalized = arr.map((it: any) => normalizeItem(it));
+          const filtered = normalized.filter((it: any) => within72Hours(it.createdAt));
+          setItems(filtered);
+        }
+      }
+    } catch (e: any) {
+      const isAbort = e?.name === 'AbortError' || e?.message?.toLowerCase?.().includes('abort');
+      if (isAbort) {
+        // Swallow expected aborts from in-flight request cancellation or unmount
+        return;
+      }
+      console.error('[feed] fetchItems error', e);
+      const msg = e?.message || String(e);
+      setError(`Network error: ${msg}`);
+    } finally {
+      if (!silent) setLoading(false);
     }
-  }, [])
+  };
+
+  useEffect(() => {
+    fetchItems();
+    // Abort any in-flight fetch on unmount
+    return () => {
+      try { fetchAbort.current?.abort(); } catch {}
+    };
+  }, []);
+
+  // Polling: keep the list in sync with the server periodically
+  useEffect(() => {
+    if (!pollingMs || pollingMs < 1000) return; // sanity guard
+    const id = setInterval(() => {
+      // Avoid background refresh if tab not visible
+      if (document.visibilityState === 'visible') {
+        fetchItems(true);
+      }
+    }, pollingMs);
+    return () => clearInterval(id);
+  }, [pollingMs]);
+
+  
+
+  useEffect(() => {
+    const sseUrl = (import.meta.env.VITE_RUNPOD_SSE as string) || '';
+    if (!sseUrl) return;
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource(sseUrl);
+    } catch (err) {
+      console.error('[feed] failed to create EventSource', err);
+      return;
+    }
+
+    const onMsg = (ev: MessageEvent) => {
+      try {
+        const raw = JSON.parse(ev.data);
+        const candidate = normalizeItem(raw);
+        if (!within72Hours(candidate.createdAt)) return;
+        setItems((prev) => {
+          if (prev.some((p) => p.id === candidate.id)) return prev;
+          return [candidate, ...prev];
+        });
+      } catch (e) {
+        console.warn('[feed] failed to parse SSE event', e);
+      }
+    };
+
+    es.addEventListener('message', onMsg);
+    es.addEventListener('error', (e) => console.error('[feed] SSE error', e));
+    return () => {
+      es?.close();
+    };
+  }, []);
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return items
-    return items.filter((it) => (it.title + ' ' + (it.group ?? '')).toLowerCase().includes(q))
-  }, [query, items])
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    const textOf = (it: Item) => {
+      const parts: string[] = [];
+      if (it.name) parts.push(String(it.name));
+      const brandCandidates: any[] = [
+        it.meta && (it.meta as any).brand,
+        it.meta && (it.meta as any).make,
+        it.raw && (it.raw as any).brand,
+        it.raw && (it.raw as any).make,
+      ];
+      for (const b of brandCandidates) {
+        if (!b) continue;
+        if (Array.isArray(b)) parts.push(b.join(' '));
+        else if (typeof b === 'string') parts.push(b);
+      }
+      return parts.join(' ').toLowerCase();
+    };
+    return items.filter((it) => textOf(it).includes(q));
+  }, [query, items]);
+
+  // Removed dynamic pills; search filters locally as you type
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-gray-800 text-gray-100">
-      <header className="max-w-3xl mx-auto py-8 text-center px-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-semibold">AI WhatsApp Sourcing Feed</h1>
-            <p className="mt-1 text-gray-400">Search items posted to WhatsApp trade groups in the last 72 hours.</p>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-black via-gray-900 to-gray-800 text-gray-100 noise-bg">
+      <nav className="w-full border-b border-white/10">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center">
+            <img src="/assets/rrs_logo_light.svg" alt="RRS" className="w-[70px] h-auto object-contain" />
           </div>
-          <div>
+
+          {/* Desktop actions */}
+          <div className="hidden md:flex items-center gap-3">
             {!loggedIn ? (
               <div className="flex gap-2">
-                <button className="px-3 py-2 bg-transparent border border-gray-700 rounded" onClick={() => setLoginOpen(true)}>Log in</button>
-                <button className="px-3 py-2 bg-emerald-600 rounded" onClick={() => setSignupOpen(true)}>Sign up</button>
+                <button className="px-3 py-2 bg-transparent border border-gray-700 rounded" onClick={() => setLoginOpen(true)}>
+                  Log in
+                </button>
+                <button className="px-3 py-2 btn-blue" onClick={() => setSignupOpen(true)}>
+                  Sign up
+                </button>
               </div>
             ) : (
               <div className="flex items-center gap-3">
                 <div className="text-sm text-gray-300">{user?.name}</div>
-                <button className="px-3 py-2 bg-red-600 rounded" onClick={() => { setLoggedIn(false); setUser(null); try { localStorage.removeItem('user') } catch {} }}>Logout</button>
+                <button
+                  className="px-3 py-2 bg-red-600 rounded"
+                  onClick={() => {
+                    setLoggedIn(false);
+                    setUser(null);
+                    try {
+                      localStorage.removeItem('user');
+                    } catch {}
+                  }}
+                >
+                  Logout
+                </button>
               </div>
             )}
           </div>
+
+          {/* Mobile menu toggle */}
+          <button className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded border border-white/10" onClick={() => setMobileMenuOpen(true)} aria-label="Menu">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
         </div>
 
-        <div className="mt-6 flex justify-center">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by item, group, or price"
-            className="w-80 px-4 py-2 rounded bg-gray-800 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
+        {/* Mobile menu overlay (full-screen via portal) */}
+        {mobileMenuOpen && createPortal(
+          <div className="fixed inset-0 z-[1000] md:hidden">
+            <div ref={mobileBackdropRef} className="absolute inset-0 modal-backdrop bg-black/40" onClick={() => closeMobileMenu()} />
+            <div
+              ref={mobilePanelRef}
+              className="absolute inset-0 h-full w-full flex flex-col bg-gradient-to-b from-[#070606] to-[#0F0F0F] text-gray-100"
+            >
+              <div className="px-4 py-4 flex items-center justify-between border-b border-white/10">
+                <img src="/assets/rrs_logo_light.svg" alt="RRS" className="w-[70px] h-auto object-contain" />
+                <button className="inline-flex items-center justify-center w-10 h-10 rounded border border-white/10" onClick={() => closeMobileMenu()} aria-label="Close menu">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+              </div>
+              <div className="px-4 py-6 flex flex-col gap-3">
+                {!loggedIn ? (
+                  <>
+                    <button className="px-4 py-3 bg-transparent border border-gray-700 rounded text-left" onClick={() => { setLoginOpen(true); closeMobileMenu(); }}>
+                      Log in
+                    </button>
+                    <button className="px-4 py-3 btn-blue text-left" onClick={() => { setSignupOpen(true); closeMobileMenu(); }}>
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm text-gray-300">{user?.name}</div>
+                    <button
+                      className="px-4 py-3 bg-red-600 rounded text-left"
+                      onClick={() => {
+                        setLoggedIn(false);
+                        setUser(null);
+                        try { localStorage.removeItem('user'); } catch {}
+                        closeMobileMenu();
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </nav>
+
+      <header className="w-full grid-top-bg">
+        <div className="max-w-6xl mx-auto pt-[80px] text-center px-4 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col items-center">
+            <h1 className="text-4xl font-normal mb-5">AI WhatsApp Sourcing Feed</h1>
+            <p className="text-gray-400 max-w-xl">
+              Our AI removes the need of searching through whatsapp trade groups. Search any item that’s been listed in the
+              last 72 hours from ANY group chat. To contact a buyer or seller, click on the ‘Message on Whatsapp’ button.
+            </p>
+
+            <div className="mt-6 w-full flex justify-center">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search names and brands"
+                className="w-full max-w-md px-4 py-2 rounded-xl border border-white/20 bg-gradient-to-b from-white/0 to-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500/10 focus:shadow-[0_0_10px_rgba(14,165,233,0.3)] transition duration-200"
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-300">
+              <button
+                className="px-3 py-1 border border-gray-700 rounded text-xs hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => fetchItems()}
+                disabled={loading}
+              >
+                {loading ? 'Refreshing…' : 'Refetch'}
+              </button>
+            </div>
+
+            {/* Quick filter pills removed; search bar now filters locally as you type */}
+          </div>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4">
-        <section className="space-y-4">
-          {visible.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">No results for "{query}"</div>
-          ) : (
-            <AnimatedList
-              items={visible}
-              renderItem={(item) => (
-                <FeedCard
-                  key={item.id}
-                  item={item}
-                  locked={!loggedIn}
-                  onRequestLogin={() => setLoginOpen(true)}
+      <main>
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <section>
+            <ErrorBanner message={error || undefined} />
+            <AnimatedHeight>
+              {loading ? (
+                <div className="p-8 text-center text-gray-400">Loading...</div>
+              ) : visible.length === 0 ? (
+                <div className="p-8 text-center text-gray-400">No results for "{query}"</div>
+              ) : (
+                <AnimatedList
+                  items={visible}
+                  className="space-y-3"
+                  renderItem={(item) => (
+                    <FeedCard
+                      key={item.id}
+                      item={item}
+                      loggedIn={loggedIn}
+                      onRequireAuth={() => setSignupOpen(true)}
+                    />
+                  )}
                 />
               )}
-            />
-          )}
-        </section>
+            </AnimatedHeight>
+          </section>
 
-        <section className="mt-12 bg-gray-900/50 p-8 rounded-lg text-center cta-wrapper">
-          <h2 className="text-2xl font-medium">Save time. Source faster.</h2>
-          <p className="mt-2 text-gray-400">Stay updated with the latest posts from sellers in 1000+ global whatsapp communities for high end luxury fashion, streetwear, sneakers, activewear, accessories, and much more.</p>
-          <button className="mt-6 px-6 py-2 bg-sky-500 hover:bg-sky-600 rounded text-white">Book Your Free Demo</button>
-        </section>
+          <section className="mt-12 text-center cta-wrapper">
+            <div className="mx-auto cta-card">
+              <h2 className="font-normal">Start Syncing Smarter Today</h2>
+              <p className="mt-2 text-gray-400">
+                Discover how ResellerSync streamlines supplier onboarding, product syncing, and payouts — all in one platform.
+                Risk-free demo, zero commitment.
+              </p>
+              <button className="px-6 py-4 btn-blue">Book Your Free Demo</button>
+            </div>
+          </section>
+        </div>
       </main>
 
-  <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onLogin={(u) => { setLoggedIn(true); setUser(u); try { localStorage.setItem('user', JSON.stringify(u)) } catch {} setLoginOpen(false) }} />
-  <SignupModal open={signupOpen} onClose={() => setSignupOpen(false)} onSignup={(u) => { setLoggedIn(true); setUser(u); try { localStorage.setItem('user', JSON.stringify(u)) } catch {} setSignupOpen(false) }} />
+      <LoginModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onLogin={(u) => {
+          setLoggedIn(true);
+          setUser(u);
+          try {
+            localStorage.setItem('user', JSON.stringify(u));
+          } catch {}
+          setLoginOpen(false);
+        }}
+        onSwitch={() => {
+          // animate out then open signup
+          setLoginOpen(false);
+          setTimeout(() => setSignupOpen(true), 220);
+        }}
+      />
 
-      <footer className="mt-20 py-10 text-center text-gray-500">
-        <div className="max-w-3xl mx-auto">Links · Link · Link · Link</div>
+      <SignupModal
+        open={signupOpen}
+        onClose={() => setSignupOpen(false)}
+        onSignup={(u) => {
+          setLoggedIn(true);
+          setUser(u);
+          try {
+            localStorage.setItem('user', JSON.stringify(u));
+          } catch {}
+          setSignupOpen(false);
+        }}
+        onSwitch={() => {
+          setSignupOpen(false);
+          setTimeout(() => setLoginOpen(true), 220);
+        }}
+      />
+
+      <footer className="mt-20 py-12 text-center text-gray-400">
+        <div className="max-w-6xl mx-auto">
+          <img src="/assets/rrs_logo_light.svg" alt="RRS" className="mx-auto w-[70px] mb-4" />
+          <div className="flex justify-center gap-6 text-sm mb-3">
+            <a className="hover:text-white">Link</a>
+            <a className="hover:text-white">Link</a>
+            <a className="hover:text-white">Link</a>
+            <a className="hover:text-white">Link</a>
+          </div>
+          <div className="text-xs text-gray-500">See how ResellerSync powers your white-label consignment model risk-free.</div>
+        </div>
       </footer>
     </div>
-  )
+  );
 }

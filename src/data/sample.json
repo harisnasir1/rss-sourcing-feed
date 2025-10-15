@@ -1,31 +1,24 @@
 {
   "items": [
-    {
-      "id": "1",
-      "title": "Dior CD Icon Hooded Sweatshirt Pink/Cream",
-      "price": "USD 1,450 • UK8 • DS",
-      "image": "/assets/sample1.jpg",
-      "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F",
-      "group": "London Luxury Resale",
-      "time": "2h"
-    },
-    {
-      "id": "2",
-      "title": "Dior CD Icon Hooded Sweatshirt Navy",
-      "price": "USD 1,450 • UK8 • DS",
-      "image": "/assets/sample2.jpg",
-      "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F",
-      "group": "EU Streetwear Traders",
-      "time": "5h"
-    },
-    {
-      "id": "3",
-      "title": "Denim Tears x Off-White Hoodie Black",
-      "price": "USD 420 • L • 9/10",
-      "image": "/assets/sample3.jpg",
-      "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F",
-      "group": "Sneaker & Street Market",
-      "time": "12h"
-    }
+  { "id": "1", "title": "Dior CD Icon Hooded Sweatshirt Pink/Cream", "price": "USD 1,450 \u2022 UK8 \u2022 DS", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F", "group": "London Luxury Resale", "time": "2h" },
+  { "id": "2", "title": "Dior CD Icon Hooded Sweatshirt Navy", "price": "USD 1,450 \u2022 UK8 \u2022 DS", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F", "group": "EU Streetwear Traders", "time": "5h" },
+  { "id": "3", "title": "Denim Tears x Off-White Hoodie Black", "price": "USD 420 \u2022 L \u2022 9/10", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Is%20this%20still%20available%3F", "group": "Sneaker & Street Market", "time": "12h" },
+  { "id": "4", "title": "Chrome Hearts Horseshoe Crewneck Black", "price": "USD 980 \u2022 M \u2022 VNDS", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Interested", "group": "Luxury Resale", "time": "1h" },
+  { "id": "5", "title": "Chrome Hearts Sports Mesh Jersey Green", "price": "USD 350 \u2022 L \u2022 8/10", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Hi", "group": "EU Streetwear Traders", "time": "3h" },
+  { "id": "6", "title": "Gucci GG Marmont Small Bag", "price": "USD 1,200 \u2022 OneSize \u2022 DS", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Price%20please", "group": "Accessories Hub", "time": "22h" },
+  { "id": "7", "title": "Balenciaga Triple S Sneakers White", "price": "USD 650 \u2022 UK9 \u2022 9/10", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Still%20available", "group": "Sneaker & Street Market", "time": "4h" },
+  { "id": "8", "title": "Prada Re-Nylon Tote Black", "price": "USD 890 \u2022 OneSize \u2022 VNDS", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Interested%20in%20this", "group": "London Luxury Resale", "time": "6h" },
+  { "id": "9", "title": "Saint Laurent Teddy Jacket", "price": "USD 1,100 \u2022 M \u2022 9/10", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=Can%20you%20deliver%3F", "group": "EU Streetwear Traders", "time": "8h" },
+  { "id": "10", "title": "Nike x Off-White Jersey", "price": "USD 420 \u2022 L \u2022 DS", "image": "/assets/placeholder_img.png", "whatsapp": "https://wa.me/1234567890?text=More%20pics%20please", "group": "Sneaker & Street Market", "time": "10h" },
+    { "id": "11", "title": "Yves Saint Laurent Wallet", "price": "USD 290 \u2022 OneSize \u2022 VNDS", "image": "/assets/sample2.jpg", "whatsapp": "https://wa.me/1234567890?text=Is%20price%20negotiable%3F", "group": "Accessories Hub", "time": "12h" },
+    { "id": "12", "title": "Burberry Vintage Trench Coat", "price": "USD 1,300 \u2022 L \u2022 8/10", "image": "/assets/sample3.jpg", "whatsapp": "https://wa.me/1234567890?text=Interested", "group": "London Luxury Resale", "time": "14h" },
+    { "id": "13", "title": "Rolex Submariner 16610", "price": "USD 8,500 \u2022 OneSize \u2022 VNDS", "image": "/assets/sample1.jpg", "whatsapp": "https://wa.me/1234567890?text=Serious%20buyer", "group": "Watch Traders", "time": "18h" },
+    { "id": "14", "title": "Aime Leon Dore Crewneck Navy", "price": "USD 220 \u2022 M \u2022 DS", "image": "/assets/sample2.jpg", "whatsapp": "https://wa.me/1234567890?text=Is%20this%20authentic%3F", "group": "EU Streetwear Traders", "time": "20h" },
+    { "id": "15", "title": "Stone Island Soft Shell Jacket", "price": "USD 780 \u2022 XL \u2022 9/10", "image": "/assets/sample3.jpg", "whatsapp": "https://wa.me/1234567890?text=Can%20you%20ship%3F", "group": "Sneaker & Street Market", "time": "1d" },
+    { "id": "16", "title": "Moncler Maya Down Jacket", "price": "USD 1,100 \u2022 L \u2022 DS", "image": "/assets/sample1.jpg", "whatsapp": "https://wa.me/1234567890?text=Any%20discounts%3F", "group": "London Luxury Resale", "time": "2d" },
+    { "id": "17", "title": "Givenchy Antigona Small Bag", "price": "USD 950 \u2022 OneSize \u2022 VNDS", "image": "/assets/sample2.jpg", "whatsapp": "https://wa.me/1234567890?text=Interested%20in%20this", "group": "Accessories Hub", "time": "3d" },
+    { "id": "18", "title": "Tom Ford Sunglasses", "price": "USD 320 \u2022 OneSize \u2022 DS", "image": "/assets/sample3.jpg", "whatsapp": "https://wa.me/1234567890?text=Price%3F", "group": "Accessories Hub", "time": "4d" },
+    { "id": "19", "title": "Off-White Industrial Belt", "price": "USD 160 \u2022 OneSize \u2022 DS", "image": "/assets/sample1.jpg", "whatsapp": "https://wa.me/1234567890?text=Available%3F", "group": "EU Streetwear Traders", "time": "5d" },
+    { "id": "20", "title": "Supreme Box Logo Hoodie White", "price": "USD 420 \u2022 M \u2022 9/10", "image": "/assets/sample2.jpg", "whatsapp": "https://wa.me/1234567890?text=Interested", "group": "Sneaker & Street Market", "time": "6d" }
   ]
 }

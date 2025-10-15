@@ -3,7 +3,149 @@
 @tailwind utilities;
 
 html, body, #root {
-  height: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;  
+}
+
+/*
+  Font: ApfelGrotezk-Regular
+  Place font files in `public/assets/fonts/`:
+    - public/assets/fonts/ApfelGrotezk-Regular.woff2
+    - public/assets/fonts/ApfelGrotezk-Regular.woff
+*/
+
+@font-face {
+  font-family: 'ApfelGrotezk';
+  src: url('/assets/fonts/ApfelGrotezk-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ApfelGrotezk';
+  src: url('/assets/fonts/ApfelGrotezk-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Base font sizing: body should always be 15px */
+html {
+  font-size: 15px; /* 1rem == 15px */
+}
+body {
+  font-family: 'ApfelGrotezk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.45;
+}
+
+/* Subtle white noise overlay (Mono, 100% density, ~5% opacity) */
+.noise-bg {
+  position: relative;
+}
+.noise-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.05; /* ~5% as per spec */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-repeat: repeat;
+}
+.noise-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive headings using clamp() */
+h1 { font-weight: 600; font-size: clamp(1.866rem, 2.6vw + 1.2rem, 2.933rem); line-height: 1.05; }
+h2 { font-weight: 600; font-size: clamp(1.333rem, 2.2vw + 0.9rem, 2rem); }
+h3 { font-weight: 600; font-size: clamp(1.166rem, 1.8vw + 0.7rem, 1.5rem); }
+h4 { font-weight: 600; font-size: clamp(1rem, 1.6vw + 0.6rem, 1.25rem); }
+
+/* Slight negative letter-spacing for headings only */
+h1, h2, h3, h4 {
+  letter-spacing: -1px;
+}
+
+/* Ensure form elements and controls share baseline */
+body, input, button, textarea, select { font-size: 1rem; }
+
+/* Do not force #root to be a flex container — allow the whole page to scroll naturally */
+
+
+.nav-backdrop {
+  /* blur removed */
+  backdrop-filter: none;
+}
+
+/* Modal card styles: match FeedCard look (dark translucent, rounded, subtle shadow) */
+.modal-card {
+  /* Stronger dark gradient per design request */
+  background: linear-gradient(180deg, #070606 0%, #0F0F0F 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 0.75rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+}
+.modal-backdrop {
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+}
+
+/* Modal form inputs */
+.modal-input {
+  /* Gradient from #FFF → #999 with overall 10% opacity as requested */
+  background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(153,153,153,0.10) 100%);
+  border: 1px solid rgba(255,255,255,0.10); /* FFFFFF 10% border */
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: #e6eef6; /* keep light text */
+  outline: none;
+  transition: box-shadow 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+.modal-input::placeholder { color: rgba(255,255,255,0.4); }
+.modal-input:focus {
+  box-shadow: 0 6px 18px rgba(16,90,137,0.12), 0 0 0 4px rgba(16,90,137,0.08);
+  border-color: rgba(16,90,137,0.9);
+}
+
+/* Slightly increase modal card max width on small viewports */
+@media (max-width: 420px) {
+  .modal-card { width: calc(100% - 2rem) !important; margin: 0 1rem; }
+}
+
+/* Modal enter animation */
+.modal-initial { opacity: 0; transform: translateY(8px) scale(.995); }
+.modal-enter { opacity: 1; transform: translateY(0) scale(1); transition: transform 220ms cubic-bezier(.2,.9,.25,1), opacity 200ms ease; }
+
+/* Improve focus ring visibility for keyboard users */
+button:focus, input:focus, textarea:focus { outline: none; }
+
+
+/* Primary blue CTA button used in the design */
+.btn-blue {
+  border-radius: 0.5rem;
+  background: #105A89;
+  box-shadow: 0 8.333px 27.778px 0 rgba(105, 197, 255, 0.25), 0 0 10px 0 #69C5FF inset;
+  color: white;
+  position: relative;
+  transition: transform 160ms ease, box-shadow 200ms ease, filter 200ms ease;
+}
+.btn-blue:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 12px 36px 0 rgba(105, 197, 255, 0.35), 0 0 12px 0 #69C5FF inset;
+  transform: translateY(-1px);
+}
+.btn-blue:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+.btn-blue:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35), 0 10px 32px rgba(105, 197, 255, 0.3);
 }
 
 /* small UI tweaks */
@@ -13,6 +155,15 @@ html, body, #root {
 .feed-card {
   /* ensure transform & opacity are animated */
   will-change: transform, opacity;
+  /* Requested surface styles */
+  border-radius: 0.75rem; /* 12px */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.00) 0%, rgba(255, 255, 255, 0.04) 100%);
+  /* Constrain width */
+  max-width: 600px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .feed-card-initial {
   opacity: 0;
@@ -37,7 +188,21 @@ html, body, #root {
 .animated-item.removing {
   opacity: 0;
   transform: translateY(-8px) scale(0.995);
-  filter: blur(6px) saturate(.8);
+  /* blur removed; keep a subtle desaturation if desired */
+  filter: saturate(.9);
+}
+/* Newly inserted items: subtle fade-in and highlight glow */
+.animated-item.is-new {
+  animation: new-fade-in 420ms ease-out both, new-glow 1200ms ease-out 80ms both;
+}
+@keyframes new-fade-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes new-glow {
+  0% { box-shadow: 0 0 0 rgba(105,197,255,0); }
+  30% { box-shadow: 0 0 0 rgba(105,197,255,0.22); }
+  100% { box-shadow: 0 0 0 rgba(105,197,255,0); }
 }
 
 /* text entrance animation for titles/meta */
@@ -52,10 +217,35 @@ html, body, #root {
   transform: translateY(0);
 }
 
-/* locked blur for price and button */
-.locked-blur {
-  filter: blur(6px);
+/* locked blur removed — we now avoid rendering sensitive text entirely when locked */
+
+/* Lightweight skeleton placeholder */
+.skeleton {
+  display: inline-block;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+  border-radius: 4px;
 }
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Small chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #cbd5e1; /* tailwind slate-300 */
+  background: rgba(2,6,23,0.6); /* slate-950/60 */
+  border: 1px solid rgba(100,116,139,0.35); /* slate-500/35 */
+  padding: 4px 8px;
+  border-radius: 9999px;
+}
+
+/* Pills removed */
 
 
 /* CTA wrapper FLIP-friendly transition: animate transform/opacity when it moves */
@@ -64,3 +254,90 @@ html, body, #root {
 }
 
 .fixed-modal { z-index: 60 }
+
+/* Decorative hero blob (top of page) */
+.hero-blob {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%) rotate(-124.344deg);
+  width: 111.625rem; /* 111.625rem from design */
+  height: 14.878rem;
+  pointer-events: none;
+  overflow: visible;
+  /* blur removed */
+  filter: none;
+}
+
+/* CTA card explicit styles (matches provided CSS) */
+.cta-card {
+  display: flex;
+  max-width: 1100px;
+  height: 25rem;
+  padding: 1.5rem;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: linear-gradient(180deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.04) 100%);
+}
+
+.cta-card p {
+  max-width: 516px;
+}
+
+.cta-card h2 {
+  font-size: 40px;
+  line-height: 100%;
+}
+
+/* Site max width utility */
+.site-max {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Top grid background (non-repeating, top-aligned) */
+.grid-top-bg {
+  background-image: url('/assets/grid.svg');
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 1400px auto; /* scaled grid, adjust as needed */
+}
+@media (min-width: 1024px) {
+  .grid-top-bg { background-size: 1600px auto; }
+}
+
+/* Modal styles */
+.modal-card {
+  border-radius: 0.5065rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, #070606 0%, #0F0F0F 100%);
+  box-shadow: 0 5px 12px 0 rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(2px);
+}
+.modal-input {
+  border-radius: 0.5065rem;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(153,153,153,0.10) 100%);
+}
+.modal-input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(105, 197, 255, 0.28);
+  border-color: #69C5FF;
+}
+
+/* Utility to reduce copying of blurred content */
+.no-copy {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: none;
+}

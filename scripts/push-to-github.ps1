@@ -8,7 +8,7 @@ Usage: run this from the repository root (where this file lives):
 This script checks for git, lets you set remote/branch if needed, and pushes.
 #>
 param(
-  [string]$CommitMessage = "Add frontend auth, animations, and SSE mock",
+  [string]$CommitMessage = "Update frontend: auth, animations, and layout",
   [string]$Remote = "origin",
   [string]$Branch = "main"
 )

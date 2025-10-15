@@ -33,23 +33,24 @@ Notes:
 - This is a UI scaffold. The data in `src/data/sample.json` is static. Replace with your API or ingestion pipeline that processes WhatsApp group posts.
 - Tailwind is configured in `tailwind.config.cjs` and PostCSS in `postcss.config.cjs`.
 
+Local dev and external API notes
+--------------------------------
+
+If you're testing against the external RunPod endpoint directly, set `VITE_RUNPOD_URL` in the project's `.env` file (already added) to:
+
+```
+VITE_RUNPOD_URL=https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/product/getlisting
+```
+
+Notes:
+- If you run the dev server and still see HTML instead of JSON, it's likely a CORS or proxy issue. Check the browser console network tab for the response body.
+- If the endpoint requires an API key, set `VITE_RUNPOD_KEY` in `.env` and the app will include it in requests.
+- When using external endpoints in development, make sure the endpoint allows requests from your origin or use a proxy.
+
 Backend integration
 -------------------
 
-This frontend expects a simple JSON API and an optional Server-Sent Events (SSE) stream to receive new items in real-time. The WhatsApp ingestion backend can implement the following endpoints:
-
-- GET /api/items
-	- Response: 200 OK
-	- Body: JSON object { items: Item[] }
-	- Used by the frontend on load to populate the initial feed. If this endpoint is unavailable, the app falls back to the bundled `src/data/sample.json`.
-
-- SSE /api/stream
-	- Content-Type: text/event-stream
-	- Each event's data should be a single Item serialized as JSON (one item per event). Example event payload:
-
-		data: {"id":"abc123","title":"Yeezy Boost 350","price":"$250","image":"/assets/sample1.jpg","whatsapp":"https://wa.me/....","group":"Sneaker Group","time":"2h"}
-
-	- The frontend prepends received items to the top of the list so they animate on entry.
+This frontend expects a simple JSON API to return a list of items and can optionally subscribe to a real-time stream if your backend provides one. The frontend will normalize common payload shapes (array, { items }, { data: { items } }, { results }).
 
 Item JSON shape
 
