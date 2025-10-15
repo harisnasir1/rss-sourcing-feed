@@ -18,8 +18,17 @@ const allowedOrigins = [
 
 ];
 app.use(cors({
-  origin: '*', // Your frontend URL
-  credentials: true, // If you're using cookies/auth
+  origin: (origin, callback) => {
+   
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false); 
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
 }));
 
