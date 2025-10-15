@@ -13,7 +13,7 @@ const PORT = 4000;
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
-   'https://sourcing-feed-rdgqa6e68-harisnasir1s-projects.vercel.app',
+   'https://sourcing-feed-six.vercel.app',
    'https://ai-feed.resellersync.io'
 
 ];
