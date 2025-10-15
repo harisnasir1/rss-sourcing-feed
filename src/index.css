@@ -82,6 +82,48 @@ body, input, button, textarea, select { font-size: 1rem; }
   backdrop-filter: none;
 }
 
+/* Modal card styles: match FeedCard look (dark translucent, rounded, subtle shadow) */
+.modal-card {
+  /* Stronger dark gradient per design request */
+  background: linear-gradient(180deg, #070606 0%, #0F0F0F 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 0.75rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+}
+.modal-backdrop {
+  backdrop-filter: blur(6px) saturate(1.05);
+}
+
+/* Modal form inputs */
+.modal-input {
+  /* Gradient from #FFF → #999 with overall 10% opacity as requested */
+  background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(153,153,153,0.10) 100%);
+  border: 1px solid rgba(255,255,255,0.10); /* FFFFFF 10% border */
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: #e6eef6; /* keep light text */
+  outline: none;
+  transition: box-shadow 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+.modal-input::placeholder { color: rgba(255,255,255,0.4); }
+.modal-input:focus {
+  box-shadow: 0 6px 18px rgba(16,90,137,0.12), 0 0 0 4px rgba(16,90,137,0.08);
+  border-color: rgba(16,90,137,0.9);
+}
+
+/* Slightly increase modal card max width on small viewports */
+@media (max-width: 420px) {
+  .modal-card { width: calc(100% - 2rem) !important; margin: 0 1rem; }
+}
+
+/* Modal enter animation */
+.modal-initial { opacity: 0; transform: translateY(8px) scale(.995); }
+.modal-enter { opacity: 1; transform: translateY(0) scale(1); transition: transform 220ms cubic-bezier(.2,.9,.25,1), opacity 200ms ease; }
+
+/* Improve focus ring visibility for keyboard users */
+button:focus, input:focus, textarea:focus { outline: none; }
+
+
 /* Primary blue CTA button used in the design */
 .btn-blue {
   border-radius: 0.5rem;
@@ -147,6 +189,19 @@ body, input, button, textarea, select { font-size: 1rem; }
   transform: translateY(-8px) scale(0.995);
   /* blur removed; keep a subtle desaturation if desired */
   filter: saturate(.9);
+}
+/* Newly inserted items: subtle fade-in and highlight glow */
+.animated-item.is-new {
+  animation: new-fade-in 420ms ease-out both, new-glow 1200ms ease-out 80ms both;
+}
+@keyframes new-fade-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes new-glow {
+  0% { box-shadow: 0 0 0 rgba(105,197,255,0); }
+  30% { box-shadow: 0 0 0 rgba(105,197,255,0.22); }
+  100% { box-shadow: 0 0 0 rgba(105,197,255,0); }
 }
 
 /* text entrance animation for titles/meta */
@@ -261,18 +316,27 @@ body, input, button, textarea, select { font-size: 1rem; }
 /* Modal styles */
 .modal-card {
   border-radius: 0.5065rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, rgba(12, 15, 17, 0.01) 0%, rgba(29, 33, 35, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, #070606 0%, #0F0F0F 100%);
   box-shadow: 0 5px 12px 0 rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(2px);
 }
 .modal-input {
   border-radius: 0.5065rem;
-  border: 0.675px solid #FFF;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(153, 153, 153, 0.10) 100%);
+  border: 1px solid rgba(255,255,255,0.10);
+  background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(153,153,153,0.10) 100%);
 }
 .modal-input:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(105, 197, 255, 0.28);
   border-color: #69C5FF;
+}
+
+/* Utility to reduce copying of blurred content */
+.no-copy {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: none;
 }

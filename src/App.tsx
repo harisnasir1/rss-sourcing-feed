@@ -6,6 +6,7 @@ import AnimatedHeight from './components/AnimatedHeight';
 import LoginModal from './components/LoginModal';
 import SignupModal from './components/SignupModal';
 import { normalizeItem, Item as NormalizedItem } from './utils/normalizeItem';
+import { within72Hours } from './utils/time';
 
 type Item = NormalizedItem;
 
@@ -14,6 +15,7 @@ export default function App() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Auto-refresh is always enabled; UI toggle removed
   
 
   const [loggedIn, setLoggedIn] = useState<boolean>(() => {
@@ -160,7 +162,8 @@ export default function App() {
             return;
           }
           const normalized = arr.map((it: any) => normalizeItem(it));
-          setItems(normalized);
+          const filtered = normalized.filter((it: any) => within72Hours(it.createdAt));
+          setItems(filtered);
         }
       }
     } catch (e: any) {
@@ -189,7 +192,10 @@ export default function App() {
   useEffect(() => {
     if (!pollingMs || pollingMs < 1000) return; // sanity guard
     const id = setInterval(() => {
-      fetchItems(true);
+      // Avoid background refresh if tab not visible
+      if (document.visibilityState === 'visible') {
+        fetchItems(true);
+      }
     }, pollingMs);
     return () => clearInterval(id);
   }, [pollingMs]);
@@ -212,6 +218,7 @@ export default function App() {
       try {
         const raw = JSON.parse(ev.data);
         const candidate = normalizeItem(raw);
+        if (!within72Hours(candidate.createdAt)) return;
         setItems((prev) => {
           if (prev.some((p) => p.id === candidate.id)) return prev;
           return [candidate, ...prev];
@@ -266,7 +273,7 @@ export default function App() {
                 <button className="px-3 py-2 bg-transparent border border-gray-700 rounded" onClick={() => setLoginOpen(true)}>
                   Log in
                 </button>
-                <button className="px-3 py-2 bg-emerald-600 rounded" onClick={() => setSignupOpen(true)}>
+                <button className="px-3 py-2 btn-blue" onClick={() => setSignupOpen(true)}>
                   Sign up
                 </button>
               </div>
@@ -309,9 +316,13 @@ export default function App() {
               />
             </div>
 
-            <div className="mt-3 flex items-center gap-4 text-sm text-gray-300">
-              <button className="px-3 py-1 border border-gray-700 rounded text-xs hover:bg-gray-800" onClick={() => fetchItems()}>
-                Refetch
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-300">
+              <button
+                className="px-3 py-1 border border-gray-700 rounded text-xs hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => fetchItems()}
+                disabled={loading}
+              >
+                {loading ? 'Refreshing…' : 'Refetch'}
               </button>
             </div>
 
@@ -334,7 +345,12 @@ export default function App() {
                   items={visible}
                   className="space-y-3"
                   renderItem={(item) => (
-                    <FeedCard key={item.id} item={item} />
+                    <FeedCard
+                      key={item.id}
+                      item={item}
+                      loggedIn={loggedIn}
+                      onRequireAuth={() => setSignupOpen(true)}
+                    />
                   )}
                 />
               )}
@@ -365,6 +381,11 @@ export default function App() {
           } catch {}
           setLoginOpen(false);
         }}
+        onSwitch={() => {
+          // animate out then open signup
+          setLoginOpen(false);
+          setTimeout(() => setSignupOpen(true), 220);
+        }}
       />
 
       <SignupModal
@@ -377,6 +398,10 @@ export default function App() {
             localStorage.setItem('user', JSON.stringify(u));
           } catch {}
           setSignupOpen(false);
+        }}
+        onSwitch={() => {
+          setSignupOpen(false);
+          setTimeout(() => setLoginOpen(true), 220);
         }}
       />
 
