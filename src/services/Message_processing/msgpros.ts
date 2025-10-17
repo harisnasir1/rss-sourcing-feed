@@ -54,8 +54,6 @@ export class Message_processing {
         {
             const img_url=await this.handle_image(msg)
             console.log("uploding completed url is ->",img_url)
-            console.log("Vendor update or created step:->")
-
             //Step 2:- check if there is caption or not
             if (imgcheck?.caption && imgcheck.caption.length > 0&&imgcheck.caption!="" &&Array.isArray(img_url)&& img_url.length>0) {
                 //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
@@ -64,33 +62,22 @@ export class Message_processing {
                    await this.creates_listings(msg, vendor,img_url)
                 }
              else {
-            console.log("comming in image buffer section")
             if(Array.isArray(img_url)&& img_url.length>0)
             {
-                
              //here add message buffer with type image
               let gname = await this.getgroupname(msg.key.remoteJid || "");
               if(!gname||gname=="")return null
-              console.log("get the name for image buffer of group->", gname)
              await this._msgbuff.addimagetobuffer(vendor,msg,gname,"image",img_url)
-            
             }}
         }
         else if (!imgcheck && textcheck && textcheck.length > 0) {
               let desc=await this.getdescription(msg)
+              //write here check duplicates ------------------->
               if(!desc) return null
               const re:MessageBuffer|null|undefined = await this._msgbuff.addtexttobuffer(vendor,msg,"text",desc)
               if(!re || (!Array.isArray(re.images))||(Array.isArray(re.images)&&re.images.length==0)  ) return null
-               
             //create listing from here if we have messagebuffer which says shouldcombine false and isprocessed true
-             await this.creates_listings(msg,vendor,re.images)
-
-            
-
-
-
-
-              
+              await this.creates_listings(msg,vendor,re.images)
             //!!!IMOPRTANT LOOK AT THIS ASAP
             //GET THE BUFFER ALSO ON GROUPID WHICH WILL HELP YOU TO JOIN TEXT AND DESCRIPTION EVEN IF THE LISITNG HAPPEN IN DIFFERENT GROUPS.
 
@@ -112,7 +99,14 @@ export class Message_processing {
         const gt = msg.key.remoteJid
         if (gid == null || gname == null) return null
         const pdesc= this.getdescription(msg) || ""
+        //check here for dublicate because every end point wil come here
         if(!pdesc||pdesc=="")return null
+        const duplicate=await this._rlist.checkdublicate(pdesc.trim(),vinfo.id)
+        if(duplicate){
+            //if we have the dublicate dublicate is true and we reutrn that
+            console.log("dublicate detected with description =>",pdesc)
+            return null
+        } 
         const aidata:AI_Response =await this._ai.extractProductInfo(pdesc)
         if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))) throw new Error(aidata?JSON.stringify(aidata):"something wrong with data")
          console.log(aidata)
@@ -148,8 +142,6 @@ export class Message_processing {
                          ? new Date(Number(msg.messageTimestamp) * 1000)
                          : new Date()
                       }
-               console.log("updating vendor with ->",d)
-               console.log("checking vender info which is sending in update vendor ->",vinfo)
                
         let venderget =   await this._rvendor.updateVendor(vinfo.phonenumber,d)
       return re;
@@ -213,10 +205,10 @@ export class Message_processing {
           }
             return null
         }
-        // const cached = this.getGroupMetadata(groupid);
-        // if (cached) {
-        //     return cached.groupName
-        // }
+        const cached = this.getGroupMetadata(groupid);
+        if (cached) {
+            return cached.groupName
+        }
         try {
             const metadata = await this._sock.groupMetadata(groupid)
             const groupname = metadata?.subject;
@@ -231,7 +223,7 @@ export class Message_processing {
     }
 
     private getdescription(msg: WAMessage) {
-        return msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption
+        return msg.message?.extendedTextMessage?.text?.trim() || msg.message?.imageMessage?.caption?.trim()
     }
 
     private addGroupMetadata(id: string, groupName: string, timestamp: number) {

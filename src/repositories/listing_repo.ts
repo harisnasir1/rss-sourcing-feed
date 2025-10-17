@@ -69,12 +69,13 @@ export class listing_repo{
             FROM "Listing" l
             INNER JOIN "Vendor" v ON l.vendorid = v.id
             WHERE l.status = 'active' AND l.iswts=true
+            AND l.createdat > NOW() - INTERVAL '72 hours'
         `;
 
         const params: any[] = [];
 
         
-        if (searchTerm.trim()) {
+        if (searchTerm.trim() ) {
             sql += ` AND (
                 l.brand ILIKE $1 OR
                 l.size ILIKE $1 OR
@@ -85,9 +86,9 @@ export class listing_repo{
             params.push(`%${searchTerm.trim()}%`);
         }
 
-        
-        sql += ` ORDER BY l.createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-        params.push(limit, offset);
+        sql += `ORDER BY l.createdat DESC`;
+        // sql += ` ORDER BY l.createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        // params.push(limit, offset);
         
 
         const result = await query(sql, params);
@@ -103,4 +104,35 @@ export class listing_repo{
     }
 
     }
+    public async checkdublicate(des:string,vid:string):Promise<Boolean>
+    {
+       try{
+        console.log("description which they ", des)
+        console.log("vendor id ",vid)
+         let sql=`
+        SELECT COUNT(*)
+        FROM "Listing"
+        WHERE "status" = 'active'
+          AND LOWER(TRIM("description")) = LOWER(TRIM($1))
+          AND "vendorid" = $2
+          AND "createdat" > NOW() - INTERVAL '10 minutes'
+        `
+        //createdat= > 11:07
+        //now => 11:13
+        //five min before now => 11:03  
+        const params: any[] = [];
+        params.push(des);
+        params.push(vid)
+        console.log("params =>",params)
+        const k=await query(sql,params);
+        console.log("dublicate query result",k)
+        const count = parseInt(k[0].count, 10);
+        return count > 0; 
+    }
+    catch(e)
+    {
+        console.error('Error fetching listings:', e);
+        return false
+    }
+  }
 }

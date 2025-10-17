@@ -96,13 +96,13 @@ export class WhatsAppClient {
     {
      try{ const popmsg=this.messageQueue.shift();
      await  this.msg_p?.messageparser(popmsg)
-      console.log('Processed message ------->', popmsg);
-     await this.sleep(500);
+    
+     await this.sleep(1000);
     }
       catch(e)
       {
           console.error('Error processing message:', e);
-           await this.sleep(1000);
+           await this.sleep(5000);
       }
     }
 
