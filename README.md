@@ -70,3 +70,12 @@ Notes for the backend dev:
 - Avoid sending duplicate `id` values (the frontend deduplicates on id).
 - For the SSE stream, send one JSON item per event (no array). The frontend handles malformed events gracefully.
 
+Compliance quick-start (UK)
+---------------------------
+
+- Add footer links to Privacy, Terms, and Cookies (already wired).
+- Cookie banner with granular consent (analytics/marketing) included; use "Manage cookies" to reopen.
+- Privacy Policy lists processors (Vercel, Runpod, email, analytics).
+- Register with the UK ICO and pay the data protection fee (most orgs must).
+- If you do not want to publish a home address, obtain a service/virtual office address before updating the policies.
+
