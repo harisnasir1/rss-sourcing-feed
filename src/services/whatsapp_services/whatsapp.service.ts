@@ -18,14 +18,22 @@ export class WhatsAppClient {
   public msg_p:Message_processing|null=null;
   private messageQueue: any[] = [];
   private isProcessingQueue = false;
+  private isReconnecting = false;
+  private reconnectries=0;
+  private maxretryallowed=6;
   constructor(authFolder: string = 'auth_info') {
   this.authFolder = authFolder;
   }
 
   public async initialize(): Promise<WASocket> {
+    if(this.reconnectries===this.maxretryallowed){
+      console.warn("-------------Reach Max retries--------")
+      return this.sock
+    }
+    this.reconnectries=this.reconnectries+1;
     const { state, saveCreds } = await useMultiFileAuthState(this.authFolder);
     this.saveCreds = saveCreds;
-    this.sock = await makeWASocket({
+    this.sock =  makeWASocket({
       auth: state,
       version : [2, 3000, 1025190524],
       logger: P({ level: 'silent' }),
@@ -34,7 +42,8 @@ export class WhatsAppClient {
     // ✅ These options prevent history sync
     syncFullHistory: false,           // Don't sync full message history
     markOnlineOnConnect: false,       // Don't show as "online" when connecting
-    shouldSyncHistoryMessage: () => false, // Disable history message sync
+    shouldSyncHistoryMessage: () => false,// Disable history message sync
+    keepAliveIntervalMs: 30000 
     });
     console.log('✅ WhatsApp client initialized');
     
@@ -60,21 +69,63 @@ export class WhatsAppClient {
   
      if (connection === 'open') {
         console.log('✅ Connected to WhatsApp Web');
+        this.reconnectries=0;
+        this.isReconnecting=false
         this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
-
       }
  if (qr) {
       console.log('QR code received, saving to qr.png...');
       await QRCode.toFile('qr.png', qr);
     }
-    if (connection === 'close') {
+    if (connection === 'close')
+       {
       const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
+       console.warn('❌ Connection closed:', {
+                reason,
+                timestamp: new Date().toISOString(),
+                error: lastDisconnect?.error
+            });
+       
+       if (this.isReconnecting) {
+           console.log('⏭️ Reconnection already in progress, skipping...');
+           return;
+       }
+        this.isReconnecting = true;
+
+        // ✅ Handle different disconnect reasons
+            if (reason === DisconnectReason.loggedOut) {
+                console.warn('🚪 Logged out - delete auth_info folder and restart server');
+                this.isReconnecting = false;
+                return;
+            }
+
       if (reason === DisconnectReason.restartRequired) {
-        console.log('Restart required, reconnecting...');
-        this.reconnect();
-      } else {
-        console.warn('Connection closed:', lastDisconnect);
-      }
+        console.warn('🔄 Restart required - reconnecting in 2 seconds...');
+          setTimeout(() => this.reconnect(), 2000);
+          return
+      } 
+
+      if (reason === 428) { // Connection closed
+                console.warn('📡 Connection closed by server - reconnecting in 5 seconds...');
+                setTimeout(() => this.reconnect(), 5000);
+                return;
+          }
+       
+       if (reason === DisconnectReason.connectionLost) {
+            console.warn('📡 Connection lost - reconnecting in 5 seconds...');
+            setTimeout(() => this.reconnect(), 5000);
+            return;
+        }
+         if (reason === DisconnectReason.timedOut) {
+                console.warn('⏱️ Connection timed out - reconnecting in 10 seconds...');
+                setTimeout(() => this.reconnect(), 10000);
+                return;
+            }
+                console.warn(`🔄 Unknown disconnect reason (${reason}) - reconnecting in 10 seconds...`);
+            setTimeout(() => this.reconnect(), 10000);
+        
+
+
     }
    
     

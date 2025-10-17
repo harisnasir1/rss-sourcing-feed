@@ -5,8 +5,8 @@ export class UserRepository {
   private readonly SALT_ROUNDS = 10;
 
   async signup(dto: SignupDto): Promise<SafeUser> {
-    const { fullname, email, password, role = 'member' } = dto;
-
+    let { fullname, email, password, role = 'member' } = dto;
+     email=email.toLowerCase().trim()
     
     const existingUser = await query(
       'SELECT id FROM "User" WHERE email = $1',

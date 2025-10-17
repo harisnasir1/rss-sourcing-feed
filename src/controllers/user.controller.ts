@@ -24,14 +24,14 @@ export const login=async(req:Request , res:Response)=>{
     console.warn("error in login",e)
      return res.status(200).json({
       success: true,
-      message: 'Login unsuccessful',
+      message: 'Login unsuccessful'
     });
   }
 }
 
 export const Signup=async(req:Request ,res:Response)=>{
   try{const udata:SignupDto=req.body;
-    console.log(udata)
+    
  const user = await userRepository.signup(udata)
 return res.status(200).json({
       success: true,
@@ -40,10 +40,18 @@ return res.status(200).json({
 }
   catch(e)
   {
+   if (e instanceof Error && e.message === 'User with this email already exists')
+    {
+return res.status(409).json({
+      success: false,
+      message: e.message
+    });
+    }
+    else{
     console.warn("error in signup",e)
     return res.status(500).json({
-      success: true,
-      message: 'sign unsuccessful',
-    });
+      success: false,
+      message: 'sign unsuccessful'
+    });}
   }
 }
