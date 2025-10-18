@@ -9,6 +9,7 @@ export const getUsers = (req: Request, res: Response) => {
 export const login=async(req:Request , res:Response)=>{
  try
  {
+  console.log(req.body)
   const udata:LoginDto=req.body;
  const user = await userRepository.login(udata);
     
@@ -23,7 +24,7 @@ export const login=async(req:Request , res:Response)=>{
   {
     console.warn("error in login",e)
      return res.status(200).json({
-      success: true,
+      success: false,
       message: 'Login unsuccessful'
     });
   }
