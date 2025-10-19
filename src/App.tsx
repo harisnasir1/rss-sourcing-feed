@@ -47,6 +47,12 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileBackdropRef = useRef<HTMLDivElement | null>(null);
   const mobilePanelRef = useRef<HTMLDivElement | null>(null);
+  // Allow opening Signup via URL for easier testing and linking
+  useEffect(() => {
+    const u = new URL(window.location.href)
+    const flag = u.searchParams.get('signup') === '1' || u.hash === '#signup'
+    if (flag) setSignupOpen(true)
+  }, [])
   // favorites/status features removed
 
   // Animate mobile menu open/close
@@ -390,10 +396,16 @@ export default function App() {
           <div className="hidden md:flex items-center gap-3">
             {!loggedIn ? (
               <div className="flex gap-2">
-                <button className="px-3 py-2 bg-transparent border border-gray-700" onClick={() => setLoginOpen(true)}>
+                <button
+                  className="px-3 py-2 bg-transparent border border-gray-700"
+                  onClick={() => { setSignupOpen(false); setLoginOpen(true); }}
+                >
                   Log in
                 </button>
-                <button className="px-3 py-2 btn-blue" onClick={() => setSignupOpen(true)}>
+                <button
+                  className="px-3 py-2 btn-blue"
+                  onClick={() => { setLoginOpen(false); setSignupOpen(true); }}
+                >
                   Sign up
                 </button>
               </div>
@@ -441,10 +453,22 @@ export default function App() {
               <div className="px-4 py-6 flex flex-col gap-3">
                 {!loggedIn ? (
                   <>
-                    <button className="px-4 py-3 bg-transparent border border-gray-700 text-left" onClick={() => { setLoginOpen(true); closeMobileMenu(); }}>
+                    <button
+                      className="px-4 py-3 bg-transparent border border-gray-700 text-left"
+                      onClick={() => {
+                        closeMobileMenu();
+                        setTimeout(() => setLoginOpen(true), 240);
+                      }}
+                    >
                       Log in
                     </button>
-                    <button className="px-4 py-3 btn-blue text-left" onClick={() => { setSignupOpen(true); closeMobileMenu(); }}>
+                    <button
+                      className="px-4 py-3 btn-blue text-left"
+                      onClick={() => {
+                        closeMobileMenu();
+                        setTimeout(() => setSignupOpen(true), 240);
+                      }}
+                    >
                       Sign up
                     </button>
                   </>

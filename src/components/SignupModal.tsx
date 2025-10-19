@@ -19,6 +19,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
   const [hasInventory, setHasInventory] = useState<null | boolean>(null)
   const [inventoryBand, setInventoryBand] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const [hp, setHp] = useState('') // honeypot
   const startRef = useRef<number>(Date.now()) // dwell-time bot check
   const backdropRef = useRef<HTMLDivElement | null>(null)
@@ -55,7 +56,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
 
   if (!open) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     // Honeypot: bots tend to fill hidden fields
     if (hp && hp.trim().length > 0) {
@@ -90,31 +91,50 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       return
     }
     setFormError(null)
+    setSubmitting(true)
     try {
+      const base = import.meta.env.DEV
+        ? '/api/users'
+        : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+      const res = await fetch(`${base}/Register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        body: JSON.stringify({ fullname: name, email, password }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data || data.success !== true) {
+        const msg = (data && (data.message || data.error)) || `Signup unsuccessful`
+        setFormError(String(msg))
+        return
+      }
+      const profile = data.data || {}
+      const effectiveName = profile.fullname || name || (email.split('@')[0])
       const user: NewUser = {
-        name: name || email.split('@')[0],
-        email,
-        hasWebsite,
-        hasInventory,
+        name: effectiveName,
+        email: profile.email || email,
+        hasWebsite: !!hasWebsite,
+        hasInventory: !!hasInventory,
         inventoryValueBand: hasInventory ? inventoryBand : undefined,
       }
       onSignup(user)
-    } catch (err) {
-      console.error('[SignupModal] onSignup threw', err)
-      return
+      setName('')
+      setEmail('')
+      setPassword('')
+      setHasWebsite(null)
+      setHasInventory(null)
+      setInventoryBand('')
+      setHp('')
+      try { onClose() } catch {}
+    } catch (err: any) {
+      console.error('[SignupModal] signup error', err)
+      setFormError('Network error. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
-    setName('')
-    setEmail('')
-    setPassword('')
-    setHasWebsite(null)
-    setHasInventory(null)
-    setInventoryBand('')
-    setHp('')
-    try { onClose() } catch (err) { console.error('[SignupModal] onClose threw', err) }
   }
 
   const modal = (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center">
   <div ref={backdropRef} className="absolute inset-0 bg-black/40 modal-backdrop" onClick={() => animateOut(() => onClose())} />
   <div ref={cardRef} className="relative modal-card w-full max-w-md text-gray-100">
         <button
@@ -216,7 +236,9 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
           {formError && <div className="text-sm text-red-400">{formError}</div>}
 
           <div className="pt-2 flex justify-end gap-2">
-            <button type="submit" className="btn-blue px-5 py-2.5">Sign up</button>
+            <button type="submit" className="btn-blue px-5 py-2.5 disabled:opacity-60" disabled={submitting}>
+              {submitting ? 'Creating account…' : 'Sign up'}
+            </button>
           </div>
         </form>
   <div className="mt-4 text-sm text-gray-400">Already have an account? <button type="button" onClick={() => animateOut(() => onSwitch?.())} className="text-sm font-normal text-sky-300 hover:underline focus:underline">Log in</button></div>

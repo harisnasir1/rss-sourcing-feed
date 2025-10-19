@@ -7,6 +7,7 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const [hp, setHp] = useState('') // honeypot
   const startRef = useRef<number>(Date.now())
   const backdropRef = useRef<HTMLDivElement | null>(null)
@@ -42,7 +43,7 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
   }
   if (!open) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (hp && hp.trim().length > 0) {
       setFormError('Something went wrong, please try again.')
@@ -57,17 +58,36 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
       setFormError(validationMessage(emailCheck))
       return
     }
-    try {
-      const user = { name: email.split('@')[0] || 'User', email }
-      onLogin(user)
-    } catch (err) {
-      console.error('[LoginModal] onLogin threw', err)
-      return
-    }
-    setEmail('')
-    setPassword('')
     setFormError(null)
-    try { onClose() } catch (err) { console.error('[LoginModal] onClose threw', err) }
+    setSubmitting(true)
+    try {
+      const base = import.meta.env.DEV
+        ? '/api/users'
+        : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+      const res = await fetch(`${base}/Login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data || data.success !== true) {
+        const msg = (data && (data.message || data.error)) || `Login unsuccessful`
+        setFormError(String(msg))
+        return
+      }
+      const profile = data.data || {}
+      const nameFromApi = profile.fullname || (profile.email ? String(profile.email).split('@')[0] : null)
+      const user = { name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email }
+      onLogin(user)
+      setEmail('')
+      setPassword('')
+      try { onClose() } catch {}
+    } catch (err: any) {
+      console.error('[LoginModal] login error', err)
+      setFormError('Network error. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const modal = (
@@ -104,7 +124,9 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
           {formError && <div className="text-sm text-red-400">{formError}</div>}
 
           <div className="pt-2 flex justify-end gap-2">
-            <button type="submit" className="btn-blue px-5 py-2.5">Log in</button>
+            <button type="submit" className="btn-blue px-5 py-2.5 disabled:opacity-60" disabled={submitting}>
+              {submitting ? 'Logging in…' : 'Log in'}
+            </button>
           </div>
         </form>
   <div className="mt-4 text-sm text-gray-400">Don't have an account? <button type="button" onClick={() => animateOut(() => onSwitch?.())} className="text-sm font-normal text-sky-300 hover:underline focus:underline">Sign up</button></div>
