@@ -1,5 +1,22 @@
-node_modules
-dist
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Env files — keep example only
 .env
+.env.*
+!.env.example
+
+# IDE/editor
 /.idea
-.vscode
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-*.log
+pnpm-*.log
