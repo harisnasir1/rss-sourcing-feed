@@ -40,8 +40,8 @@ export class AI {
   
   return {
     price: parsed.price ?? 0,
-    brand: parsed.brand ??hai?.brand?? "",
-    productType: parsed.productType??hai?.product ?? "",
+    brand:  parsed.brand || hai?.brand || "",
+    productType: parsed.productType || hai?.product || "",
     gender: parsed.gender ?? "unisex",
     size: parsed.size ?? "",
     condition: parsed.condition ?? "new",
