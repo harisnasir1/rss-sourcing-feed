@@ -18,6 +18,12 @@ type Item = NormalizedItem;
 export default function App() {
   const location = useLocation();
   const [query, setQuery] = useState('');
+  // N-2 + debounce knobs (client-side only)
+  const MIN_CHARS = Number(import.meta.env.VITE_MIN_QUERY_CHARS ?? 2);
+  const DEBOUNCE_MS = Number(import.meta.env.VITE_SEARCH_DEBOUNCE_MS ?? 500);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  // Pagination knobs (client-exposed)
+  const PAGE_LIMIT = Number(import.meta.env.VITE_PAGE_LIMIT ?? 20);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +59,14 @@ export default function App() {
     const flag = u.searchParams.get('signup') === '1' || u.hash === '#signup'
     if (flag) setSignupOpen(true)
   }, [])
+  // Scroll to top on any route change
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, [location.pathname])
   // favorites/status features removed
 
   // Animate mobile menu open/close
@@ -82,6 +96,11 @@ export default function App() {
   const fetchAbort = useRef<AbortController | null>(null);
   const inFlightRef = useRef(false);
   const didInitialFetchRef = useRef(false);
+  const lastSearchedRef = useRef(false);
+  const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
+  const [hasMore, setHasMore] = useState(true);
+  const seenIdsRef = useRef<Set<string>>(new Set());
 
   // --- Helpers to normalize API payloads ---
   const looksLikeItem = (obj: any) => {
@@ -148,7 +167,7 @@ export default function App() {
   const runpodKey = (import.meta.env.VITE_RUNPOD_KEY as string) || '';
 
   // --- Fetch data ---
-  const fetchItems = async (silent = false) => {
+  const fetchItems = async (silent = false, search?: string, pageOverride?: number, append = false) => {
     if (inFlightRef.current) return; // prevent overlapping calls
     inFlightRef.current = true;
     if (!silent) setLoading(true);
@@ -165,12 +184,27 @@ export default function App() {
         headers['x-api-key'] = runpodKey;
       }
 
-  // Always fetch full dataset; search input filters locally.
-  // Preserve any default query from VITE_RUNPOD_URL (e.g., ?search=Nike) in dev and prod.
-  let qs = '';
-  try { const u = new URL(configuredRunpodUrl); qs = u.search || ''; } catch {}
-  const base = import.meta.env.DEV ? `/api/product/getlisting${qs}` : configuredRunpodUrl;
-    const fetchUrl = base;
+  // Build the request URL, optionally adding a search param when provided and long enough (N-2)
+  // Preserve any default query from VITE_RUNPOD_URL when no explicit search is passed.
+  let initialSearch = '';
+  try { const u = new URL(configuredRunpodUrl); initialSearch = u.search || ''; } catch {}
+  const devBase = `/api/product/getlisting`;
+  const targetUrl = import.meta.env.DEV ? new URL(devBase, window.location.origin) : new URL(configuredRunpodUrl);
+  // If a search term is supplied, prefer it over any existing query string.
+  if (typeof search === 'string' && search.trim().length >= MIN_CHARS) {
+    targetUrl.search = '';
+    targetUrl.searchParams.set('search', search.trim());
+  } else if (!search && initialSearch) {
+    // keep whatever was configured in env
+    try { const u = new URL(configuredRunpodUrl); targetUrl.search = u.search; } catch {}
+  }
+
+  // Always request page/limit; if upstream ignores, we chunk on the client
+  const effectivePage = Math.max(1, pageOverride ?? page);
+  targetUrl.searchParams.set('page', String(effectivePage));
+  targetUrl.searchParams.set('limit', String(PAGE_LIMIT));
+
+  const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
 
       console.debug('[feed] fetching', fetchUrl, { dev: import.meta.env.DEV });
 
@@ -207,15 +241,48 @@ export default function App() {
         }
 
         if (Array.isArray(arr)) {
-          if (arr.length === 0) {
-            // Empty is a valid response — just show "No results" state
-            setItems([]);
-            return;
-          }
           const normalized = arr.map((it: any) => normalizeItem(it));
           const filtered = normalized.filter((it: any) => within72Hours(it.createdAt));
-          setItems(filtered);
-          try { localStorage.setItem('feed_cache', JSON.stringify(filtered)); } catch {}
+
+          // Decide which chunk to use
+          let chunk: Item[] = filtered as any;
+          if (filtered.length > PAGE_LIMIT) {
+            const start = (effectivePage - 1) * PAGE_LIMIT;
+            const end = start + PAGE_LIMIT;
+            // If upstream isn't paginating and returns the whole set, slice the relevant window
+            chunk = filtered.slice(start, end) as any;
+          }
+
+          if (append) {
+            const toAdd: Item[] = [];
+            for (const it of chunk) {
+              const id = String((it as any).id);
+              if (!seenIdsRef.current.has(id)) {
+                seenIdsRef.current.add(id);
+                toAdd.push(it);
+              }
+            }
+            if (toAdd.length) {
+              setItems((prev) => {
+                const next = [...prev, ...toAdd];
+                try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch {}
+                return next;
+              });
+            }
+            // Determine if more pages likely exist
+            if (filtered.length > PAGE_LIMIT) {
+              setHasMore(effectivePage * PAGE_LIMIT < filtered.length);
+            } else {
+              setHasMore(chunk.length >= PAGE_LIMIT);
+            }
+          } else {
+            // Reset mode: start fresh at first chunk only
+            seenIdsRef.current.clear();
+            for (const it of chunk) seenIdsRef.current.add(String((it as any).id));
+            setItems(chunk);
+            try { localStorage.setItem('feed_cache', JSON.stringify(chunk)); } catch {}
+            if (filtered.length > PAGE_LIMIT) setHasMore(true); else setHasMore(chunk.length >= PAGE_LIMIT);
+          }
         }
       }
     } catch (e: any) {
@@ -247,11 +314,47 @@ export default function App() {
     // React 18 StrictMode double-invokes effects in dev; guard to run only once per mount
     if (didInitialFetchRef.current) return;
     didInitialFetchRef.current = true;
-    fetchItems();
+  setPage(1);
+  pageRef.current = 1;
+  setHasMore(true);
+  fetchItems(false, undefined, 1, false);
     // Do not abort here — StrictMode's immediate cleanup would cancel the first fetch.
     // The in-flight guard protects against overlaps; the browser will cancel on real unmounts.
     return () => { /* no-op cleanup to avoid aborting initial fetch in StrictMode */ };
   }, []);
+
+  // Debounce query and trigger fetch only when MIN_CHARS reached
+  useEffect(() => {
+    const s = query.trim();
+    if (s.length < MIN_CHARS) {
+      setDebouncedQuery('');
+      return; // do not query upstream for short inputs
+    }
+    const id = window.setTimeout(() => setDebouncedQuery(s), DEBOUNCE_MS);
+    return () => window.clearTimeout(id);
+  }, [query, MIN_CHARS, DEBOUNCE_MS]);
+
+  useEffect(() => {
+    // When a debounced search term is available, reset paging and fetch first page
+    if (!debouncedQuery) return; // rely on initial fetch for empty/short search
+  setPage(1);
+  pageRef.current = 1;
+  setHasMore(true);
+  fetchItems(false, debouncedQuery, 1, false);
+  lastSearchedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery]);
+
+  // If the field is cleared after a prior search, fetch the default (all) again
+  useEffect(() => {
+    if (query.trim() === '' && lastSearchedRef.current) {
+      setPage(1);
+      pageRef.current = 1;
+      setHasMore(true);
+      fetchItems(false, undefined, 1, false);
+      lastSearchedRef.current = false;
+    }
+  }, [query]);
 
   // Polling disabled — updates come in via SSE only (or manual Refetch)
   useEffect(() => { return; }, [pollingMs]);
@@ -299,16 +402,27 @@ export default function App() {
     const textOf = (it: Item) => {
       const parts: string[] = [];
       if (it.name) parts.push(String(it.name));
+      if (it.description) parts.push(String(it.description));
       const brandCandidates: any[] = [
         it.meta && (it.meta as any).brand,
         it.meta && (it.meta as any).make,
         it.raw && (it.raw as any).brand,
         it.raw && (it.raw as any).make,
       ];
+      const typeCandidates: any[] = [
+        it.meta && (it.meta as any).productType,
+        it.raw && (it.raw as any).productType,
+        it.raw && (it.raw as any).product_type,
+      ];
       for (const b of brandCandidates) {
         if (!b) continue;
         if (Array.isArray(b)) parts.push(b.join(' '));
         else if (typeof b === 'string') parts.push(b);
+      }
+      for (const t of typeCandidates) {
+        if (!t) continue;
+        if (Array.isArray(t)) parts.push(t.join(' '));
+        else if (typeof t === 'string') parts.push(t);
       }
       return parts.join(' ').toLowerCase();
     };
@@ -320,62 +434,46 @@ export default function App() {
 
   // filtering for favorites removed
 
-  // --- Infinite scroll ---
-  const PAGE_SIZE = 20;
+  // --- Manual pagination (button-only) ---
+  const PAGE_SIZE = PAGE_LIMIT;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
   const listTopRef = useRef<HTMLDivElement | null>(null);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreRef = useRef(false);
 
   // Reset visible items when filters/search change
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
     setLoadingMore(false);
-    try { listTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
   }, [query]);
 
   const pagedItems = useMemo(() => brandFiltered.slice(0, visibleCount), [brandFiltered, visibleCount]);
 
   const tryLoadMore = () => {
     if (loadingMoreRef.current) return false;
-    if (visibleCount >= brandFiltered.length) return false;
+    // If server has no more pages but we still have locally hidden items, reveal them
+    if (!hasMore && visibleCount < brandFiltered.length) {
+      setVisibleCount((n) => Math.min(n + PAGE_LIMIT, brandFiltered.length));
+      return true;
+    }
+    if (!hasMore) return false;
     loadingMoreRef.current = true;
     setLoadingMore(true);
-    setTimeout(() => {
-      setVisibleCount((n) => Math.min(n + PAGE_SIZE, brandFiltered.length));
-      setLoadingMore(false);
-      loadingMoreRef.current = false;
-    }, 200);
+  const nextPage = pageRef.current + 1;
+  pageRef.current = nextPage;
+    fetchItems(true, debouncedQuery || undefined, nextPage, true)
+      .catch(() => {})
+      .finally(() => {
+  setPage(nextPage);
+        setLoadingMore(false);
+        loadingMoreRef.current = false;
+        // Reveal more rows in the list immediately
+        setVisibleCount((n) => n + PAGE_LIMIT);
+      });
     return true;
   };
 
-  // IntersectionObserver to trigger load more
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      if (!entries[0]?.isIntersecting) return;
-      tryLoadMore();
-    }, { root: null, rootMargin: '800px 0px 0px 0px', threshold: 0 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [brandFiltered.length, visibleCount]);
-
-  // Fallback: load more when user scrolls near bottom (in case IO fails)
-  useEffect(() => {
-    const onScroll = () => {
-      if (loadingMoreRef.current) return;
-      if (visibleCount >= brandFiltered.length) return;
-      const scrollPos = window.scrollY + window.innerHeight;
-      const docHeight = document.documentElement.scrollHeight;
-      if (docHeight - scrollPos < 600) {
-        tryLoadMore();
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [brandFiltered.length, visibleCount]);
+  // No infinite scroll or auto-loading. Users click the button to fetch the next page.
 
   // Removed auto-fill: show only PAGE_SIZE initially; user scrolls/clicks to load the next PAGE_SIZE.
 
@@ -564,24 +662,23 @@ export default function App() {
                           )}
                         />
 
-                        {loadingMore && (
-                          <div className="flex justify-center py-4" aria-live="polite" aria-busy="true">
-                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-sky-400" />
-                          </div>
-                        )}
-
-                        <div ref={sentinelRef} style={{ height: 1 }} />
-                        {visibleCount < brandFiltered.length && !loadingMore && (
+                        {(hasMore || visibleCount < brandFiltered.length) && (
                           <div className="flex justify-center py-3">
                             <button
-                              className="px-4 py-2 border border-gray-700 hover:bg-gray-800 text-sm"
+                              className="px-4 py-2 border border-gray-700 hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2 text-sm"
                               onClick={() => tryLoadMore()}
+                              disabled={loadingMore}
+                              aria-live="polite"
+                              aria-busy={loadingMore}
                             >
-                              Load more
+                              {loadingMore && (
+                                <span className="h-4 w-4 inline-block animate-spin rounded-full border-2 border-white/20 border-t-sky-400" aria-hidden="true" />
+                              )}
+                              <span>{loadingMore ? 'Loading…' : 'Load more'}</span>
                             </button>
                           </div>
                         )}
-                        {visibleCount >= brandFiltered.length && (
+                        {!hasMore && (
                           <div className="text-center text-gray-500 text-sm py-4">End of results</div>
                         )}
                       </>
@@ -602,7 +699,14 @@ export default function App() {
                 Discover how ResellerSync streamlines supplier onboarding, product syncing, and payouts — all in one platform.
                 Risk-free demo, zero commitment.
               </p>
-              <button className="px-6 py-4 btn-blue">Book Your Free Demo</button>
+              <a
+                href="https://resellersync.io/book-a-demo/"
+                target="_blank"
+                rel="noreferrer"
+                className="px-6 py-4 btn-blue inline-block"
+              >
+                Book Your Free Demo
+              </a>
             </div>
           </section>
         </div>
@@ -650,7 +754,12 @@ export default function App() {
             <Link className="hover:text-white" to="/privacy">Privacy Policy</Link>
             <Link className="hover:text-white" to="/terms">Terms of Service</Link>
             <Link className="hover:text-white" to="/cookies">Cookie Policy</Link>
-            <button className="hover:text-white underline decoration-dotted" onClick={() => openCookieManager()}>Manage cookies</button>
+            <button
+              className="hover:text-white appearance-none bg-transparent p-0 border-0 cursor-pointer text-sm font-normal leading-normal"
+              onClick={() => openCookieManager()}
+            >
+              Manage cookies
+            </button>
           </div>
           <div className="text-xs text-gray-500">See how ResellerSync powers your white-label consignment model risk-free.</div>
         </div>
