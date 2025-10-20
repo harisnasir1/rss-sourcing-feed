@@ -35,7 +35,7 @@ export class Message_processing {
         //lets decide whiter it is image or text or mixed
         
         const venderifo = await this.extractVendorInfo(msg)
-        console.log("get vendor information :->",venderifo)
+        
         if (!venderifo) return
 
         //but first take care that the first vendor or message come we neeed to resgister them.
@@ -53,7 +53,7 @@ export class Message_processing {
         if (imgcheck && !textcheck)
         {
             const img_url=await this.handle_image(msg)
-            console.log("uploding completed url is ->",img_url)
+            
             //Step 2:- check if there is caption or not
             if (imgcheck?.caption && imgcheck.caption.length > 0&&imgcheck.caption!="" &&Array.isArray(img_url)&& img_url.length>0) {
                 //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
@@ -104,12 +104,11 @@ export class Message_processing {
         const duplicate=await this._rlist.checkdublicate(pdesc.trim(),vinfo.id)
         if(duplicate){
             //if we have the dublicate dublicate is true and we reutrn that
-            console.log("dublicate detected with description =>",pdesc)
             return null
         } 
-        const aidata:AI_Response =await this._ai.extractProductInfo(pdesc)
+        const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
         if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))) throw new Error(aidata?JSON.stringify(aidata):"something wrong with data")
-         console.log(aidata)
+     
         const list: Listing = {
             vendorId: vinfo.id,
             groupId: gid,
@@ -154,7 +153,7 @@ export class Message_processing {
     
     private async extractVendorInfo(msg: WAMessage) {
         const isGroup = msg.key.remoteJid?.endsWith('@g.us')
-         console.log("is group or not -> ",isGroup )
+         
         if(!isGroup) return null
         let vendorWhatsappId: string = ""
         let vendorPhoneNumber: string = ""
@@ -163,18 +162,18 @@ export class Message_processing {
         let vendorName = msg.pushName || 'Unknown'
         if (isGroup) {
             groupid = this.getgroupid(msg);
-             console.log("groupid -> ",groupid )
+            
             if (!groupid||groupid=="") return null
             let k = await this.getgroupname(msg.key.remoteJid||"")
             if (k == "" || k == null) return null
             groupname = k;
             vendorWhatsappId = msg.key.participant ? msg.key.participant.split("@")[0] : ""
-            console.log("vendorWhatsappId -> ",vendorWhatsappId )
+            
             if (vendorName == "") return null
             if (msg.key.participantPn) {
                 vendorPhoneNumber = msg.key.participantPn.split(':')[0]
                 vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
-                console.log("vendorPhoneNumber -> ",vendorPhoneNumber)
+              
             }
         }
         if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" ) return null
@@ -198,7 +197,7 @@ export class Message_processing {
 
     public async getgroupname(groupid: string): Promise<string | null> {
         if (groupid == null || groupid == "" || !this._sock){
-          console.log(groupid)    
+           
           if(!this._sock)
           {
             console.log("socket is not established yet")
@@ -213,7 +212,7 @@ export class Message_processing {
             const metadata = await this._sock.groupMetadata(groupid)
             const groupname = metadata?.subject;
             this.addGroupMetadata(groupid, groupname, Date.now())
-              console.log("gorupname", groupname)
+             
             return groupname
         }
         catch (e) {
@@ -255,11 +254,11 @@ export class Message_processing {
 
     private async handle_image(msg:WAMessage)
     {
- console.log("passed image + caption:-> moving to download image")
+ 
             let imgbuff: Buffer | null = await this.downloadimage(msg)
             
             if (!imgbuff) return
-            console.log("downloadedimage passed:-> uploading it")
+            
             return await this._imgpro.upload_image(imgbuff)
             
     }
@@ -303,9 +302,9 @@ export class Message_processing {
     private async vendor_handling(venderifo:any,msg:WAMessage)
     {
         let venderget= await this._rvendor.getVendorByPhone(venderifo.vdata.phoneNumber);
-            console.log("vendor info from db->",venderget)
+           
             if (!venderget || venderget.length === 0) {
-            console.log("new vendor created with ->",venderifo.vdata)
+          
             venderget = await this._rvendor.createVendor(venderifo.vdata)
             }
          return venderget       

@@ -3,21 +3,25 @@
 import Groq from "groq-sdk";
 import { jsonrepair } from 'jsonrepair';
 import { ListingGender,ListingCondition, AI_Response } from "../../types/Data_types";
-
+import OpenAI from "openai";
 export class AI {
   private api_key: string;
   private apiUrl: string = "https://api.x.ai/v1/chat/completions";
+  private  openai : OpenAI;
+
   private groq;
   constructor() {
     this.api_key = process.env.GROQ_API_KEY || "";
+    this.openai=new OpenAI({apiKey:process.env.GPT_API_KEY})||""
     if (!this.api_key) {
       console.warn("Warning: Grok API key not found in environment variables");
     }
     this.groq= new Groq({ apiKey:this.api_key });
   }
 
-  async extractProductInfo(description: string):Promise<AI_Response> {
+  async extractProductInfo(description: string,imgs:string[]):Promise<AI_Response> {
     try {
+      console.log("image ai main get",imgs)
       const chatCompletion = await this.getGroqChatCompletion(description);
       const content =chatCompletion.choices[0]?.message?.content;
       console.log("ai response=>",content)
@@ -25,11 +29,19 @@ export class AI {
     
     let cleaned =jsonrepair(content)     
     const parsed = JSON.parse(cleaned)
+    let hai=null
+    if( !parsed||parsed?.brand==""||parsed.productType=="")
+    {
+        console.log("calling image ai as backup")
+        hai= await this.getopenaicompletion(imgs[0])
+        console.log("backup ai response= ",hai)
+    }
+    
   
   return {
     price: parsed.price ?? 0,
-    brand: parsed.brand ?? "",
-    productType: parsed.productType ?? "",
+    brand: parsed.brand ??hai?.brand?? "",
+    productType: parsed.productType??hai?.product ?? "",
     gender: parsed.gender ?? "unisex",
     size: parsed.size ?? "",
     condition: parsed.condition ?? "new",
@@ -200,6 +212,71 @@ export class AI {
 
   });
 
+}
+
+private async getopenaicompletion(img:string){
+
+  console.log("image openai get",img)
+const response = await this.openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+        {
+            role: "user",
+            content: [
+                { 
+                    type: "text", 
+                    text: "Analyze this product image and identify the brand, category, and product type." 
+                },
+                {
+                    type: "image_url",
+                    image_url: {
+                        url:  img
+                    }
+                }
+            ]
+        }
+    ],
+    functions: [
+        {
+            name: "identify_product",
+            description: "Identify product brand and details from image. if you failed to generate the brand or product just generate empty strings",
+            parameters: {
+                type: "object",
+                properties: {
+                    brand: {
+                        type: "string",
+                        description: "The brand name of the product"
+                    },
+                    product: {
+                        type: "string",
+                        description: "Specific product type"
+                    }
+                },
+                required: ["brand", "product"]
+            }
+        }
+    ],
+    function_call: { name: "identify_product" }
+});
+  console.log("gpt res =>",response)
+  if (!response?.choices?.[0]?.message?.function_call?.arguments) {
+    console.log("⚠️ No function_call arguments from OpenAI — returning defaults.");
+    return { brand: "", product: "" };
+  }
+
+const res = jsonrepair(response.choices[0].message.function_call.arguments);
+  console.log("after json repair",jsonrepair)
+  let result: { brand: string; product: string };
+  try {
+    result = JSON.parse(res);
+    console.log("after parsing the result",result)
+  } catch (err) {
+    console.log("Error parsing function_call arguments:", err);
+    result = { brand: "", product: "" };
+  }
+
+  console.log("result sending back", result)
+  return result;
 }
 
 }
