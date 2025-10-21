@@ -65,7 +65,7 @@ export class VendorRepo {
     const sql = `UPDATE "Vendor" SET ${fields.join(', ')} WHERE phonenumber = $${idx}`;
     values.push(phone);
 
-    console.log("update query ->",sql)
+    
 
 
     await query(sql, values);

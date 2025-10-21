@@ -86,9 +86,14 @@ export class listing_repo{
             params.push(`%${searchTerm.trim()}%`);
         }
 
-        sql += `ORDER BY l.createdat DESC`;
-        // sql += ` ORDER BY l.createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-        // params.push(limit, offset);
+      
+        if(limit){
+        sql += ` ORDER BY l.createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(limit, offset);}
+        else{
+         sql += `ORDER BY l.createdat DESC`;
+        }
+        console.log(offset)
         const result = await query(sql, params);
 
        return({

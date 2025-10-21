@@ -16,7 +16,7 @@ export class AI {
     if (!this.api_key) {
       console.warn("Warning: Grok API key not found in environment variables");
     }
-    this.groq= new Groq({ apiKey:this.api_key });
+      this.groq= new Groq({ apiKey:this.api_key });
   }
 
   async extractProductInfo(description: string,imgs:string[]):Promise<AI_Response> {
@@ -221,7 +221,7 @@ export class AI {
 
 private async getopenaicompletion(img:string){
 
-  console.log("image openai get",img)
+ 
 const response = await this.openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
@@ -263,24 +263,23 @@ const response = await this.openai.chat.completions.create({
     ],
     function_call: { name: "identify_product" }
 });
-  console.log("gpt res =>",response)
+
   if (!response?.choices?.[0]?.message?.function_call?.arguments) {
     console.log("⚠️ No function_call arguments from OpenAI — returning defaults.");
     return { brand: "", product: "" };
   }
 
 const res = jsonrepair(response.choices[0].message.function_call.arguments);
-  console.log("after json repair",jsonrepair)
+
   let result: { brand: string; product: string };
   try {
     result = JSON.parse(res);
-    console.log("after parsing the result",result)
+    
   } catch (err) {
     console.log("Error parsing function_call arguments:", err);
     result = { brand: "", product: "" };
   }
 
-  console.log("result sending back", result)
   return result;
 }
 

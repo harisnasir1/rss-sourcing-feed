@@ -87,7 +87,6 @@ export class Message_processing {
             //2->if the last message of that vendor is image then add text to it (after ai) and then create the listing from that data.
             //3->delete that messagebuffer.
         }
-
     }
     
     //need to add ai on this function
