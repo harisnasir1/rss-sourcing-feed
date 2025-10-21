@@ -490,6 +490,23 @@ export default function App() {
   const loadingMoreRef = useRef(false);
   const prefetchRef = useRef(false);
 
+  // Force refresh from page 1 and reset visible window/counters
+  const refetchFirstPage = () => {
+    try { fetchAbort.current?.abort(); } catch {}
+    inFlightRef.current = false;
+    prefetchRef.current = false;
+    loadingMoreRef.current = false;
+
+    setHasMore(true);
+    setVisibleCount(PAGE_LIMIT);
+
+    setPage(1);
+    pageRef.current = 1;
+    seenIdsRef.current.clear();
+
+    fetchItems(false, debouncedQuery || undefined, 1, false);
+  };
+
   // Reset visible items when filters/search change
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
@@ -686,7 +703,7 @@ export default function App() {
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-300">
               <button
                 className="px-3 py-1 border border-gray-700 text-xs hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => fetchItems()}
+                onClick={refetchFirstPage}
                 disabled={loading}
               >
                 {loading ? 'Refreshing…' : 'Refetch'}
