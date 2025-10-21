@@ -7,10 +7,10 @@ describe('buildWhatsAppHref', () => {
     expect(res).toContain('text=')
   })
 
-  it('leaves existing text param intact', () => {
+  it('overrides existing text param', () => {
     const url = 'https://api.whatsapp.com/send?phone=12345&text=pre'
     const res = buildWhatsAppHref(url, 'hello world')
     const parsed = new URL(res)
-    expect(parsed.searchParams.get('text')).toBe('pre')
+    expect(parsed.searchParams.get('text')).toBe('hello world')
   })
 })

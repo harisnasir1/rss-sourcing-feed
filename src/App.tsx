@@ -23,6 +23,7 @@ export default function App() {
   const DEBOUNCE_MS = Number(import.meta.env.VITE_SEARCH_DEBOUNCE_MS ?? 500);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   // Pagination knobs (client-exposed)
+  // Default to 20 items per page; can be overridden via VITE_PAGE_LIMIT
   const PAGE_LIMIT = Number(import.meta.env.VITE_PAGE_LIMIT ?? 20);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
@@ -178,7 +179,7 @@ export default function App() {
       try { fetchAbort.current?.abort(); } catch {}
       fetchAbort.current = new AbortController();
 
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = { Accept: 'application/json' };
       if (runpodKey) {
         headers['Authorization'] = `Bearer ${runpodKey}`;
         headers['x-api-key'] = runpodKey;
@@ -241,16 +242,35 @@ export default function App() {
         }
 
         if (Array.isArray(arr)) {
-          const normalized = arr.map((it: any) => normalizeItem(it));
-          const filtered = normalized.filter((it: any) => within72Hours(it.createdAt));
+          const start = (effectivePage - 1) * PAGE_LIMIT;
+          const endExclusive = start + PAGE_LIMIT;
 
-          // Decide which chunk to use
-          let chunk: Item[] = filtered as any;
-          if (filtered.length > PAGE_LIMIT) {
-            const start = (effectivePage - 1) * PAGE_LIMIT;
-            const end = start + PAGE_LIMIT;
-            // If upstream isn't paginating and returns the whole set, slice the relevant window
-            chunk = filtered.slice(start, end) as any;
+          let eligibleIndex = 0; // counts items that pass the 72h filter
+          const chunk: Item[] = [];
+
+          // Progressive scan: normalize only the items we need for the current page
+          for (let i = 0; i < arr.length; i++) {
+            const rawIt = arr[i];
+            const norm = normalizeItem(rawIt);
+            if (!within72Hours(norm.createdAt)) continue;
+
+            if (!append) {
+              if (eligibleIndex >= start && eligibleIndex < endExclusive) {
+                chunk.push(norm);
+                if (chunk.length >= PAGE_LIMIT) break;
+              }
+              eligibleIndex++;
+            } else {
+              // Append mode: collect the next unseen window worth of items
+              const id = String((norm as any).id);
+              if (!seenIdsRef.current.has(id)) {
+                if (eligibleIndex >= start && eligibleIndex < endExclusive) {
+                  chunk.push(norm);
+                  if (chunk.length >= PAGE_LIMIT) break;
+                }
+                eligibleIndex++;
+              }
+            }
           }
 
           if (append) {
@@ -269,19 +289,15 @@ export default function App() {
                 return next;
               });
             }
-            // Determine if more pages likely exist
-            if (filtered.length > PAGE_LIMIT) {
-              setHasMore(effectivePage * PAGE_LIMIT < filtered.length);
-            } else {
-              setHasMore(chunk.length >= PAGE_LIMIT);
-            }
+            // Heuristic: if we filled the page, assume more may exist
+            setHasMore(chunk.length >= PAGE_LIMIT);
           } else {
             // Reset mode: start fresh at first chunk only
             seenIdsRef.current.clear();
             for (const it of chunk) seenIdsRef.current.add(String((it as any).id));
             setItems(chunk);
             try { localStorage.setItem('feed_cache', JSON.stringify(chunk)); } catch {}
-            if (filtered.length > PAGE_LIMIT) setHasMore(true); else setHasMore(chunk.length >= PAGE_LIMIT);
+            setHasMore(chunk.length >= PAGE_LIMIT);
           }
         }
       }
@@ -302,12 +318,13 @@ export default function App() {
 
   useEffect(() => {
     // Hydrate from cache first for instant paint
+    let hadCache = false;
     try {
       const raw = localStorage.getItem('feed_cache');
       if (raw) {
         const cached: Item[] = JSON.parse(raw);
         const filtered = Array.isArray(cached) ? cached.filter((it: any) => within72Hours(it.createdAt)) : [];
-        if (filtered.length) setItems(filtered);
+        if (filtered.length) { setItems(filtered); hadCache = true; }
       }
     } catch {}
     
@@ -317,7 +334,8 @@ export default function App() {
   setPage(1);
   pageRef.current = 1;
   setHasMore(true);
-  fetchItems(false, undefined, 1, false);
+  // If we had cache, refresh silently in background; otherwise show loader
+  fetchItems(hadCache, undefined, 1, false);
     // Do not abort here — StrictMode's immediate cleanup would cancel the first fetch.
     // The in-flight guard protects against overlaps; the browser will cancel on real unmounts.
     return () => { /* no-op cleanup to avoid aborting initial fetch in StrictMode */ };
@@ -642,12 +660,15 @@ export default function App() {
                 path="/"
                 element={
                   <AnimatedHeight>
-                    {loading ? (
+                    {loading && visible.length === 0 ? (
                       <div className="p-8 text-center text-gray-400">Loading...</div>
                     ) : visible.length === 0 ? (
                       <div className="p-8 text-center text-gray-400">No results for "{query}"</div>
                     ) : (
                       <>
+                        {loading && visible.length > 0 && (
+                          <div className="text-center text-xs text-gray-400 py-1" aria-live="polite">Refreshing…</div>
+                        )}
                         <AnimatedList
                           items={pagedItems}
                           className="space-y-3"

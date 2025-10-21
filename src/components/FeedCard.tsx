@@ -38,49 +38,48 @@ export default function FeedCard({
     return item.displayPrice || ''
   }, [item.displayPrice])
 
-  // Derive details line: brand + sizes + price PP + optional phrase from description
+  // Derive details line: Brand — Price only (no sizes/extra phrases)
   const details = useMemo(() => {
     const source = String(item.raw?.description || item.description || '')
     // Brand: prefer normalized meta.brand then fallback to raw.brand/make
     const brandRaw = (item.meta?.brand || (item.raw as any)?.brand || (item.raw as any)?.make || '').toString().trim()
     const brandPart = brandRaw ? brandRaw : ''
-    // Sizes: UK/EU/US with optional decimal and optional xN count
-    const sizeMatches = source.match(/\b(?:UK|EU|US)\s?\d+(?:\.\d+)?(?:\s*x\d+)?\b/gi) || []
-    const sizesPart = Array.from(new Set(sizeMatches.map(s => s.replace(/\s+/g, ''))))
-      .join(', ')
 
-    // Price PP phrases: currency before/after amount with PP/ea/each
+    // Price: detect price + pp/ea/each if present; else fallback to normalized displayPrice (not 'Contact for price')
     const pricePP1 = source.match(/(?:£|\$|€)\s*\d[\d,]*(?:\.\d+)?\s*(?:pp|per\s*piece|ea|each)\b/i)
     const pricePP2 = source.match(/\b(?:pp|per\s*piece|ea|each)\s*(?:of\s*)?(?:£|\$|€)\s*\d[\d,]*(?:\.\d+)?/i)
     let pricePart = (pricePP1?.[0] || pricePP2?.[0] || '').trim()
     if (!pricePart && displayPrice && !/^contact/i.test(displayPrice)) {
       pricePart = displayPrice
     }
-
-    // Optional extra phrase
-    const extra = /take\s*all\s*for\s*cheaper/i.test(source) ? 'take all for cheaper' : ''
-
     const pieces: (string | JSX.Element)[] = []
     if (brandPart) pieces.push(brandPart)
-    if (sizesPart) pieces.push(sizesPart)
     if (pricePart) {
       if (pieces.length) pieces.push(' — ')
-      pieces.push(
-        loggedIn ? pricePart : <span className="blur-[6px] select-none no-copy text-white/40" title="Login to view price">{pricePart}</span>
-      )
+      if (loggedIn) {
+        pieces.push(pricePart)
+      } else {
+        const stripped = pricePart.replace(/^[£$€]\s*/, '')
+        pieces.push(
+          <>
+            <span>£</span>
+            <span className="blur-[6px] select-none no-copy text-white/40" title="Login to view price">{stripped}</span>
+          </>
+        )
+      }
     }
-    if (extra) {
-      if (pieces.length) pieces.push(' — ')
-      pieces.push(extra)
-    }
-    return pieces
+    return pieces.map((p, i) => <React.Fragment key={`detail-${i}`}>{p}</React.Fragment>)
   }, [item.raw?.description, item.description, displayPrice, loggedIn])
 
   const messageHref = useMemo(() => {
     const base = item.whatsappUrl || item.raw?.whatsapp || ''
     if (!loggedIn) return '#'
-    const title = item.name || item.description || 'your item'
-    const text = `I'm interested in ${title}. Could you tell me more?`
+    // Message includes the item name when available
+      const name = (item.name || item.description || '').toString().trim()
+      const safeName = name.replace(/\"/g, "'")
+      const text = name
+        ? `Referred from resellersync.io, have you still got "${safeName}" available?`
+        : `Referred from resellersync.io, have you still got this available?`
     return buildWhatsAppHref(base, text)
   }, [item, loggedIn])
 
@@ -123,6 +122,11 @@ export default function FeedCard({
         <div className="feed-meta mt-1 text-animate flex flex-wrap items-center gap-2">
           {details.length ? details : null}
         </div>
+
+        {/* Posted date/time */}
+        {(date || time) ? (
+          <div className="mt-1 text-xs text-white/60">Posted {date}{date && time ? ' - ' : ''}{time}</div>
+        ) : null}
 
 
         <div className="mt-2">
