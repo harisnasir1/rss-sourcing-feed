@@ -105,10 +105,11 @@ export class Message_processing {
         if(duplicate){
             //if we have the dublicate dublicate is true and we reutrn that
             return null
-        } 
+        }
         const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
+        console.log("data form ai=>",aidata)
         if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))) throw new Error(aidata?JSON.stringify(aidata):"something wrong with data")
-     
+
         const list: Listing = {
             vendorId: vinfo.id,
             groupId: gid,

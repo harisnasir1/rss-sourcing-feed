@@ -21,10 +21,10 @@ export class AI {
 
   async extractProductInfo(description: string,imgs:string[]):Promise<AI_Response> {
     try {
-      console.log("image ai main get",imgs)
+      
       const chatCompletion = await this.getGroqChatCompletion(description);
       const content =chatCompletion.choices[0]?.message?.content;
-      console.log("ai response=>",content)
+      
     if(!content)  throw new Error("data coming from ai is wrong!") 
     
     let cleaned =jsonrepair(content)     
@@ -32,7 +32,7 @@ export class AI {
     let hai=null
     if( !parsed||parsed?.brand==""||parsed.productType=="")
     {
-        console.log("calling image ai as backup")
+        
         hai= await this.getopenaicompletion(imgs[0])
         console.log("backup ai response= ",hai)
     }
@@ -52,6 +52,11 @@ export class AI {
     } catch (error) {
       console.error("Error extracting product info:", error);
       // Return default values on error
+      let k= false;
+      if(description.toLocaleLowerCase().includes("sell") || description.toLocaleLowerCase().includes("wts"))
+      {
+       k=true
+      }
       return {
         price: 0,
         brand: "",
@@ -60,7 +65,7 @@ export class AI {
         size: "",
         condition: "new",
         iswtb:false,
-        iswts:true
+        iswts:k
       };
     }
   }
