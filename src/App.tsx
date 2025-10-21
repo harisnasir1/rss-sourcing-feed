@@ -25,6 +25,8 @@ export default function App() {
   // Pagination knobs (client-exposed)
   // Default to 20 items per page; can be overridden via VITE_PAGE_LIMIT
   const PAGE_LIMIT = Number(import.meta.env.VITE_PAGE_LIMIT ?? 20);
+  // Prefetch when the remaining hidden items drop below this threshold
+  const PRELOAD_THRESHOLD = Number(import.meta.env.VITE_PRELOAD_THRESHOLD ?? 30);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -244,60 +246,88 @@ export default function App() {
         if (Array.isArray(arr)) {
           const start = (effectivePage - 1) * PAGE_LIMIT;
           const endExclusive = start + PAGE_LIMIT;
+          const singlePageFromServer = arr.length <= PAGE_LIMIT; // likely server respected pagination
 
-          let eligibleIndex = 0; // counts items that pass the 72h filter
-          const chunk: Item[] = [];
+          let chunk: Item[] = [];
 
-          // Progressive scan: normalize only the items we need for the current page
-          for (let i = 0; i < arr.length; i++) {
-            const rawIt = arr[i];
-            const norm = normalizeItem(rawIt);
-            if (!within72Hours(norm.createdAt)) continue;
-
-            if (!append) {
-              if (eligibleIndex >= start && eligibleIndex < endExclusive) {
-                chunk.push(norm);
-                if (chunk.length >= PAGE_LIMIT) break;
+          if (singlePageFromServer) {
+            // Normalize only what we received and filter by recency
+            const pageItems = arr.map((raw) => normalizeItem(raw)).filter((it) => within72Hours(it.createdAt));
+            if (append) {
+              const toAdd: Item[] = [];
+              for (const it of pageItems) {
+                const id = String((it as any).id);
+                if (!seenIdsRef.current.has(id)) {
+                  seenIdsRef.current.add(id);
+                  toAdd.push(it);
+                }
               }
-              eligibleIndex++;
+              if (toAdd.length) {
+                setItems((prev) => {
+                  const next = [...prev, ...toAdd];
+                  try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch {}
+                  return next;
+                });
+              }
+              // If server returned less than limit, likely the end
+              setHasMore(arr.length >= PAGE_LIMIT && toAdd.length > 0);
             } else {
-              // Append mode: collect the next unseen window worth of items
-              const id = String((norm as any).id);
-              if (!seenIdsRef.current.has(id)) {
+              seenIdsRef.current.clear();
+              for (const it of pageItems) seenIdsRef.current.add(String((it as any).id));
+              setItems(pageItems);
+              try { localStorage.setItem('feed_cache', JSON.stringify(pageItems)); } catch {}
+              setHasMore(arr.length >= PAGE_LIMIT);
+            }
+          } else {
+            // Progressive scan: normalize only the items we need for the current page window
+            let eligibleIndex = 0; // counts items that pass the 72h filter
+            for (let i = 0; i < arr.length; i++) {
+              const norm = normalizeItem(arr[i]);
+              if (!within72Hours(norm.createdAt)) continue;
+
+              if (!append) {
                 if (eligibleIndex >= start && eligibleIndex < endExclusive) {
                   chunk.push(norm);
                   if (chunk.length >= PAGE_LIMIT) break;
                 }
                 eligibleIndex++;
+              } else {
+                // Append mode: collect items in the next page window; skip if we've already seen the id
+                const id = String((norm as any).id);
+                if (eligibleIndex >= start && eligibleIndex < endExclusive) {
+                  if (!seenIdsRef.current.has(id)) {
+                    chunk.push(norm);
+                    if (chunk.length >= PAGE_LIMIT) break;
+                  }
+                }
+                eligibleIndex++;
               }
             }
-          }
 
-          if (append) {
-            const toAdd: Item[] = [];
-            for (const it of chunk) {
-              const id = String((it as any).id);
-              if (!seenIdsRef.current.has(id)) {
-                seenIdsRef.current.add(id);
-                toAdd.push(it);
+            if (append) {
+              const toAdd: Item[] = [];
+              for (const it of chunk) {
+                const id = String((it as any).id);
+                if (!seenIdsRef.current.has(id)) {
+                  seenIdsRef.current.add(id);
+                  toAdd.push(it);
+                }
               }
+              if (toAdd.length) {
+                setItems((prev) => {
+                  const next = [...prev, ...toAdd];
+                  try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch {}
+                  return next;
+                });
+              }
+              setHasMore(chunk.length >= PAGE_LIMIT);
+            } else {
+              seenIdsRef.current.clear();
+              for (const it of chunk) seenIdsRef.current.add(String((it as any).id));
+              setItems(chunk);
+              try { localStorage.setItem('feed_cache', JSON.stringify(chunk)); } catch {}
+              setHasMore(chunk.length >= PAGE_LIMIT);
             }
-            if (toAdd.length) {
-              setItems((prev) => {
-                const next = [...prev, ...toAdd];
-                try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch {}
-                return next;
-              });
-            }
-            // Heuristic: if we filled the page, assume more may exist
-            setHasMore(chunk.length >= PAGE_LIMIT);
-          } else {
-            // Reset mode: start fresh at first chunk only
-            seenIdsRef.current.clear();
-            for (const it of chunk) seenIdsRef.current.add(String((it as any).id));
-            setItems(chunk);
-            try { localStorage.setItem('feed_cache', JSON.stringify(chunk)); } catch {}
-            setHasMore(chunk.length >= PAGE_LIMIT);
           }
         }
       }
@@ -458,6 +488,7 @@ export default function App() {
   const [loadingMore, setLoadingMore] = useState(false);
   const listTopRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreRef = useRef(false);
+  const prefetchRef = useRef(false);
 
   // Reset visible items when filters/search change
   useEffect(() => {
@@ -469,8 +500,9 @@ export default function App() {
 
   const tryLoadMore = () => {
     if (loadingMoreRef.current) return false;
-    // If server has no more pages but we still have locally hidden items, reveal them
-    if (!hasMore && visibleCount < brandFiltered.length) {
+    const hidden = Math.max(0, brandFiltered.length - visibleCount);
+    // If we already have hidden, preloaded items, reveal them without fetching
+    if (hidden > 0) {
       setVisibleCount((n) => Math.min(n + PAGE_LIMIT, brandFiltered.length));
       return true;
     }
@@ -490,6 +522,25 @@ export default function App() {
       });
     return true;
   };
+
+  // Early prefetch: when we’re within PRELOAD_THRESHOLD of the end, fetch the next page silently
+  useEffect(() => {
+    if (!hasMore) return;
+    if (loadingMoreRef.current || prefetchRef.current || inFlightRef.current) return;
+    const hidden = Math.max(0, brandFiltered.length - visibleCount);
+    if (hidden <= PRELOAD_THRESHOLD) {
+      const nextPage = pageRef.current + 1;
+      prefetchRef.current = true;
+      fetchItems(true, debouncedQuery || undefined, nextPage, true)
+        .catch(() => {})
+        .finally(() => {
+          // Mark that we’ve advanced the page due to prefetch
+          pageRef.current = nextPage;
+          setPage(nextPage);
+          prefetchRef.current = false;
+        });
+    }
+  }, [brandFiltered.length, visibleCount, hasMore, debouncedQuery]);
 
   // No infinite scroll or auto-loading. Users click the button to fetch the next page.
 
