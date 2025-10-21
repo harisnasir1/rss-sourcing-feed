@@ -7,6 +7,8 @@ html, body, #root {
   margin-right: auto;
   width: 100%;  
 }
+/* Ensure app content is above page-level decorative layers */
+#root { position: relative; z-index: 1; }
 
 /*
   Font: ApfelGrotezk-Regular
@@ -17,14 +19,15 @@ html, body, #root {
 
 @font-face {
   font-family: 'ApfelGrotezk';
-  src: url('/assets/fonts/ApfelGrotezk-Regular.woff2') format('woff2');
+  src: url('/assets/Fonts/ApfelGrotezk-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
+/* Alias family name with space for designer-friendly usage */
 @font-face {
-  font-family: 'ApfelGrotezk';
-  src: url('/assets/fonts/ApfelGrotezk-Regular.woff') format('woff');
+  font-family: 'Apfel Grotezk';
+  src: url('/assets/Fonts/ApfelGrotezk-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -39,40 +42,49 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.45;
+  /* Lighten base background slightly */
+  background-color: #1E1E1E;
 }
 
-/* Subtle white noise overlay (Mono, 100% density, ~5% opacity) */
-.noise-bg {
-  position: relative;
-}
-.noise-bg::before {
+/* Global body noise overlay using provided Figma SVG (tiled over #181818) */
+body::before {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
-  opacity: 0.05; /* ~5% as per spec */
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  z-index: 0; /* behind the app content */
+  opacity: 1; /* keep layer at 1; SVG encodes the subtle white noise */
   background-repeat: repeat;
-}
-.noise-bg > * {
-  position: relative;
-  z-index: 1;
+  background-size: 1928px 1889px; /* match SVG viewBox for crisp tile */
+  /* Remove base fill merge from SVG so it doesn't override body background color */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1928' height='1889' viewBox='0 0 1928 1889' fill='none'%3E%3Cg opacity='0.5' filter='url(%23filter0_n_829_19734)'%3E%3Cpath d='M0 0H1928V10246H0V0Z' fill='%23181818'/%3E%3C/g%3E%3Cdefs%3E%3Cfilter id='filter0_n_829_19734' x='0' y='0' width='1928' height='10246' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='BackgroundImageFix' result='shape'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45454543828964233 0.45454543828964233' stitchTiles='stitch' numOctaves='3' result='noise' seed='7550'/%3E%3CfeColorMatrix in='noise' type='luminanceToAlpha' result='alphaNoise'/%3E%3CfeComponentTransfer in='alphaNoise' result='coloredNoise1'%3E%3CfeFuncA type='discrete' tableValues='1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'/%3E%3C/feComponentTransfer%3E%3CfeComposite operator='in' in2='shape' in='coloredNoise1' result='noise1Clipped'/%3E%3CfeFlood flood-color='rgba(255, 255, 255, 0.05)' result='color1Flood'/%3E%3CfeComposite operator='in' in2='noise1Clipped' in='color1Flood' result='color1'/%3E%3CfeMerge result='effect1_noise_829_19734'%3E%3CfeMergeNode in='color1'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3C/svg%3E");
 }
 
-/* Responsive headings using clamp() */
-h1 { font-weight: 600; font-size: clamp(1.866rem, 2.6vw + 1.2rem, 2.933rem); line-height: 1.05; }
-h2 { font-weight: 600; font-size: clamp(1.333rem, 2.2vw + 0.9rem, 2rem); }
-h3 { font-weight: 600; font-size: clamp(1.166rem, 1.8vw + 0.7rem, 1.5rem); }
-h4 { font-weight: 600; font-size: clamp(1rem, 1.6vw + 0.6rem, 1.25rem); }
+/* Responsive headings: use Apfel Grotezk */
+h1 { font-family: 'Apfel Grotezk', 'ApfelGrotezk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; font-weight: 800; font-size: clamp(1.866rem, 2.6vw + 1.2rem, 2.933rem); line-height: 1.05; }
+h2 { font-family: 'Apfel Grotezk', 'ApfelGrotezk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; font-weight: 800; font-size: clamp(1.333rem, 2.2vw + 0.9rem, 2rem); }
+h3 { font-family: 'Apfel Grotezk', 'ApfelGrotezk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; font-weight: 800; font-size: clamp(1.166rem, 1.8vw + 0.7rem, 1.5rem); }
+h4 { font-family: 'Apfel Grotezk', 'ApfelGrotezk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; font-weight: 800; font-size: clamp(1rem, 1.6vw + 0.6rem, 1.25rem); }
 
 /* Slight negative letter-spacing for headings only */
 h1, h2, h3, h4 {
   letter-spacing: -1px;
 }
 
+/* Gradient headline style for modal headers */
+.headline-gradient {
+  font-family: 'Apfel Grotezk', 'ApfelGrotezk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 100%; /* 2rem */
+  letter-spacing: -0.04rem;
+  color: #fff; /* no gradient fill; solid white text */
+}
+
 /* Ensure form elements and controls share baseline */
 body, input, button, textarea, select { font-size: 1rem; }
+/* Unify button border radius to match primary blue button */
+button { border-radius: 0.5rem; }
 
 /* Do not force #root to be a flex container — allow the whole page to scroll naturally */
 
@@ -157,13 +169,16 @@ button:focus, input:focus, textarea:focus { outline: none; }
   will-change: transform, opacity;
   /* Requested surface styles */
   border-radius: 0.75rem; /* 12px */
-  border: 1px solid rgba(255, 255, 255, 0.12);
+border: 1px solid rgba(255, 255, 255, 0.12);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.00) 0%, rgba(255, 255, 255, 0.04) 100%);
+  /* Default to the previous hover shadow */
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -4px rgba(0,0,0,0.10);
   /* Constrain width */
   max-width: 600px;
   width: 100%;
   margin-left: auto;
   margin-right: auto;
+  position: relative; /* allow floating badge */
 }
 .feed-card-initial {
   opacity: 0;
@@ -172,6 +187,36 @@ button:focus, input:focus, textarea:focus { outline: none; }
 .feed-card-enter {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+/* Very recent items (<= 15 minutes) subtle glow */
+.recent-15 {
+  box-shadow: 0 0 0 1px rgba(105, 197, 255, 0.22) inset, 0 8px 24px rgba(16, 90, 137, 0.18);
+}
+
+/* Small NEW badge */
+.recent-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #69C5FF;
+  border: 1px solid rgba(105, 197, 255, 0.35);
+  background: rgba(16, 90, 137, 0.40);
+}
+
+/* Floating position top-right and glowing pulse */
+.recent-badge-float { position: absolute; top: 6px; right: 6px; pointer-events: none; }
+/* More subtle, box-shadow-based glow */
+.recent-badge-glow { animation: badge-glow 2.6s ease-in-out infinite; box-shadow: 0 0 10px rgba(105,197,255,0.25); }
+@keyframes badge-glow {
+  0% { box-shadow: 0 0 8px rgba(105,197,255,0.20); }
+  50% { box-shadow: 0 0 16px rgba(105,197,255,0.32); }
+  100% { box-shadow: 0 0 8px rgba(105,197,255,0.20); }
 }
 
 /* Smooth layout transitions for the containing list */
@@ -217,6 +262,25 @@ button:focus, input:focus, textarea:focus { outline: none; }
   transform: translateY(0);
 }
 
+/* Hero heading and subtitle styles (AI WhatsApp Sourcing Feed) */
+.hero-title {
+  text-align: center;
+  font-family: 'Apfel Grotezk', 'ApfelGrotezk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-size: 3.75rem; /* 60px */
+  font-weight: 400;
+  line-height: 100%; /* equal to font-size */
+  letter-spacing: -4px; /* -2px */
+}
+.hero-subtitle {
+  color: #FFF;
+  text-align: center;
+  font-family: 'Apfel Grotezk', 'ApfelGrotezk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 150%; /* 1.875rem */
+}
+
 /* locked blur removed — we now avoid rendering sensitive text entirely when locked */
 
 /* Lightweight skeleton placeholder */
@@ -245,7 +309,54 @@ button:focus, input:focus, textarea:focus { outline: none; }
   border-radius: 9999px;
 }
 
-/* Pills removed */
+/* Brand pills under search */
+.brand-pills-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.25rem 0;
+  white-space: nowrap;
+}
+@media (min-width: 768px) {
+  .brand-pills-row {
+    flex-wrap: wrap;
+    overflow: visible;
+    white-space: normal;
+    justify-content: center;
+  }
+}
+.brand-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5065rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem; /* match btn-blue */
+  border: 0.675px solid rgba(255, 255, 255, 0.10);
+  opacity: 0.6;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(153, 153, 153, 0.10) 100%);
+  transform: rotate(0.094deg);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 160ms ease, transform 140ms ease, box-shadow 180ms ease;
+}
+.brand-pill:hover { opacity: 0.85; }
+.brand-pill:active { transform: rotate(0.094deg) scale(0.98); }
+.brand-pill[aria-pressed="true"] {
+  opacity: 1;
+  background: rgba(16, 90, 137, 0.40); /* blue 40% */
+  border-color: rgba(105, 197, 255, 0.40); /* blue at 40% */
+  box-shadow: none; /* no pulsing/glow */
+}
+/* Button-style radios in signup (role=radio, aria-checked=true): 20% blue background when selected */
+.brand-pill[role="radio"][aria-checked="true"] {
+  background: rgba(16, 90, 137, 0.40); /* blue 40% */
+  border-color: rgba(105, 197, 255, 0.40); /* blue at 40% */
+  box-shadow: none; /* no pulsing/glow border */
+  opacity: 1;
+}
 
 
 /* CTA wrapper FLIP-friendly transition: animate transform/opacity when it moves */
@@ -282,7 +393,12 @@ button:focus, input:focus, textarea:focus { outline: none; }
   flex-shrink: 0;
   border-radius: 0.75rem;
   border: 1px solid rgba(255,255,255,0.12);
-  background: linear-gradient(180deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.04) 100%);
+  /* Layer gradient over CTA background image for readability */
+  background: 
+    linear-gradient(180deg, rgba(0, 0, 0, 0.20) 0%, rgba(0, 0, 0, 0.35) 100%),
+    url('/assets/cta_bg.png');
+  background-size: auto, cover;
+  background-position: center;
 }
 
 .cta-card p {
@@ -303,15 +419,88 @@ button:focus, input:focus, textarea:focus { outline: none; }
   padding-right: 1rem;
 }
 
-/* Top grid background (non-repeating, top-aligned) */
+/* Remove the old grid image and let the page-level glow show through */
 .grid-top-bg {
-  background-image: url('/assets/grid.svg');
-  background-repeat: no-repeat;
-  background-position: center top;
-  background-size: 1400px auto; /* scaled grid, adjust as needed */
+  position: relative;
+  background: none;
+  overflow: hidden;
 }
-@media (min-width: 1024px) {
-  .grid-top-bg { background-size: 1600px auto; }
+/* Top-left gradient ray layered inside the app (above root background) */
+#root::before {
+  content: '';
+  position: fixed; /* keep it anchored to the viewport */
+  top: -80px;
+  left: calc(50% - 560px);
+  width: 900px;
+  height: 360px;
+  pointer-events: none;
+  z-index: 0; /* behind content but above #root background */
+  background: radial-gradient(110% 80% at 0% 0%,
+    rgba(105, 197, 255, 0.46) 0%,
+    rgba(16, 90, 137, 0.32) 32%,
+    rgba(16, 90, 137, 0.14) 58%,
+    rgba(0, 0, 0, 0) 78%
+  );
+  filter: blur(50px);
+  transform: translate3d(0,0,0) scale(1);
+}
+
+/* Feed card typography overrides to match spec */
+.feed-title {
+  color: #fff;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-size: 0.9375rem; /* ~15px base => 15px * 0.9375 = ~14px */
+  font-weight: 600;
+  line-height: 130%; /* 1.21875rem */
+  letter-spacing: -0.5px;;
+}
+.feed-meta {
+  color: #fff;
+/* Blue fade gradient for large titles (hero + CTA) */
+.title-gradient {
+  background: linear-gradient(90deg, #ffffff 0%, #bfe8ff 30%, #69C5FF 65%, #105A89 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+  font-family: Geist, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-size: 12px; /* 12px */
+  font-weight: 400;
+  line-height: 140%; /* 1.05rem */
+  
+}
+
+/* Card button label typography (as requested) */
+.card-btn-label {
+  color: #fff;
+  font-family: Geist, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-size: 0.75rem; /* 12px */
+  font-style: normal;
+  font-weight: 400;
+  line-height: 140%; /* 1.05rem */
+  letter-spacing: -0.04688rem;
+}
+
+/* Page-level top-left "ray of light" gradient under header and content */
+body::after {
+  content: '';
+  position: fixed;
+  top: -140px; /* start slightly above viewport */
+  left: -140px; /* originate from top-left corner */
+  width: 1200px;
+  height: 420px;
+  pointer-events: none;
+  z-index: 0; /* stay behind #root */
+  /* Blue-ish ray fading down/right; tweak stops to adjust reach/intensity */
+  background: radial-gradient(120% 80% at 0% 0%,
+    rgba(105, 197, 255, 0.38) 0%,
+    rgba(16, 90, 137, 0.26) 32%,
+    rgba(16, 90, 137, 0.12) 58%,
+    rgba(0, 0, 0, 0) 78%
+  );
+  filter: blur(48px);
+  /* Add subtle drifting animation to the background ray */
+  transform: translate3d(0,0,0) scale(1);
 }
 
 /* Modal styles */
@@ -321,6 +510,7 @@ button:focus, input:focus, textarea:focus { outline: none; }
   background: linear-gradient(180deg, #070606 0%, #0F0F0F 100%);
   box-shadow: 0 5px 12px 0 rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(2px);
+  padding: 3rem; /* increased to 3rem as requested */
 }
 .modal-input {
   border-radius: 0.5065rem;

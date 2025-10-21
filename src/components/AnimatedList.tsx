@@ -7,11 +7,13 @@ export default function AnimatedList({
   renderItem,
   removeDelay = 320,
   className,
+  instantRemove = false,
 }: {
   items: Item[]
   renderItem: (item: Item) => React.ReactNode
   removeDelay?: number
   className?: string
+  instantRemove?: boolean
 }) {
   // local copy that can hold 'removing' items while they animate out
   const [local, setLocal] = useState<{ item: Item; id: string; removing?: boolean; fresh?: boolean }[]>(
@@ -20,6 +22,7 @@ export default function AnimatedList({
   const timers = useRef<Record<string, number>>({})
   const containerRef = useRef<HTMLDivElement | null>(null)
   const prevRects = useRef<Record<string, DOMRect>>({})
+  const containerHeight = useRef<number>(0)
 
   // FLIP: measure positions before DOM changes
   const measure = () => {
@@ -35,9 +38,14 @@ export default function AnimatedList({
 
   useEffect(() => {
     // capture positions before update
+    // lock container height to reduce jump during exit
+    if (containerRef.current) {
+      containerHeight.current = containerRef.current.getBoundingClientRect().height
+      containerRef.current.style.minHeight = `${containerHeight.current}px`
+    }
     prevRects.current = measure()
 
-    // compute next local array with removing flags
+    // compute next local array with removing flags (or instant removal)
     setLocal((prev) => {
       const prevById = new Map(prev.map((p) => [p.id, p]))
       const next: { item: Item; id: string; removing?: boolean; fresh?: boolean }[] = []
@@ -55,12 +63,17 @@ export default function AnimatedList({
       }
 
       for (const [, removed] of prevById) {
-        next.push({ ...removed, removing: true })
+        if (instantRemove) {
+          // Do not include removed items at all — instant removal
+          continue
+        } else {
+          next.push({ ...removed, removing: true })
+        }
       }
 
       return next
     })
-  }, [items])
+  }, [items, instantRemove])
 
   // after DOM updated, perform FLIP animation
   useEffect(() => {
@@ -84,11 +97,16 @@ export default function AnimatedList({
           })
         }
       })
+      // release container height after animation
+      setTimeout(() => {
+        if (containerRef.current) containerRef.current.style.minHeight = ''
+      }, 320)
     })
   }, [local])
 
   // watch for items that are marked removing and schedule cleanup
   useEffect(() => {
+    if (instantRemove) return; // nothing to schedule when removals are instant
     for (const entry of local) {
       if (entry.removing && !timers.current[entry.id]) {
         const id = entry.id
@@ -105,7 +123,7 @@ export default function AnimatedList({
         delete timers.current[k]
       }
     }
-  }, [local, removeDelay])
+  }, [local, removeDelay, instantRemove])
 
   return (
     <div ref={containerRef} className={className ?? ''}>
