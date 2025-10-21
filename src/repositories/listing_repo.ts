@@ -55,7 +55,7 @@ export class listing_repo{
                 l.groupid AS "groupId",
                 l.groupname AS "groupName",
                 l.description,
-                l.images,
+                l.images[1:1] AS images,
                 l.price,
                 l.brand,
                 l.producttype AS "productType",
@@ -86,7 +86,8 @@ export class listing_repo{
             params.push(`%${searchTerm.trim()}%`);
         }
 
-      
+        
+
         if(limit){
         sql += ` ORDER BY l.createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(limit, offset);}
