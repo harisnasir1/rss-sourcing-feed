@@ -89,8 +89,6 @@ export class listing_repo{
         sql += `ORDER BY l.createdat DESC`;
         // sql += ` ORDER BY l.createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         // params.push(limit, offset);
-        
-
         const result = await query(sql, params);
 
        return({

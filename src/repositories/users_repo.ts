@@ -42,10 +42,10 @@ return res[0];
   async login(dto: LoginDto): Promise<SafeUser> {
     const { email, password } = dto;
 
-   
+    
     const User = await query(
       'SELECT * FROM "User" WHERE email = $1',
-      [email]
+      [email.trim().toLowerCase()]
     );
 
     if (User.length === 0) {
