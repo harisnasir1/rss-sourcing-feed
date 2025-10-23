@@ -8,6 +8,9 @@ export type SignupDto = {
   email: string;
   password: string;
   role?: string;
+  have_site?:boolean;
+  have_stock?:boolean;
+  inventory_value?:string;
 }
 
 export type LoginDto = {
