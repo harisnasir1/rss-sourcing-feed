@@ -5,9 +5,9 @@ export class UserRepository {
   private readonly SALT_ROUNDS = 10;
 
   async signup(dto: SignupDto): Promise<SafeUser> {
-    let { fullname, email, password, role = 'member' } = dto;
+    let { fullname, email, password, role = 'member',have_site=0,have_stock=0,inventory_value='0' } = dto;
      email=email.toLowerCase().trim()
-    
+   
     const existingUser = await query(
       'SELECT id FROM "User" WHERE email = $1',
       [email]
@@ -23,15 +23,15 @@ export class UserRepository {
     
    const sql = `
   INSERT INTO "User" (
-    id, fullname, email, password, role
+    id, fullname, email, password,role,have_site,have_stock,inventory_value
   )
   VALUES (
-    gen_random_uuid(), $1, $2, $3, $4
+    gen_random_uuid(), $1, $2, $3, $4,$5,$6,$7
   )
   RETURNING id, fullname, email, role, created_at, last_login;
 `;
 
-const values = [fullname, email, hashedPassword, role];
+const values = [fullname, email, hashedPassword, role,have_site,have_stock,inventory_value];
 
 const res = await query(sql, values);
 return res[0];

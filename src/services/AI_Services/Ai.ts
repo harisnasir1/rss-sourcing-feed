@@ -32,7 +32,6 @@ export class AI {
     let hai=null
     if( !parsed||parsed?.brand==""||parsed.productType=="")
     {
-        
         hai= await this.getopenaicompletion(imgs[0])
         console.log("backup ai response= ",hai)
     }
