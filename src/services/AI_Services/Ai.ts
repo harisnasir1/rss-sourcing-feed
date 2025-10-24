@@ -30,9 +30,8 @@ export class AI {
     let cleaned =jsonrepair(content)     
     const parsed = JSON.parse(cleaned)
     let hai=null
-    if( !parsed||parsed?.brand==""||parsed.productType=="")
+    if( !parsed||((parsed?.brand==""||parsed.productType=="")&&parsed.iswts===true))
     {
-        
         hai= await this.getopenaicompletion(imgs[0])
         console.log("backup ai response= ",hai)
     }
@@ -235,7 +234,7 @@ const response = await this.openai.chat.completions.create({
                 {
                     type: "image_url",
                     image_url: {
-                        url:  img
+                        url:  img.trim().replace(/\.$/, '')
                     }
                 }
             ]

@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand,waitUntilObjectExists } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from 'uuid';
 export class ImgProcessing{
     private AccessKey:string;
@@ -32,7 +32,11 @@ export class ImgProcessing{
         Body: image_url,  //<-buffer write  
         ContentType: "image/png",
       };
-      (await this.s3).send(new PutObjectCommand(uploadParams));
+     await (await this.s3).send(new PutObjectCommand(uploadParams));
+      await waitUntilObjectExists(
+    { client: this.s3, maxWaitTime: 10 },
+    { Bucket: this.Bucketname, Key: key }
+  );
       return [`https://${this.Bucketname}.s3.${this.Region}.amazonaws.com/${key}`];
     }
    
