@@ -96,10 +96,18 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       const base = import.meta.env.DEV
         ? '/api/users'
         : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+      const payload = {
+        fullname: name,
+        email,
+        password,
+        have_site: hasWebsite ? 1 : 0,
+        have_stock: hasInventory ? 1 : 0,
+        inventory_value: hasInventory ? inventoryBand : '',
+      }
       const res = await fetch(`${base}/Register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
-        body: JSON.stringify({ fullname: name, email, password }),
+        headers: { 'Content-Type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify(payload),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok || !data || data.success !== true) {
