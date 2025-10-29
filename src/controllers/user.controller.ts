@@ -37,7 +37,8 @@ export const Signup=async(req:Request ,res:Response)=>{
 return res.status(200).json({
       success: true,
       message: 'Login successful',
-      data: user
+      data: user,
+      ghl:true
     });
 }
   catch(e)
@@ -47,14 +48,23 @@ return res.status(200).json({
 return res.status(409).json({
       success: false,
       message: e.message,
-      
+      ghl:true
+    });
+    }
+    else if(e instanceof Error && e.message === 'User is not in ghl won stage')
+    {
+      return res.status(409).json({
+      success: false,
+      message: e.message,
+      ghl:false
     });
     }
     else{
     console.warn("error in signup",e)
     return res.status(500).json({
       success: false,
-      message: 'sign unsuccessful'
+      message: 'sign unsuccessful',
+      ghl:true
     });}
   }
 }

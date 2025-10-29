@@ -123,9 +123,6 @@ export class WhatsAppClient {
             }
                 console.warn(`🔄 Unknown disconnect reason (${reason}) - reconnecting in 10 seconds...`);
             setTimeout(() => this.reconnect(), 10000);
-        
-
-
     }
    
     

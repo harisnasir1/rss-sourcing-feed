@@ -2,7 +2,9 @@ import { query } from '../utils/db_connection';
 import {SignupDto,LoginDto,usertype,SafeUser} from "../types/User_types"
 import bcrypt from 'bcrypt';
 export class UserRepository {
-  private readonly SALT_ROUNDS = 10;
+  private readonly SALT_ROUNDS=10;
+  private readonly ghlkey=process.env.GHL_API_KEY
+
 
   async signup(dto: SignupDto): Promise<SafeUser> {
     let { fullname, email, password, role = 'member',have_site=0,have_stock=0,inventory_value='0' } = dto;
@@ -16,7 +18,12 @@ export class UserRepository {
     if (existingUser.length > 0) {
       throw new Error('User with this email already exists');
     }
-
+    const ghlcheck=await this.checkinghlwon(email)
+    if(!ghlcheck)
+     {
+      throw new Error('User is not in ghl won stage');
+    }
+    
     
     const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
@@ -177,6 +184,36 @@ return res[0];
     }
 
     await this.updatePassword(userId, newPassword);
+  }
+
+  private async checkinghlwon(email:string)
+  {
+     var url = "https://services.leadconnectorhq.com/opportunities/search"
+    + "?location_id=0jUuoXuSJVQGki9cRwUx"
+    + "&pipeline_id=xLLFc3s2wXBCu8Ms50eh"
+    + "&pipeline_stage_id=00964150-abc3-4a57-923b-3799b165a06d"
+    + `&q=${email}`
+  
+  var options = {
+    method: "get",
+    headers: {
+      "Accept": "application/json",
+      "Version": "2021-07-28",
+      "Authorization":`Bearer ${this.ghlkey}`
+        },
+    muteHttpExceptions: true
+  };
+
+  var res =await fetch(url, options);
+  const data=await res.json()
+  console.log("res",res)
+  console.log("data",data)
+  if(data&&data.opportunities&&data.opportunities.length>0)
+  {
+   return 1
+  }
+  return 0 
+
   }
 }
 
