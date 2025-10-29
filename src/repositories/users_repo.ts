@@ -206,8 +206,7 @@ return res[0];
 
   var res =await fetch(url, options);
   const data=await res.json()
-  console.log("res",res)
-  console.log("data",data)
+ 
   if(data&&data.opportunities&&data.opportunities.length>0)
   {
    return 1
