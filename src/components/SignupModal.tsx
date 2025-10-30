@@ -110,6 +110,14 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
         body: JSON.stringify(payload),
       })
       const data = await res.json().catch(() => ({}))
+
+      if (data && data.ghl === false) {
+        const msg = data.message || 'Please complete the onboarding form first.'
+        try { window.open('https://forms.gle/Na1yHnniRvA2rbYu7', '_blank', 'noopener'); } catch {}
+        setFormError(String(msg))
+        return
+      }
+
       if (!res.ok || !data || data.success !== true) {
         const msg = (data && (data.message || data.error)) || `Signup unsuccessful`
         setFormError(String(msg))
