@@ -11,6 +11,7 @@ export type SignupDto = {
   have_site?:boolean;
   have_stock?:boolean;
   inventory_value?:string;
+  is_active?:boolean;
 }
 
 export type LoginDto = {

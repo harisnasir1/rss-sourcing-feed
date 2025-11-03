@@ -7,7 +7,7 @@ export class UserRepository {
 
 
   async signup(dto: SignupDto): Promise<SafeUser> {
-    let { fullname, email, password, role = 'member',have_site=0,have_stock=0,inventory_value='0' } = dto;
+    let { fullname, email, password, role = 'member',have_site=0,have_stock=0,inventory_value='0',is_active=1 } = dto;
      email=email.toLowerCase().trim()
    
     const existingUser = await query(
@@ -21,6 +21,22 @@ export class UserRepository {
     const ghlcheck=await this.checkinghlwon(email)
     if(!ghlcheck)
      {
+
+    const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
+
+    
+   const sql = `
+       INSERT INTO "User" (
+         id, fullname, email, password,role,have_site,have_stock,inventory_value,is_active
+       )
+       VALUES (
+         gen_random_uuid(), $1, $2, $3, $4,$5,$6,$7,$8
+       )
+       RETURNING id, fullname, email, role, created_at, last_login;
+     `;
+     const values = [fullname, email, hashedPassword, role,have_site,have_stock,inventory_value,0];
+     
+     const res = await query(sql, values);
       throw new Error('User is not in ghl won stage');
     }
     
