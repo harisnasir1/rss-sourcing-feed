@@ -21,12 +21,21 @@ export const login=async(req:Request , res:Response)=>{
     });
  }
   catch(e)
+  {  
+
+   if (e instanceof Error && e.message === 'unauthorized')
   {
-    console.warn("error in login",e)
+     return res.status(200).json({
+      success: false,
+      message: 'UnAuthorized'
+    });
+  }
+
+   else {
      return res.status(200).json({
       success: false,
       message: 'Login unsuccessful'
-    });
+    });}
   }
 }
 
@@ -36,7 +45,7 @@ export const Signup=async(req:Request ,res:Response)=>{
  const user = await userRepository.signup(udata)
 return res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: 'Signup successful',
       data: user,
       ghl:true
     });
@@ -59,6 +68,7 @@ return res.status(409).json({
       ghl:false
     });
     }
+   
     else{
     console.warn("error in signup",e)
     return res.status(500).json({

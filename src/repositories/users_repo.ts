@@ -70,12 +70,17 @@ return res[0];
       'SELECT * FROM "User" WHERE email = $1',
       [email.trim().toLowerCase()]
     );
-
     if (User.length === 0) {
       throw new Error('Invalid email or password');
     }
 
     const user = User[0];
+    if(!user.is_active)
+    {
+ throw new Error('unauthorized');
+    }
+  
+
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
