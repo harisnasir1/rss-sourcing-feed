@@ -3,6 +3,7 @@ export type usertype={
     fullname:string,
     email:string,
     password:string,
+    role:string
 }
 export type SignupDto = {
   fullname: string;
@@ -22,6 +23,7 @@ export interface JwtPayload {
   userId: string;
   email: string;
   fullname: string;
+  role:string;
 }
 export type status_update={
   id:string;

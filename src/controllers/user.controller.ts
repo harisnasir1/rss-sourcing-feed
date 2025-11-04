@@ -36,13 +36,14 @@ export const login=async(req:Request , res:Response)=>{
         const token = generateToken({
       userId: user.id, // adjust based on what userRepository.login returns
       email: user.email,
-      fullname: user.fullname
+      fullname: user.fullname,
+      role:user.role
     });
 
     return res.status(200).json({
       success: true,
       message: 'Login successful',
-      data: {fullname:user.fullname , email:user.email},
+      data: {fullname:user.fullname , email:user.email,role:user.role},
       token:token
     });
  }
@@ -72,12 +73,13 @@ export const Signup=async(req:Request ,res:Response)=>{
   const token = generateToken({
       userId: user.id, // adjust based on what userRepository.login returns
       email: user.email,
-      fullname: user.fullname
+      fullname: user.fullname,
+      role:user.role
     });
 return res.status(200).json({
       success: true,
       message: 'Signup successful',
-      data: {fullname:user.fullname , email:user.email},
+      data: {fullname:user.fullname , email:user.email, role:user.role},
       ghl:true,
       token:token
     });
