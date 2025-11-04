@@ -4,12 +4,13 @@ import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
 
 type NewUser = {
-  id:string,
+
   name: string
   email?: string
   hasWebsite: boolean
   hasInventory: boolean
   inventoryValueBand?: string
+  role:string
 }
 
 export default function SignupModal({ open, onClose, onSignup, onSwitch }: { open: boolean; onClose: () => void; onSignup: (user: NewUser) => void; onSwitch?: () => void }) {
@@ -128,12 +129,13 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       const profile = data.data || {}
       const effectiveName = profile.fullname || name || (email.split('@')[0])
       const user: NewUser = {
-        id:data.id,
+      
         name: effectiveName,
         email: profile.email || email,
         hasWebsite: !!hasWebsite,
         hasInventory: !!hasInventory,
         inventoryValueBand: hasInventory ? inventoryBand : undefined,
+        role:data.role
       }
       onSignup(user)
       setName('')

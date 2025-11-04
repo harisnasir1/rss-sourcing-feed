@@ -11,6 +11,7 @@ import LoginModal from './components/LoginModal';
 import SignupModal from './components/SignupModal';
 import { normalizeItem, Item as NormalizedItem } from './utils/normalizeItem';
 import { within72Hours } from './utils/time';
+import AdminPanel from './components/AdminPanel';
 // favorites/status storage removed
 
 type Item = NormalizedItem;
@@ -42,7 +43,7 @@ export default function App() {
     }
   });
 
-  const [user, setUser] = useState<{ name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string } | null>(() => {
+  const [user, setUser] = useState<{ name: string; email?: string; role:String } | null>(() => {
     try {
       const raw = localStorage.getItem('user');
       return raw ? JSON.parse(raw) : null;
@@ -52,6 +53,7 @@ export default function App() {
   });
 
   const [loginOpen, setLoginOpen] = useState(false);
+   const [AdminOpen, setadminopen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileBackdropRef = useRef<HTMLDivElement | null>(null);
@@ -592,6 +594,7 @@ export default function App() {
                 >
                   Sign up
                 </button>
+             
               </div>
             ) : (
               <div className="flex items-center gap-3">
@@ -608,6 +611,12 @@ export default function App() {
                 >
                   Logout
                 </button>
+                 {user&&user.role==="admin"&&   <button
+                  className="px-3 py-2 btn-blue"
+                  onClick={() => { setLoginOpen(false); setSignupOpen(false);setadminopen(true) }}
+                >
+                 Admin panel
+                </button>}
               </div>
             )}
           </div>
@@ -670,6 +679,12 @@ export default function App() {
                     >
                       Logout
                     </button>
+                     {user&&user.role==="admin"&&   <button
+                  className="px-3 py-2 btn-blue"
+                  onClick={() => { setLoginOpen(false); setSignupOpen(false);setadminopen(true); closeMobileMenu(); }}
+                >
+                 Admin panel
+                </button>}
                   </>
                 )}
               </div>
@@ -836,6 +851,13 @@ export default function App() {
           setTimeout(() => setLoginOpen(true), 220);
         }}
       />
+      <AdminPanel
+  open={AdminOpen}
+  onClose={() => setadminopen(false)}
+  user={user}
+
+/>
+     
 
       <footer className="mt-20 py-12 text-center text-gray-400">
         <div className="max-w-6xl mx-auto">

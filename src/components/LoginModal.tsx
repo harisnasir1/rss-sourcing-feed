@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
 
-export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string }) => void; onSwitch?: () => void }) {
+export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string; role:String } | null) => void; onSwitch?: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
@@ -78,7 +78,7 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
       }
       const profile = data.data || {}
       const nameFromApi = profile.fullname || (profile.email ? String(profile.email).split('@')[0] : null)
-      const user = {id:profile.id, name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email }
+      const user = { name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email,role:profile.role }
       onLogin(user)
       setEmail('')
       setPassword('')
