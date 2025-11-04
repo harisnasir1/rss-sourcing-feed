@@ -10,8 +10,8 @@ export const getvendorphonenumber=async(req:Request,res:Response)=>{
          const re=  await vendorRepo.getvendornumber(vendorid)
        
           if(!re ) throw Error("somehting wrong while vendor info")
-            return res.status(500).json({
-              success: false,
+            return res.status(200).json({
+              success: true,
               Number:re[0].phonenumber
              });
         }
