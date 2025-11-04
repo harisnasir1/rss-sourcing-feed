@@ -14,7 +14,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
    'https://sourcing-feed-six.vercel.app',
-   'https://ai-feed.resellersync.io'
+   'https://ai-feed.resellersync.io',
+    'http://localhost:5174'
 
 ];
 app.use(cors({

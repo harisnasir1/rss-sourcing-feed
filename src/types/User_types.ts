@@ -18,4 +18,8 @@ export type LoginDto = {
   email: string;
   password: string;
 }
+export type status_update={
+  id:string;
+  is_active:boolean;
+}
 export type SafeUser = Omit<usertype, 'password'>;

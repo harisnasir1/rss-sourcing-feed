@@ -67,7 +67,7 @@ return res[0];
 
     
     const User = await query(
-      'SELECT * FROM "User" WHERE email = $1',
+      'SELECT id,email,password,role,created_at,fullname,is_active FROM "User" WHERE email = $1',
       [email.trim().toLowerCase()]
     );
     if (User.length === 0) {
@@ -205,6 +205,47 @@ return res[0];
     }
 
     await this.updatePassword(userId, newPassword);
+  }
+
+  public async Change_active_status(userid:string,status:boolean)
+  {
+     if(!userid)
+     {
+      throw Error("User ID is required")
+     }
+
+    const re= await query(
+      'SELECT id,email,password,role,created_at,fullname,is_active FROM "User" WHERE id = $1',
+      [userid.trim()]
+    );
+    const user=re[0]
+    
+
+    if(!user)
+    {
+      throw Error("User not found")
+    }
+    if(user?.role=="admin")
+    {
+     throw Error("Cannot change the status of admin")
+    }
+        const values: any[] = [];
+      values.push(status)
+      values.push(userid)
+   const result =  await query(
+      `UPDATE "User" 
+       SET is_active=$1
+       WHERE id = $2
+       RETURNING id, fullname, email, role, created_at, last_login`,
+      values
+    );
+    if(!result || result.length<1)
+    {
+      throw Error("Failed to update user status");
+    }
+     
+    return result[0]
+
   }
 
   private async checkinghlwon(email:string)

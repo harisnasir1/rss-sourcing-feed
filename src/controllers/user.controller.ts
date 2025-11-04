@@ -1,9 +1,29 @@
 import { Request, Response } from "express";
-import {usertype,SignupDto, LoginDto} from "../types/User_types"
+import {usertype,SignupDto, LoginDto,status_update} from "../types/User_types"
 import {userRepository} from "../repositories/users_repo"
 
-export const getUsers = (req: Request, res: Response) => {
-
+export const getUsers =async (req: Request, res: Response) => {
+  try{
+ 
+    const users=await userRepository.findAll();
+    if(users.length<=0)
+    {
+      throw Error("No users to fetch")
+    }
+    return res.status(200).json({
+      success: false,
+      uses: users,
+      count:users.length
+    });
+  }
+  catch(e)
+  {
+    return res.status(500).json({
+      success: false,
+      message: 'error fetching users',
+      count:0
+    });
+  }
 };
 
 export const login=async(req:Request , res:Response)=>{
@@ -78,3 +98,33 @@ return res.status(409).json({
     });}
   }
 }
+
+
+export const update_status=async(req:Request,res:Response)=>{
+  try{
+
+    const udata:status_update=req.body;
+
+    const user=await userRepository.Change_active_status(udata.id,udata.is_active);
+
+    if(!user)
+    {
+      return res.status(500).json({
+      success: false,
+      message: 'status update unsuccessful',
+    });}
+    
+    return res.status(500).json({
+      success: true,
+      message: 'status updated successfully',
+    });
+
+  }
+  catch(e)
+  {
+      //  console.warn("error in udating status",e)
+    return res.status(500).json({
+      success: false,
+      message: 'status update unsuccessful',
+    });}
+  }
