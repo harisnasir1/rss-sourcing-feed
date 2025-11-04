@@ -234,6 +234,7 @@ export default function App() {
       }
 
       if (payload) {
+       
         // Try to resolve an array of items from common API shapes
         let arr: any[] = [];
         if (Array.isArray(payload)) arr = payload;
@@ -244,7 +245,7 @@ export default function App() {
           const found = findItemsArray(payload, 4);
           if (Array.isArray(found)) arr = found;
         }
-
+       
         if (Array.isArray(arr)) {
           const start = (effectivePage - 1) * PAGE_LIMIT;
           const endExclusive = start + PAGE_LIMIT;
@@ -255,6 +256,7 @@ export default function App() {
           if (singlePageFromServer) {
             // Normalize only what we received and filter by recency
             const pageItems = arr.map((raw) => normalizeItem(raw)).filter((it) => within72Hours(it.createdAt));
+            
             if (append) {
               const toAdd: Item[] = [];
               for (const it of pageItems) {
@@ -517,6 +519,7 @@ export default function App() {
 
   const pagedItems = useMemo(() => brandFiltered.slice(0, visibleCount), [brandFiltered, visibleCount]);
 
+  
   const tryLoadMore = () => {
     if (loadingMoreRef.current) return false;
     const hidden = Math.max(0, brandFiltered.length - visibleCount);

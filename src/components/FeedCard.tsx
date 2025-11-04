@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState,useCallback } from 'react'
 import { buildWhatsAppHref } from '../utils/whatsapp'
 import { Item as NormalizedItem } from '../utils/normalizeItem'
 
@@ -24,7 +24,7 @@ export default function FeedCard({
   const { date, time } = formatDate(item.createdAt)
   // local state used to trigger enter animation when the component mounts
   const [entered, setEntered] = useState(false)
-
+const [loading, setLoading] = useState(false)
   // Recent within last 15 minutes
   const isRecent = useMemo(() => {
     if (!item.createdAt) return false
@@ -73,6 +73,7 @@ export default function FeedCard({
 
   const messageHref = useMemo(() => {
     const base = item.whatsappUrl || item.raw?.whatsapp || ''
+    // console.log(item.raw.vendorId)
     if (!loggedIn) return '#'
     // Message includes the item name when available
       const name = (item.name || item.description || '').toString().trim()
@@ -88,6 +89,52 @@ export default function FeedCard({
     const t = setTimeout(() => setEntered(true), 20)
     return () => clearTimeout(t)
   }, [])
+
+const handleClick = useCallback(async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+   console.log(messageHref)
+    if (!loggedIn) {
+      alert('Please log in first.')
+      return
+    }
+
+    try {
+      // setLoading(true)
+
+      const response = await fetch('http://localhost:4000/api/vendors/getnumber', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendorid: item.raw.vendorId }),
+      })
+
+      const data = await response.json()
+      
+      if (!data?.Number) {
+        alert('Could not fetch WhatsApp number.')
+        return
+      }
+
+      // Build the message text
+      const name = (item.name || item.description || '').toString().trim()
+      const safeName = name.replace(/\"/g, "'")
+      const text = name
+        ? `Referred from resellersync.io, have you still got "${safeName}" available?`
+        : `Referred from resellersync.io, have you still got this available?`
+
+      // Build WhatsApp URL with message
+         const number = data.Number.replace(/\D/g, '')
+   const encodedText = encodeURIComponent(text)
+   const finalUrl = `https://wa.me/${number}?text=${encodedText}`
+      console.log(finalUrl)
+      // Redirect to WhatsApp
+      window.open(finalUrl, '_blank', 'noopener,noreferrer')
+
+    } catch (err) {
+      console.error('Error fetching WhatsApp number:', err)
+      alert('Something went wrong fetching the WhatsApp number.')
+    } finally {
+    }
+  }, [item, loggedIn])
 
   return (
     <div
@@ -132,9 +179,8 @@ export default function FeedCard({
         <div className="mt-2">
           {loggedIn ? (
             <a
-              href={messageHref}
-              target="_blank"
-              rel="noreferrer"
+              href="#"
+              onClick={handleClick}
               className="btn-blue px-5 py-2.5 inline-block text-center card-btn-label"
             >
               Message on WhatsApp

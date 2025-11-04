@@ -33,7 +33,7 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
   const getusers=async()=>{
     let re=await fetch("http://localhost:4000/api/users/");
        const data = await re.json().catch(() => ({}))
-    console.log(data)
+    
     setUsers(data.users)
   }
 
