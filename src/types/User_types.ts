@@ -1,4 +1,5 @@
 export type usertype={
+    id:string,
     fullname:string,
     email:string,
     password:string,
@@ -13,10 +14,14 @@ export type SignupDto = {
   inventory_value?:string;
   is_active?:boolean;
 }
-
 export type LoginDto = {
   email: string;
   password: string;
+}
+export interface JwtPayload {
+  userId: string;
+  email: string;
+  fullname: string;
 }
 export type status_update={
   id:string;
