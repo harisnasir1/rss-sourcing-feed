@@ -11,8 +11,8 @@ export const getUsers =async (req: Request, res: Response) => {
       throw Error("No users to fetch")
     }
     return res.status(200).json({
-      success: false,
-      uses: users,
+      success: true,
+      users: users,
       count:users.length
     });
   }
@@ -104,7 +104,7 @@ export const update_status=async(req:Request,res:Response)=>{
   try{
 
     const udata:status_update=req.body;
-
+   
     const user=await userRepository.Change_active_status(udata.id,udata.is_active);
 
     if(!user)
@@ -122,7 +122,7 @@ export const update_status=async(req:Request,res:Response)=>{
   }
   catch(e)
   {
-      //  console.warn("error in udating status",e)
+       console.warn("error in udating status",e)
     return res.status(500).json({
       success: false,
       message: 'status update unsuccessful',

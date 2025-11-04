@@ -99,7 +99,6 @@ return res[0];
     return safeUser;
   }
 
-  
   async findById(id: string): Promise<SafeUser | null> {
     const result = await query(
       `SELECT id, fullname, email, role, created_at, last_login
@@ -125,7 +124,7 @@ return res[0];
 
   async findAll(): Promise<SafeUser[]> {
     const result = await query(
-      `SELECT id, fullname, email, role, created_at, last_login
+      `SELECT *
        FROM "User"
        ORDER BY created_at DESC`
     );

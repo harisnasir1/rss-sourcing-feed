@@ -64,8 +64,7 @@ export class listing_repo{
                 l.condition,
                 l.status,
                 l.createdat AS "createdAt",
-                v.displayname AS "vendorName",
-                v.phonenumber AS "vendorPhone"
+                v.displayname AS "vendorName"
             FROM "Listing" l
             INNER JOIN "Vendor" v ON l.vendorid = v.id
             WHERE l.status = 'active' AND l.iswts=true
@@ -94,7 +93,7 @@ export class listing_repo{
         else{
          sql += `ORDER BY l.createdat DESC`;
         }
-        console.log(offset)
+        
         const result = await query(sql, params);
 
        return({
@@ -139,4 +138,5 @@ export class listing_repo{
         return false
     }
   }
+   
 }

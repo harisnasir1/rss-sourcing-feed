@@ -1,7 +1,7 @@
 import { query } from '../utils/db_connection';
 import { Vendor } from '../types/Data_types';
 
-export class VendorRepo {
+ class VendorRepo {
 
   
   public async getVendorByName(vendorName: string): Promise<Vendor[]> {
@@ -72,4 +72,21 @@ export class VendorRepo {
 
     return await this.getVendorByPhone(phone);
   }
+   public async getvendornumber(vendorid:string)
+    {
+      try{
+       console.log(vendorid)
+       let sql='Select phonenumber from "Vendor" where id=$1';
+       const params=[]
+       params.push(vendorid)
+       const k=await query(sql,params);
+       return k
+      }
+      catch(e)
+      {
+      console.error('Error fetching vendor phone number:', e);
+    
+      }
+    }
 }
+export const vendorRepo=new VendorRepo();
