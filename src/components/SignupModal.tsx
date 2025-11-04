@@ -4,6 +4,7 @@ import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
 
 type NewUser = {
+  id:string,
   name: string
   email?: string
   hasWebsite: boolean
@@ -93,9 +94,10 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
     setFormError(null)
     setSubmitting(true)
     try {
-      const base = import.meta.env.DEV
-        ? '/api/users'
-        : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+      // const base = import.meta.env.DEV
+      //   ? '/api/users'
+      //   : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+      const base='http://localhost:4000/api/users'
       const payload = {
         fullname: name,
         email,
@@ -126,6 +128,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       const profile = data.data || {}
       const effectiveName = profile.fullname || name || (email.split('@')[0])
       const user: NewUser = {
+        id:data.id,
         name: effectiveName,
         email: profile.email || email,
         hasWebsite: !!hasWebsite,

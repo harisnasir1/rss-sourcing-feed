@@ -61,9 +61,10 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
     setFormError(null)
     setSubmitting(true)
     try {
-      const base = import.meta.env.DEV
-        ? '/api/users'
-        : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+      // const base = import.meta.env.DEV
+      //   ? '/api/users'
+      //   : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+      const base='http://localhost:4000/api/users'
       const res = await fetch(`${base}/Login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
@@ -77,7 +78,7 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
       }
       const profile = data.data || {}
       const nameFromApi = profile.fullname || (profile.email ? String(profile.email).split('@')[0] : null)
-      const user = { name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email }
+      const user = {id:profile.id, name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email }
       onLogin(user)
       setEmail('')
       setPassword('')

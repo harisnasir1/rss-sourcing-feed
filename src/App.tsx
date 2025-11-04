@@ -207,8 +207,8 @@ export default function App() {
   targetUrl.searchParams.set('page', String(effectivePage));
   targetUrl.searchParams.set('limit', String(PAGE_LIMIT));
 
-  const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
-
+  // const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
+   const fetchUrl ="http://localhost:4000/api/product/getlisting"
       console.debug('[feed] fetching', fetchUrl, { dev: import.meta.env.DEV });
 
       const res = await fetch(fetchUrl, { headers, signal: fetchAbort.current.signal });
@@ -809,7 +809,8 @@ export default function App() {
           setUser(u);
           try {
             localStorage.setItem('user', JSON.stringify(u));
-          } catch {}
+          } 
+          catch {}
           setLoginOpen(false);
         }}
         onSwitch={() => {
