@@ -75,7 +75,7 @@ import { Vendor } from '../types/Data_types';
    public async getvendornumber(vendorid:string)
     {
       try{
-       console.log(vendorid)
+     
        let sql='Select phonenumber from "Vendor" where id=$1';
        const params=[]
        params.push(vendorid)
