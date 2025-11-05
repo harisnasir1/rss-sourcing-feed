@@ -156,9 +156,14 @@ export const Forget_password=async(req:Request,res:Response)=>{
   catch(e)
   {
     console.log("problem on forgetting password",e)
+     if (e instanceof Error)
+     {
     return res.status(500).json({
-      success:false
+      success:false,
+      message:e.message
     })
+     }
+ return res.status(500)
   }
 }
 

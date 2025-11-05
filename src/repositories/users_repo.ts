@@ -106,7 +106,9 @@ return res[0];
     //check if user exists or not
     if(!email)throw Error("undefined id")
     const euser=await this.findByEmail(email);
-    if(!euser) return null
+    if(!euser) throw Error("Email does not exists")
+    if(!euser.is_active) throw Error("UnAutharized")
+    
     //check if token is there
     const userid=euser.id
     const token=crypto.randomBytes(32).toString('hex');
@@ -125,7 +127,7 @@ return res[0];
     else{
       tokenrecord=await token_repo.createToken(userid,htoken,expires_at);
     }
-    const link=`${process.env.Client_Add}/forgetpassword?id=${userid}&token=${token}`
+    const link=`${process.env.Client_Add}/reset-password?id=${userid}&token=${token}`
     if(!(await email_service.verifyConnection()))throw Error("Email service problem")
     await email_service.sendmail(euser.email,link,euser.fullname)
     return tokenrecord
@@ -164,7 +166,7 @@ return res[0];
 
   async findByEmail(email: string): Promise<SafeUser | null> {
     const result = await query(
-      `SELECT id, fullname, email, role, created_at, last_login
+      `SELECT id, fullname, email, role,is_active, created_at, last_login
        FROM "User"
        WHERE email = $1`,
       [email]

@@ -3,7 +3,8 @@ export type usertype={
     fullname:string,
     email:string,
     password:string,
-    role:string
+    role:string,
+    is_active?:boolean
 }
 export type SignupDto = {
   fullname: string;
