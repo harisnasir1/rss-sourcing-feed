@@ -1,8 +1,6 @@
-// AdminPanel.tsx
-// Place this file in your components folder (e.g., src/components/AdminPanel.tsx)
-
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useAuth } from '../utils/AuthContext';
 
 interface AdminPanelProps {
   open: boolean;
@@ -29,11 +27,21 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [searchQuery, setSearchQuery] = useState('');
   const [u,setu]=useState()
-
+ 
+  const {token}=useAuth();
+ 
   const getusers=async()=>{
-    let re=await fetch("http://localhost:4000/api/users/");
+    console.log(token)
+    if(!token) return
+     const headers: Record<string, string> = { Accept: 'application/json',
+       Authorization:`Bearer ${token}`
+      };
+    const re = await fetch("http://localhost:4000/api/users/", {
+  method: "GET", // optional, defaults to GET
+  headers,       // you must wrap headers inside an options object
+});
        const data = await re.json().catch(() => ({}))
-    
+    console.log(re)
     setUsers(data.users)
   }
 
@@ -45,7 +53,7 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
     else{
        
     }
-  },[user])
+  },[token])
 
   if (!open) return null;
 
@@ -57,7 +65,7 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
      const base='http://localhost:4000/api/users/status_update'
       const res = await fetch(base, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json','Authorization':`Bearer ${token}` },
         body: JSON.stringify({ id:userId,is_active:!cis_active }),
       })
       const data=await res.json();

@@ -78,7 +78,9 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
       }
       const profile = data.data || {}
       const nameFromApi = profile.fullname || (profile.email ? String(profile.email).split('@')[0] : null)
-      const user = { name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email,role:profile.role }
+      const user = { name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email,role:profile.role,token:data.token }
+      console.log(data.data)
+
       onLogin(user)
       setEmail('')
       setPassword('')

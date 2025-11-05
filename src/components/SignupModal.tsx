@@ -11,6 +11,7 @@ type NewUser = {
   hasInventory: boolean
   inventoryValueBand?: string
   role:string
+  token:string,
 }
 
 export default function SignupModal({ open, onClose, onSignup, onSwitch }: { open: boolean; onClose: () => void; onSignup: (user: NewUser) => void; onSwitch?: () => void }) {
@@ -113,7 +114,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
         body: JSON.stringify(payload),
       })
       const data = await res.json().catch(() => ({}))
-
+       console.log(data)
       if (data && data.ghl === false) {
         const msg = data.message || 'Please complete the onboarding form first.'
         try { window.open('https://forms.gle/Na1yHnniRvA2rbYu7', '_blank', 'noopener'); } catch {}
@@ -135,7 +136,9 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
         hasWebsite: !!hasWebsite,
         hasInventory: !!hasInventory,
         inventoryValueBand: hasInventory ? inventoryBand : undefined,
-        role:data.role
+        role:data.role,
+        token:data.token
+
       }
       onSignup(user)
       setName('')

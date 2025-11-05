@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState,useCallback } from 'react'
 import { buildWhatsAppHref } from '../utils/whatsapp'
 import { Item as NormalizedItem } from '../utils/normalizeItem'
-
+import { useAuth } from '../utils/AuthContext'
 type Item = NormalizedItem
 
 export default function FeedCard({
@@ -13,6 +13,7 @@ export default function FeedCard({
   loggedIn?: boolean
   onRequireAuth?: () => void
 }) {
+  const {token}=useAuth()
   const formatDate = (iso?: string) => {
     if (!iso) return { date: '', time: '' }
     const d = new Date(iso)
@@ -93,7 +94,7 @@ const [loading, setLoading] = useState(false)
 const handleClick = useCallback(async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
    console.log(messageHref)
-    if (!loggedIn) {
+    if (!loggedIn && !token) {
       alert('Please log in first.')
       return
     }
@@ -103,8 +104,9 @@ const handleClick = useCallback(async (e: React.MouseEvent<HTMLAnchorElement>) =
 
       const response = await fetch('http://localhost:4000/api/vendors/getnumber', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',  'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ vendorid: item.raw.vendorId }),
+      
       })
 
       const data = await response.json()
@@ -125,7 +127,7 @@ const handleClick = useCallback(async (e: React.MouseEvent<HTMLAnchorElement>) =
          const number = data.Number.replace(/\D/g, '')
    const encodedText = encodeURIComponent(text)
    const finalUrl = `https://wa.me/${number}?text=${encodedText}`
-      console.log(finalUrl)
+      
       // Redirect to WhatsApp
       window.open(finalUrl, '_blank', 'noopener,noreferrer')
 

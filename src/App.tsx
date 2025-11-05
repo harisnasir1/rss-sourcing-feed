@@ -12,12 +12,14 @@ import SignupModal from './components/SignupModal';
 import { normalizeItem, Item as NormalizedItem } from './utils/normalizeItem';
 import { within72Hours } from './utils/time';
 import AdminPanel from './components/AdminPanel';
+import { useAuth } from './utils/AuthContext';
 // favorites/status storage removed
 
 type Item = NormalizedItem;
 
 export default function App() {
   const location = useLocation();
+  const {setToken,token}=useAuth()
   const [query, setQuery] = useState('');
   // N-2 + debounce knobs (client-side only)
   const MIN_CHARS = Number(import.meta.env.VITE_MIN_QUERY_CHARS ?? 2);
@@ -46,7 +48,10 @@ export default function App() {
   const [user, setUser] = useState<{ name: string; email?: string; role:String } | null>(() => {
     try {
       const raw = localStorage.getItem('user');
-      return raw ? JSON.parse(raw) : null;
+     
+      const d= raw ? JSON.parse(raw) : null;
+      setToken(d?.token)
+      return d
     } catch {
       return null;
     }
@@ -614,7 +619,7 @@ export default function App() {
                 >
                   Logout
                 </button>
-                 {user&&user.role==="admin"&&   <button
+                 {user&&user.role==="admin"&& token&&  <button
                   className="px-3 py-2 btn-blue"
                   onClick={() => { setLoginOpen(false); setSignupOpen(false);setadminopen(true) }}
                 >
@@ -682,7 +687,7 @@ export default function App() {
                     >
                       Logout
                     </button>
-                     {user&&user.role==="admin"&&   <button
+                     {user&&user.role==="admin"&&token&&   <button
                   className="px-3 py-2 btn-blue"
                   onClick={() => { setLoginOpen(false); setSignupOpen(false);setadminopen(true); closeMobileMenu(); }}
                 >
@@ -846,6 +851,7 @@ export default function App() {
           setUser(u);
           try {
             localStorage.setItem('user', JSON.stringify(u));
+            setToken(u.token)
           } catch {}
           setSignupOpen(false);
         }}
