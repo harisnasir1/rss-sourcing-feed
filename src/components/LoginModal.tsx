@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
-
+import { Link } from 'react-router-dom'
 export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string; role:String } | null) => void; onSwitch?: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -123,9 +123,18 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
             <label className="block text-sm text-gray-300 mb-1">Password</label>
             <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="modal-input w-full" required />
           </div>
+          <div className="text-right">
+            <Link 
+              to="/forget-password" 
+              className="text-sm text-sky-400 hover:text-sky-300"
+              onClick={() => onClose()} 
+            >
+              Forgot password?
+            </Link>
+            </div>
 
           {formError && <div className="text-sm text-red-400">{formError}</div>}
-
+          
           <div className="pt-2 flex justify-end gap-2">
             <button type="submit" className="btn-blue px-5 py-2.5 disabled:opacity-60" disabled={submitting}>
               {submitting ? 'Logging in…' : 'Log in'}
