@@ -1,10 +1,14 @@
 import { query } from '../utils/db_connection';
 import {SignupDto,LoginDto,usertype,SafeUser} from "../types/User_types"
+import { token_repo } from './token_repo';
 import bcrypt from 'bcrypt';
+import crypto from "crypto"
+import { email_service } from '../services/Email_Services/EmailService';
 export class UserRepository {
   private readonly SALT_ROUNDS=10;
   private readonly ghlkey=process.env.GHL_API_KEY
 
+  //auth logic
 
   async signup(dto: SignupDto): Promise<SafeUser> {
     let { fullname, email, password, role = 'member',have_site=0,have_stock=0,inventory_value='0',is_active=1 } = dto;
@@ -61,7 +65,6 @@ return res[0];
 
   }
 
- 
   async login(dto: LoginDto): Promise<SafeUser> {
     const { email, password } = dto;
 
@@ -99,13 +102,53 @@ return res[0];
     return safeUser;
   }
 
+  async Forget_pass_request(userid:string){
+    //check if user exists or not
+    if(!userid)throw Error("undefined id")
+    const euser=await this.findById(userid);
+    if(!euser) return null
+    //check if token is there
+    
+    const token=crypto.randomBytes(32).toString('hex');
+
+    const expires_at=new Date()
+    expires_at.setHours(expires_at.getHours()+1);
+
+    const existingtoken=await token_repo.getTokenByUserId(userid);
+
+    let tokenrecord;
+    const htoken=await this.hashtoken(token);
+    if(existingtoken)
+    {
+      tokenrecord=await token_repo.updateusertoken(userid,htoken,expires_at);
+    }
+    else{
+      tokenrecord=await token_repo.createToken(userid,htoken,expires_at);
+    }
+    const link=`${process.env.Client_Add}/forgetpassword?id=${userid}&token=${token}`
+    if(!(await email_service.verifyConnection()))throw Error("Email service problem")
+    await email_service.sendmail(euser.email,link,euser.fullname)
+    return tokenrecord
+  }
+
+
+   private async hashtoken(token:string){
+    return await bcrypt.hash(token,4);
+  }
+  
+
+
+  //users logic
+
   async findById(id: string): Promise<SafeUser | null> {
+    
     const result = await query(
       `SELECT id, fullname, email, role, created_at, last_login
-       FROM User
+       FROM "User"
        WHERE id = $1`,
       [id]
     );
+    
 
     return result[0] || null;
   }
@@ -120,7 +163,6 @@ return res[0];
 
     return result[0] || null;
   }
-
 
   async findAll(): Promise<SafeUser[]> {
     const result = await query(
@@ -140,7 +182,6 @@ return res[0];
       [hashedPassword, userId]
     );
   }
-
 
   async updateProfile(userId: string, updates: Partial<Pick<usertype, 'fullname' | 'email'>>): Promise<SafeUser> {
     const fields: string[] = [];

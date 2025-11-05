@@ -30,3 +30,12 @@ export type status_update={
   is_active:boolean;
 }
 export type SafeUser = Omit<usertype, 'password'>;
+
+export type forget_token={
+  id:string,
+  uid:string,
+  token:string,
+  created_at:Date,
+  updated_at:Date,
+  expires_at:Date,
+}

@@ -142,3 +142,22 @@ export const update_status=async(req:Request,res:Response)=>{
       message: 'status update unsuccessful',
     });}
   }
+
+export const Forget_password=async(req:Request,res:Response)=>{
+  try
+  {
+     const id=req.body;
+     if(!id) throw Error("not getting id")
+     const k= await userRepository.Forget_pass_request(id.id);
+     return res.status(200).json({
+      success:true,
+     })
+  }
+  catch(e)
+  {
+    console.log("problem on forgetting password",e)
+    return res.status(500).json({
+      success:false
+    })
+  }
+}
