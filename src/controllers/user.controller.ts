@@ -146,9 +146,9 @@ export const update_status=async(req:Request,res:Response)=>{
 export const Forget_password=async(req:Request,res:Response)=>{
   try
   {
-     const id=req.body;
-     if(!id) throw Error("not getting id")
-     const k= await userRepository.Forget_pass_request(id.id);
+     const user=req.body;
+     if(!user.email) throw Error("not getting email")
+     const k= await userRepository.Forget_pass_request(user.email);
      return res.status(200).json({
       success:true,
      })

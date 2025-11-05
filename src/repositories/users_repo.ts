@@ -102,13 +102,13 @@ return res[0];
     return safeUser;
   }
 
-  async Forget_pass_request(userid:string){
+  async Forget_pass_request(email:string){
     //check if user exists or not
-    if(!userid)throw Error("undefined id")
-    const euser=await this.findById(userid);
+    if(!email)throw Error("undefined id")
+    const euser=await this.findByEmail(email);
     if(!euser) return null
     //check if token is there
-    
+    const userid=euser.id
     const token=crypto.randomBytes(32).toString('hex');
 
     const expires_at=new Date()
