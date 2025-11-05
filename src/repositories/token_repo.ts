@@ -53,6 +53,5 @@ import bycrypt from "bcrypt"
   return true;
 }
 
-  
 } 
 export const token_repo=new Token_Repo()

@@ -112,7 +112,7 @@ return res[0];
     const token=crypto.randomBytes(32).toString('hex');
 
     const expires_at=new Date()
-    expires_at.setHours(expires_at.getHours()+1);
+    expires_at.setMinutes(expires_at.getMinutes()+1);
 
     const existingtoken=await token_repo.getTokenByUserId(userid);
 
@@ -131,13 +131,22 @@ return res[0];
     return tokenrecord
   }
 
+  async Forget_change_pass(userid:string,token:string,password:string):Promise<boolean>
+  {
+    //check if token is valid
+   if(! await token_repo.validateToken(userid,token)) return false
+     
+   const k= await this.updatePassword(userid,password)
+     if(!k) return false;
+     token_repo.deleteToken(userid)
+     return true
+  }
 
    private async hashtoken(token:string){
     return await bcrypt.hash(token,4);
   }
+
   
-
-
   //users logic
 
   async findById(id: string): Promise<SafeUser | null> {
@@ -174,13 +183,16 @@ return res[0];
     return result;
   }
 
-  async updatePassword(userId: string, newPassword: string): Promise<void> {
+  async updatePassword(userId: string, newPassword: string): Promise<boolean> {
     const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
 
-    await query(
-      'UPDATE "User" SET password = $1 WHERE id = $2',
+   const data= await query(
+      'UPDATE "User" SET password = $1 WHERE id = $2 RETURNING * ',
       [hashedPassword, userId]
     );
+    if(data.length<1) return false
+
+    return true;
   }
 
   async updateProfile(userId: string, updates: Partial<Pick<usertype, 'fullname' | 'email'>>): Promise<SafeUser> {
@@ -235,7 +247,6 @@ return res[0];
 
     return await bcrypt.compare(password, result[0].password);
   }
-
 
   async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
     const isValid = await this.verifyPassword(userId, oldPassword);

@@ -52,14 +52,14 @@ export const login=async(req:Request , res:Response)=>{
 
    if (e instanceof Error && e.message === 'unauthorized')
   {
-     return res.status(200).json({
+     return res.status(401).json({
       success: false,
       message: 'UnAuthorized'
     });
   }
 
    else {
-     return res.status(200).json({
+     return res.status(500).json({
       success: false,
       message: 'Login unsuccessful'
     });}
@@ -159,5 +159,36 @@ export const Forget_password=async(req:Request,res:Response)=>{
     return res.status(500).json({
       success:false
     })
+  }
+}
+
+export const Forgetnewpassword=async(req:Request,res:Response)=>{
+  try{
+      const {id,token,newPassword}=req.body;
+      if(!id||!token||!newPassword) return res.status(500).json({
+        sucesss:false,
+        message:"something wrong with forget password!"
+      }) 
+
+      const k=await userRepository.Forget_change_pass(id,token,newPassword);
+
+      if(!k) throw Error();
+
+      return res.status(200).json({
+        sucesss:true,
+        message:"password changed !"
+      })
+  }
+  catch(e){
+     if (e instanceof Error && e.message === 'unauthorized'){
+           return res.send(401).json({
+        sucesss:false,
+        message:"UnAuthorized!"
+      }) ;
+     }
+     return res.status(500).json({
+        sucesss:false,
+        message:"something wrong with forget password!"
+      }) 
   }
 }
