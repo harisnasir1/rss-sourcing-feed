@@ -111,8 +111,8 @@ return res[0];
     const userid=euser.id
     const token=crypto.randomBytes(32).toString('hex');
 
-    const expires_at=new Date()
-    expires_at.setMinutes(expires_at.getMinutes()+1);
+    const expires_at=new Date();
+    expires_at.setHours(expires_at.getHours()+1);
 
     const existingtoken=await token_repo.getTokenByUserId(userid);
 
