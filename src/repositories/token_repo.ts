@@ -25,8 +25,7 @@ import bycrypt from "bcrypt"
     const sql = `
       INSERT INTO forget_token (uid, token, expires_at) 
       VALUES ($1, $2, $3) 
-      RETURNING *
-    `;
+      RETURNING *`;
     const params = [userid, token, expiresAt];
     const data = await query(sql, params);
     
@@ -48,7 +47,7 @@ import bycrypt from "bcrypt"
   const result = await query(sql, params);
  
   if (result.length < 1) return false;
-   let check=bycrypt.compare(token,result[0].token)
+   let check=await bycrypt.compare(token,result[0].token)
    if(!check) throw Error("Unauthrized")
   return true;
 }

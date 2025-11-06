@@ -123,7 +123,7 @@ export const update_status=async(req:Request,res:Response)=>{
 
     if(!user)
     {
-      return res.status(500).json({
+      return res.status(200).json({
       success: false,
       message: 'status update unsuccessful',
     });}
@@ -163,7 +163,10 @@ export const Forget_password=async(req:Request,res:Response)=>{
       message:e.message
     })
      }
- return res.status(500)
+ return res.status(500).json({
+      success:false,
+      message:"Unknown Error"
+    })
   }
 }
 

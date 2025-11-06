@@ -189,7 +189,7 @@ return res[0];
     const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
 
    const data= await query(
-      'UPDATE "User" SET password = $1 WHERE id = $2 RETURNING * ',
+      'UPDATE "User" SET password = $1 WHERE id = $2 RETURNING id ',
       [hashedPassword, userId]
     );
     if(data.length<1) return false
