@@ -1,7 +1,7 @@
 import { query } from '../utils/db_connection';
 import { Vendor } from '../types/Data_types';
 
- class VendorRepo {
+  class VendorRepo {
 
   
   public async getVendorByName(vendorName: string): Promise<Vendor[]> {
