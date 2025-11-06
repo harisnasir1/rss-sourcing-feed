@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import CookieBanner, { openCookieManager } from './components/CookieBanner';
 import { Link, Routes, Route, useLocation } from 'react-router-dom';
+import ForgetPasswordRequest from './components/ForgetPasswordRequest';
+import ResetPassword from './components/ResetPassword';
+
 import gsap from 'gsap';
 import FeedCard from './components/FeedCard';
 import AnimatedList from './components/AnimatedList';
@@ -11,12 +14,15 @@ import LoginModal from './components/LoginModal';
 import SignupModal from './components/SignupModal';
 import { normalizeItem, Item as NormalizedItem } from './utils/normalizeItem';
 import { within72Hours } from './utils/time';
+import AdminPanel from './components/AdminPanel';
+import { useAuth } from './utils/AuthContext';
 // favorites/status storage removed
 
 type Item = NormalizedItem;
 
 export default function App() {
   const location = useLocation();
+  const {setToken,token}=useAuth()
   const [query, setQuery] = useState('');
   // N-2 + debounce knobs (client-side only)
   const MIN_CHARS = Number(import.meta.env.VITE_MIN_QUERY_CHARS ?? 2);
@@ -42,16 +48,20 @@ export default function App() {
     }
   });
 
-  const [user, setUser] = useState<{ name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string } | null>(() => {
+  const [user, setUser] = useState<{ name: string; email?: string; role:String } | null>(() => {
     try {
       const raw = localStorage.getItem('user');
-      return raw ? JSON.parse(raw) : null;
+     
+      const d= raw ? JSON.parse(raw) : null;
+      setToken(d?.token)
+      return d
     } catch {
       return null;
     }
   });
 
   const [loginOpen, setLoginOpen] = useState(false);
+   const [AdminOpen, setadminopen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileBackdropRef = useRef<HTMLDivElement | null>(null);
@@ -166,7 +176,7 @@ export default function App() {
   // --- API Configuration ---
   const configuredRunpodUrl =
     (import.meta.env.VITE_RUNPOD_URL as string) ||
-    'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/product/getlisting';
+    'http://localhost:4000';
   const runpodKey = (import.meta.env.VITE_RUNPOD_KEY as string) || '';
 
   // --- Fetch data ---
@@ -207,8 +217,8 @@ export default function App() {
   targetUrl.searchParams.set('page', String(effectivePage));
   targetUrl.searchParams.set('limit', String(PAGE_LIMIT));
 
-  const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
-
+   const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
+  //  const fetchUrl ="http://localhost:4000/api/product/getlisting"
       console.debug('[feed] fetching', fetchUrl, { dev: import.meta.env.DEV });
 
       const res = await fetch(fetchUrl, { headers, signal: fetchAbort.current.signal });
@@ -232,6 +242,7 @@ export default function App() {
       }
 
       if (payload) {
+       
         // Try to resolve an array of items from common API shapes
         let arr: any[] = [];
         if (Array.isArray(payload)) arr = payload;
@@ -242,7 +253,7 @@ export default function App() {
           const found = findItemsArray(payload, 4);
           if (Array.isArray(found)) arr = found;
         }
-
+       
         if (Array.isArray(arr)) {
           const start = (effectivePage - 1) * PAGE_LIMIT;
           const endExclusive = start + PAGE_LIMIT;
@@ -253,6 +264,7 @@ export default function App() {
           if (singlePageFromServer) {
             // Normalize only what we received and filter by recency
             const pageItems = arr.map((raw) => normalizeItem(raw)).filter((it) => within72Hours(it.createdAt));
+            
             if (append) {
               const toAdd: Item[] = [];
               for (const it of pageItems) {
@@ -515,6 +527,7 @@ export default function App() {
 
   const pagedItems = useMemo(() => brandFiltered.slice(0, visibleCount), [brandFiltered, visibleCount]);
 
+  
   const tryLoadMore = () => {
     if (loadingMoreRef.current) return false;
     const hidden = Math.max(0, brandFiltered.length - visibleCount);
@@ -592,6 +605,7 @@ export default function App() {
                 >
                   Sign up
                 </button>
+             
               </div>
             ) : (
               <div className="flex items-center gap-3">
@@ -608,6 +622,12 @@ export default function App() {
                 >
                   Logout
                 </button>
+                 {user&&user.role==="admin"&&   <button
+                  className="px-3 py-2 btn-blue"
+                  onClick={() => { setLoginOpen(false); setSignupOpen(false);setadminopen(true) }}
+                >
+                 Admin panel
+                </button>}
               </div>
             )}
           </div>
@@ -670,6 +690,12 @@ export default function App() {
                     >
                       Logout
                     </button>
+                     {user&&user.role==="admin"&&   <button
+                  className="px-3 py-2 btn-blue"
+                  onClick={() => { setLoginOpen(false); setSignupOpen(false);setadminopen(true); closeMobileMenu(); }}
+                >
+                 Admin panel
+                </button>}
                   </>
                 )}
               </div>
@@ -775,6 +801,8 @@ export default function App() {
                   </AnimatedHeight>
                 }
               />
+              <Route path="/forget-password" element={<ForgetPasswordRequest />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/privacy" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Privacy Policy</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><p>This Privacy Policy explains how ResellerSync ("we", "us") collects and uses your information when you use our website and services.</p><h2>Who we are</h2><p>Data Controller: ResellerSync. Contact: <a href="mailto:support@resellersync.io">support@resellersync.io</a>. We are UK based. You may contact the ICO if you have concerns.</p><h2>What we collect</h2><ul><li>Account details (email, name you provide).</li><li>Usage data (IP address, device, and interaction data).</li><li>Cookies and similar technologies (see Cookie Policy).</li></ul><h2>Why we use your data (lawful bases)</h2><ul><li>Provide and maintain the service (Contract/Legitimate Interests).</li><li>Improve the service (Consent for analytics where required).</li><li>Communicate incl. support (Contract/Legitimate Interests; Consent for marketing).</li><li>Security and abuse prevention (Legitimate Interests).</li></ul><h2>Retention</h2><p>We retain data only as long as necessary and as required by law.</p><h2>Sharing and processors</h2><p>We use trusted vendors: Vercel (hosting/CDN), Runpod (infrastructure), Email provider (support/transactional), Analytics provider (if enabled by your cookie choices). We do not sell personal data.</p><h2>International transfers</h2><p>Data may be processed outside the UK with appropriate safeguards (SCCs).</p><h2>Your rights</h2><ul><li>Access, rectification, erasure, restriction, portability, objection.</li><li>Withdraw consent at any time for consent-based activities.</li></ul><p>To exercise rights, contact <a href="mailto:support@resellersync.io">support@resellersync.io</a>.</p><h2>Complaints</h2><p>Complain to the ICO: <a href="https://ico.org.uk/" target="_blank" rel="noreferrer">ico.org.uk</a>.</p><h2>Changes</h2><p>We may update this Policy and post the new date here.</p></div></div>} />
               <Route path="/terms" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Terms of Service</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><h2>Agreement</h2><p>By using ResellerSync, you agree to these terms.</p><h2>Use of Service</h2><ul><li>No abuse, scraping, or interference; no unauthorized access.</li><li>We may update or discontinue features at any time.</li><li>You are responsible for your account and compliance with laws.</li></ul><h2>Content</h2><p>We aggregate or normalize content. No guarantees of accuracy; not affiliated with brands mentioned.</p><h2>Availability</h2><p>Service is provided “as is”, without warranty; no guarantee of uninterrupted operation.</p><h2>Liability</h2><p>Liability is limited to amounts paid in the last 12 months, to the extent permitted by law.</p><h2>Governing Law</h2><p>Laws of England and Wales. Exclusive jurisdiction of its courts.</p><h2>Contact</h2><p><a href="mailto:support@resellersync.io">support@resellersync.io</a></p></div></div>} />
               <Route path="/cookies" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Cookie Policy</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><p>This Cookie Policy explains how ResellerSync uses cookies and similar technologies.</p><h2>Categories</h2><ul><li><strong>Necessary</strong>: Required for core functionality. Always on.</li><li><strong>Analytics</strong>: Understand usage and improve the product. Only set with your consent.</li><li><strong>Marketing</strong>: Personalization and measuring campaigns. Only set with your consent.</li></ul><h2>Managing cookies</h2><p>You can change your choices at any time via <button className="underline" onClick={() => window.dispatchEvent(new CustomEvent('open-cookie-manager'))}>Manage cookies</button>.</p><h2>Third parties</h2><ul><li>Vercel (hosting/CDN)</li><li>Runpod (infrastructure)</li><li>Analytics provider (only if you opt in)</li><li>Email provider (support/transactional)</li></ul><h2>More info</h2><p>See our <a href="/privacy">Privacy Policy</a> for data handling info.</p></div></div>} />
@@ -809,7 +837,8 @@ export default function App() {
           setUser(u);
           try {
             localStorage.setItem('user', JSON.stringify(u));
-          } catch {}
+          } 
+          catch {}
           setLoginOpen(false);
         }}
         onSwitch={() => {
@@ -827,6 +856,7 @@ export default function App() {
           setUser(u);
           try {
             localStorage.setItem('user', JSON.stringify(u));
+            setToken(u.token)
           } catch {}
           setSignupOpen(false);
         }}
@@ -835,6 +865,13 @@ export default function App() {
           setTimeout(() => setLoginOpen(true), 220);
         }}
       />
+      <AdminPanel
+  open={AdminOpen}
+  onClose={() => setadminopen(false)}
+  user={user}
+
+/>
+     
 
       <footer className="mt-20 py-12 text-center text-gray-400">
         <div className="max-w-6xl mx-auto">

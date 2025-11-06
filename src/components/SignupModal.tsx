@@ -4,11 +4,14 @@ import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
 
 type NewUser = {
+
   name: string
   email?: string
   hasWebsite: boolean
   hasInventory: boolean
   inventoryValueBand?: string
+  role:string
+  token:string,
 }
 
 export default function SignupModal({ open, onClose, onSignup, onSwitch }: { open: boolean; onClose: () => void; onSignup: (user: NewUser) => void; onSwitch?: () => void }) {
@@ -95,7 +98,8 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
     try {
       const base = import.meta.env.DEV
         ? '/api/users'
-        : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+        : 'http://localhost:4000/api/users'
+      
       const payload = {
         fullname: name,
         email,
@@ -110,7 +114,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
         body: JSON.stringify(payload),
       })
       const data = await res.json().catch(() => ({}))
-
+       console.log(data)
       if (data && data.ghl === false) {
         const msg = data.message || 'Please complete the onboarding form first.'
         try { window.open('https://forms.gle/Na1yHnniRvA2rbYu7', '_blank', 'noopener'); } catch {}
@@ -126,11 +130,15 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       const profile = data.data || {}
       const effectiveName = profile.fullname || name || (email.split('@')[0])
       const user: NewUser = {
+      
         name: effectiveName,
         email: profile.email || email,
         hasWebsite: !!hasWebsite,
         hasInventory: !!hasInventory,
         inventoryValueBand: hasInventory ? inventoryBand : undefined,
+        role:data.role,
+        token:data.token
+
       }
       onSignup(user)
       setName('')
@@ -181,7 +189,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-1">Password</label>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="modal-input w-full" required />
+            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="modal-input w-full" required minLength={6}/>
           </div>
 
           {/* Required: Do you have a website? */}

@@ -8,6 +8,7 @@ export type Item = {
   price: number | null
   displayPrice: string
   vendorName?: string
+  vendorid?:string
   vendorPhone?: string | null
   whatsappUrl?: string | null
   createdAt?: string
@@ -311,6 +312,7 @@ export function normalizeItem(raw: RawItem): Item {
     images,
     price: priceNum,
     displayPrice,
+    vendorid:raw.vendorid,
     vendorName: raw.vendorName || raw.vendor_name || raw.vendor || undefined,
     vendorPhone: phone,
     whatsappUrl: whatsappUrl || null,

@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
-
-export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string }) => void; onSwitch?: () => void }) {
+import { Link } from 'react-router-dom'
+export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string; role:String } | null) => void; onSwitch?: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
@@ -63,7 +63,8 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
     try {
       const base = import.meta.env.DEV
         ? '/api/users'
-        : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
+        :  'http://localhost:4000/api/users'
+      // const base='http://localhost:4000/api/users'
       const res = await fetch(`${base}/Login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
@@ -77,7 +78,9 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
       }
       const profile = data.data || {}
       const nameFromApi = profile.fullname || (profile.email ? String(profile.email).split('@')[0] : null)
-      const user = { name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email }
+      const user = { name: nameFromApi || (email.split('@')[0] || 'User'), email: profile.email || email,role:profile.role,token:data.token }
+      console.log(data.data)
+
       onLogin(user)
       setEmail('')
       setPassword('')
@@ -120,9 +123,18 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
             <label className="block text-sm text-gray-300 mb-1">Password</label>
             <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="modal-input w-full" required />
           </div>
+          <div className="text-right">
+            <Link 
+              to="/forget-password" 
+              className="text-sm text-sky-400 hover:text-sky-300"
+              onClick={() => onClose()} 
+            >
+              Forgot password?
+            </Link>
+            </div>
 
           {formError && <div className="text-sm text-red-400">{formError}</div>}
-
+          
           <div className="pt-2 flex justify-end gap-2">
             <button type="submit" className="btn-blue px-5 py-2.5 disabled:opacity-60" disabled={submitting}>
               {submitting ? 'Logging in…' : 'Log in'}
