@@ -65,7 +65,7 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
         ? '/api/users'
         :  'http://localhost:4000/api/users'
       // const base='http://localhost:4000/api/users'
-      const loginUrl = `${import.meta.env.VITE_RUNPOD_KEY}/api/users/Login`;
+      const loginUrl = `${import.meta.env.VITE_RUNPOD_URL}/api/users/Login`;
       console.log('Login URL:', loginUrl);
       const res = await fetch(`${loginUrl}/api/users/Login`, {
         method: 'POST',

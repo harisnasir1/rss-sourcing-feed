@@ -40,7 +40,7 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
      const headers: Record<string, string> = { Accept: 'application/json',
        Authorization:`Bearer ${token}`
       };
-    const re = await fetch(`${import.meta.env.VITE_RUNPOD_KEY.toString()}/api/users`, {
+    const re = await fetch(`${import.meta.env.VITE_RUNPOD_URL.toString()}/api/users`, {
   method: "GET", // optional, defaults to GET
   headers,       // you must wrap headers inside an options object
 });
@@ -70,7 +70,7 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
         return;
     }
     
-     const feturl=`${import.meta.env.VITE_RUNPOD_KEY.toString()}/api/users/status_update`
+     const feturl=`${import.meta.env.VITE_RUNPOD_URL.toString()}/api/users/status_update`
       const res = await fetch(feturl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'accept': 'application/json','Authorization':`Bearer ${token}` },
