@@ -39,8 +39,11 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
+       const base = import.meta.env.DEV
+        ? '/api/users'
+        : 'http://localhost:4000/api/users'
      
-        const res = await fetch('http://localhost:4000/api/users/forget_new_pass', {
+        const res = await fetch(`${base}/forget_new_pass`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id:userid, token, newPassword: password }),

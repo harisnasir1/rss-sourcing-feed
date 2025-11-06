@@ -61,10 +61,10 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
     setFormError(null)
     setSubmitting(true)
     try {
-      // const base = import.meta.env.DEV
-      //   ? '/api/users'
-      //   : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
-      const base='http://localhost:4000/api/users'
+      const base = import.meta.env.DEV
+        ? '/api/users'
+        :  'http://localhost:4000/api/users'
+      // const base='http://localhost:4000/api/users'
       const res = await fetch(`${base}/Login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },

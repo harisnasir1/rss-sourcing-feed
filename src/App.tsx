@@ -176,7 +176,7 @@ export default function App() {
   // --- API Configuration ---
   const configuredRunpodUrl =
     (import.meta.env.VITE_RUNPOD_URL as string) ||
-    'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/product/getlisting';
+    'http://localhost:4000';
   const runpodKey = (import.meta.env.VITE_RUNPOD_KEY as string) || '';
 
   // --- Fetch data ---
@@ -217,8 +217,8 @@ export default function App() {
   targetUrl.searchParams.set('page', String(effectivePage));
   targetUrl.searchParams.set('limit', String(PAGE_LIMIT));
 
-  // const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
-   const fetchUrl ="http://localhost:4000/api/product/getlisting"
+   const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
+  //  const fetchUrl ="http://localhost:4000/api/product/getlisting"
       console.debug('[feed] fetching', fetchUrl, { dev: import.meta.env.DEV });
 
       const res = await fetch(fetchUrl, { headers, signal: fetchAbort.current.signal });

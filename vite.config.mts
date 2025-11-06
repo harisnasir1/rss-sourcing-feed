@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
-  const target = 'https://rmizhq2lxoty3l-4000.proxy.runpod.net';
+  const target = env.VITE_RUNPOD_URL || 'http://localhost:4000';
 
   return {
     plugins: [react()],

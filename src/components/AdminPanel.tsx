@@ -27,16 +27,20 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [searchQuery, setSearchQuery] = useState('');
   const [u,setu]=useState()
- 
+ const [base,setbase]=useState(  import.meta.env.DEV
+        ? '/api/users'
+        : 'http://localhost:4000/api/users')
   const {token}=useAuth();
+  
  
   const getusers=async()=>{
     console.log(token)
+    
     if(!token) return
      const headers: Record<string, string> = { Accept: 'application/json',
        Authorization:`Bearer ${token}`
       };
-    const re = await fetch("http://localhost:4000/api/users/", {
+    const re = await fetch(`${base}`, {
   method: "GET", // optional, defaults to GET
   headers,       // you must wrap headers inside an options object
 });
@@ -62,8 +66,9 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
     if(role==="admin"){
         return;
     }
-     const base='http://localhost:4000/api/users/status_update'
-      const res = await fetch(base, {
+    
+     const feturl=`${base}/status_update`
+      const res = await fetch(feturl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'accept': 'application/json','Authorization':`Bearer ${token}` },
         body: JSON.stringify({ id:userId,is_active:!cis_active }),

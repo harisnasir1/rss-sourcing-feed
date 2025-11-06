@@ -13,7 +13,10 @@ export default function ForgetPasswordRequest() {
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:4000/api/users/forgetpass', {
+       const base = import.meta.env.DEV
+        ? '/api/users'
+        : 'http://localhost:4000/api/users'
+      const res = await fetch(`${base}/forgetpass`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

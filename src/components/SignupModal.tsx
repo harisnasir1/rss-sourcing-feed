@@ -96,10 +96,10 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
     setFormError(null)
     setSubmitting(true)
     try {
-      // const base = import.meta.env.DEV
-      //   ? '/api/users'
-      //   : 'https://rmizhq2lxoty3l-4000.proxy.runpod.net/api/users'
-      const base='http://localhost:4000/api/users'
+      const base = import.meta.env.DEV
+        ? '/api/users'
+        : 'http://localhost:4000/api/users'
+      
       const payload = {
         fullname: name,
         email,
@@ -189,7 +189,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-1">Password</label>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="modal-input w-full" required />
+            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="modal-input w-full" required minLength={6}/>
           </div>
 
           {/* Required: Do you have a website? */}
