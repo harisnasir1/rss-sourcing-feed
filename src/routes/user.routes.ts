@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { getUsers,login,Signup } from "../controllers/user.controller";
-
+import { getUsers,login,Signup,update_status,Forget_password,Forgetnewpassword } from "../controllers/user.controller";
+import {authenticateJWT} from "../middleware/auth.middleware"
 const router = Router();
-
-router.get("/", getUsers);
-router.post("/Register",Signup)
-router.post("/Login",login)
-
+router.get("/",authenticateJWT, getUsers);
+router.post("/Register",Signup);
+router.post("/Login",login);
+router.post("/status_update",authenticateJWT,update_status)
+router.post("/forgetpass",Forget_password)
+router.post("/forget_new_pass",Forgetnewpassword)
 export default router;
