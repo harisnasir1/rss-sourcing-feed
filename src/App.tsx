@@ -175,7 +175,7 @@ export default function App() {
 
   // --- API Configuration ---
   const configuredRunpodUrl =
-    (import.meta.env.VITE_RUNPOD_URL as string) ||
+    (import.meta.env.VITE_RUNPOD_URL as string)+`/api/product/getlisting` ||
     'http://localhost:4000';
   const runpodKey = (import.meta.env.VITE_RUNPOD_KEY as string) || '';
 

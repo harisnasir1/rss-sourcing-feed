@@ -16,7 +16,7 @@ export default function ForgetPasswordRequest() {
        const base = import.meta.env.DEV
         ? '/api/users'
         : 'http://localhost:4000/api/users'
-      const res = await fetch(`${base}/forgetpass`, {
+      const res = await fetch(`${import.meta.env.VITE_RUNPOD_KEY.toString()}/api/users/forgetpass`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
