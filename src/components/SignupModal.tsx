@@ -4,20 +4,22 @@ import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
 
 type NewUser = {
-
   name: string
   email?: string
+  phone?: string
   hasWebsite: boolean
   hasInventory: boolean
   inventoryValueBand?: string
-  role:string
-  token:string,
+  role: string
+  token: string
 }
 
 export default function SignupModal({ open, onClose, onSignup, onSwitch }: { open: boolean; onClose: () => void; onSignup: (user: NewUser) => void; onSwitch?: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [countryCode, setCountryCode] = useState('+44') // default UK
+  const [phone, setPhone] = useState('')
   const [hasWebsite, setHasWebsite] = useState<null | boolean>(null)
   const [hasInventory, setHasInventory] = useState<null | boolean>(null)
   const [inventoryBand, setInventoryBand] = useState('')
@@ -56,6 +58,18 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       cb?.()
     }
   }
+  // Helper: define phone number lengths by country code
+const getMaxLength = (code) => {
+  const lengths = {
+    '+1': 10, '+44': 10, '+91': 10, '+92': 10, '+971': 9, '+966': 9, '+61': 9,
+    '+49': 11, '+33': 9, '+81': 10, '+82': 10, '+39': 10, '+34': 9, '+7': 10,
+    '+31': 9, '+46': 9, '+41': 9, '+64': 9, '+65': 8, '+60': 9, '+63': 10,
+    '+62': 10, '+94': 9, '+66': 9, '+90': 10, '+20': 10, '+27': 9, '+234': 10,
+    '+358': 9, '+351': 9, '+353': 9
+  }
+  return lengths[code] || 10 // fallback to 10
+}
+
 
   if (!open) return null
 
@@ -72,13 +86,18 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       return
     }
     // Basic validation for required fields
-    if (!name || !email || !password) {
-      setFormError('Please fill in your name, email and password.')
+    if (!name || !email || !password || !phone) {
+      setFormError('Please fill in your name, email, phone and password.')
       return
     }
     const emailCheck = validateEmail(email)
     if (!emailCheck.ok) {
       setFormError(validationMessage(emailCheck))
+      return
+    }
+    // Validate phone number (basic check)
+    if (phone.length < 7) {
+      setFormError('Please enter a valid phone number.')
       return
     }
     if (hasWebsite == null) {
@@ -99,11 +118,15 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       const base = import.meta.env.DEV
         ? '/api/users'
         : 'http://localhost:4000/api/users'
-      
+
+      // Remove + from country code and combine with phone
+      const fullPhone = `${countryCode.replace('+', '')}${phone}`
+
       const payload = {
         fullname: name,
         email,
         password,
+        phone: fullPhone.trim(), // send without +
         have_site: hasWebsite ? 1 : 0,
         have_stock: hasInventory ? 1 : 0,
         inventory_value: hasInventory ? inventoryBand : '',
@@ -114,10 +137,10 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
         body: JSON.stringify(payload),
       })
       const data = await res.json().catch(() => ({}))
-       console.log(data)
+      console.log(data)
       if (data && data.ghl === false) {
         const msg = data.message || 'Please complete the onboarding form first.'
-        try { window.open('https://forms.gle/Na1yHnniRvA2rbYu7', '_blank', 'noopener'); } catch {}
+        try { window.open('https://forms.gle/Na1yHnniRvA2rbYu7', '_blank', 'noopener'); } catch { }
         setFormError(String(msg))
         return
       }
@@ -130,25 +153,26 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       const profile = data.data || {}
       const effectiveName = profile.fullname || name || (email.split('@')[0])
       const user: NewUser = {
-      
         name: effectiveName,
         email: profile.email || email,
+        phone: fullPhone,
         hasWebsite: !!hasWebsite,
         hasInventory: !!hasInventory,
         inventoryValueBand: hasInventory ? inventoryBand : undefined,
-        role:data.role,
-        token:data.token
-
+        role: data.role,
+        token: data.token
       }
       onSignup(user)
       setName('')
       setEmail('')
       setPassword('')
+      setCountryCode('+44')
+      setPhone('')
       setHasWebsite(null)
       setHasInventory(null)
       setInventoryBand('')
       setHp('')
-      try { onClose() } catch {}
+      try { onClose() } catch { }
     } catch (err: any) {
       console.error('[SignupModal] signup error', err)
       setFormError('Network error. Please try again.')
@@ -159,19 +183,19 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
 
   const modal = (
     <div className="fixed inset-0 z-[1200] flex items-center justify-center">
-  <div ref={backdropRef} className="absolute inset-0 bg-black/40 modal-backdrop" onClick={() => animateOut(() => onClose())} />
-  <div ref={cardRef} className="relative modal-card w-full max-w-md text-gray-100">
+      <div ref={backdropRef} className="absolute inset-0 bg-black/40 modal-backdrop" onClick={() => animateOut(() => onClose())} />
+      <div ref={cardRef} className="relative modal-card w-full max-w-md text-gray-100">
         <button
           type="button"
           aria-label="Close"
           className="absolute top-2 right-2 inline-flex items-center justify-center w-8 h-8 border border-white/10 hover:bg-white/5"
           onClick={() => animateOut(() => onClose())}
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-  <h3 className="headline-gradient">Sign up</h3>
-  <p className="mt-2 text-sm text-gray-400">Create an account to unlock contact details.</p>
-  <div className="mt-2 text-sm text-sky-300">It's completely free — create an account to message sellers.</div>
+        <h3 className="headline-gradient">Sign up</h3>
+        <p className="mt-2 text-sm text-gray-400">Create an account to unlock contact details.</p>
+        <div className="mt-2 text-sm text-sky-300">It's completely free — create an account to message sellers.</div>
 
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
           {/* Honeypot field (off-screen) */}
@@ -187,9 +211,93 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
             <label className="block text-sm text-gray-300 mb-1">Email</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" type="email" className="modal-input w-full" required />
           </div>
+
+          {/* Phone number with country code */}
+ <div>
+  <label className="block text-sm text-gray-300 mb-1">Phone number</label>
+  <div className="flex gap-2">
+    <select
+      value={countryCode}
+      onChange={(e) => setCountryCode(e.target.value)}
+      className="modal-input w-28"
+    >
+      <option value="+44">🇬🇧 +44</option>
+      <option value="+1">🇺🇸 +1</option>
+      <option value="+91">🇮🇳 +91</option>
+      <option value="+92">🇵🇰 +92</option>
+      <option value="+971">🇦🇪 +971</option>
+      <option value="+966">🇸🇦 +966</option>
+      <option value="+61">🇦🇺 +61</option>
+      <option value="+86">🇨🇳 +86</option>
+      <option value="+49">🇩🇪 +49</option>
+      <option value="+33">🇫🇷 +33</option>
+      <option value="+81">🇯🇵 +81</option>
+      <option value="+82">🇰🇷 +82</option>
+      <option value="+39">🇮🇹 +39</option>
+      <option value="+34">🇪🇸 +34</option>
+      <option value="+7">🇷🇺 +7</option>
+      <option value="+31">🇳🇱 +31</option>
+      <option value="+46">🇸🇪 +46</option>
+      <option value="+41">🇨🇭 +41</option>
+      <option value="+64">🇳🇿 +64</option>
+      <option value="+65">🇸🇬 +65</option>
+      <option value="+60">🇲🇾 +60</option>
+      <option value="+63">🇵🇭 +63</option>
+      <option value="+62">🇮🇩 +62</option>
+      <option value="+94">🇱🇰 +94</option>
+      <option value="+66">🇹🇭 +66</option>
+      <option value="+90">🇹🇷 +90</option>
+      <option value="+20">🇪🇬 +20</option>
+      <option value="+27">🇿🇦 +27</option>
+      <option value="+234">🇳🇬 +234</option>
+      <option value="+358">🇫🇮 +358</option>
+      <option value="+351">🇵🇹 +351</option>
+      <option value="+353">🇮🇪 +353</option>
+    </select>
+
+    <input
+      value={phone}
+      onChange={(e) => {
+        // Allow typing digits only
+        const input = e.target.value.replace(/\D/g, '')
+        setPhone(input)
+      }}
+      onPaste={(e) => {
+        e.preventDefault()
+        let pasted = e.clipboardData.getData('text').replace(/\D/g, '')
+
+        // Try to detect country code only on paste
+        const allCodes = [
+          '1', '7', '20', '27', '30', '31', '32', '33', '34', '36', '39', '40',
+          '41', '43', '44', '45', '46', '47', '48', '49', '51', '52', '54', '55',
+          '56', '57', '58', '60', '61', '62', '63', '64', '65', '66', '81', '82',
+          '84', '86', '90', '91', '92', '94', '98', '212', '234', '351', '353',
+          '358', '380', '420', '855', '966', '971', '975'
+        ].sort((a, b) => b.length - a.length)
+
+        for (const code of allCodes) {
+          if (pasted.startsWith(code)) {
+            setCountryCode(`+${code}`)
+            pasted = pasted.slice(code.length)
+            break
+          }
+        }
+        setPhone(pasted)
+      }}
+      placeholder="7123456789"
+      type="tel"
+      inputMode="numeric"
+      className="modal-input flex-1"
+      required
+      maxLength={getMaxLength(countryCode)}
+    />
+  </div>
+</div>
+
+
           <div>
             <label className="block text-sm text-gray-300 mb-1">Password</label>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="modal-input w-full" required minLength={6}/>
+            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="modal-input w-full" required minLength={6} />
           </div>
 
           {/* Required: Do you have a website? */}
@@ -241,7 +349,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
             <div>
               <label className="block text-sm text-gray-300 mb-1">How much in value of inventory do you have? (cost)</label>
               <div className="flex flex-wrap gap-2 text-sm" role="radiogroup" aria-label="Inventory value">
-                {['£0–£2499','£2500–£4999','£5000–£9999','£10,000+'].map((opt) => (
+                {['£0–£2499', '£2500–£4999', '£5000–£9999', '£10,000+'].map((opt) => (
                   <button
                     key={opt}
                     type="button"
@@ -265,7 +373,7 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
             </button>
           </div>
         </form>
-  <div className="mt-4 text-sm text-gray-400">Already have an account? <button type="button" onClick={() => animateOut(() => onSwitch?.())} className="text-sm font-normal text-sky-300 hover:underline focus:underline">Log in</button></div>
+        <div className="mt-4 text-sm text-gray-400">Already have an account? <button type="button" onClick={() => animateOut(() => onSwitch?.())} className="text-sm font-normal text-sky-300 hover:underline focus:underline">Log in</button></div>
       </div>
     </div>
   )
