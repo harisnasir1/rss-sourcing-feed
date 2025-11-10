@@ -7,11 +7,13 @@ import { email_service } from '../services/Email_Services/EmailService';
 export class UserRepository {
   private readonly SALT_ROUNDS=10;
   private readonly ghlkey=process.env.GHL_API_KEY
+  private readonly ghltoken=process.env.GHL_API_Token
 
   //auth logic
 
   async signup(dto: SignupDto): Promise<SafeUser> {
-    let { fullname, email, password, role = 'member',have_site=0,have_stock=0,inventory_value='0',is_active=1 } = dto;
+    let { fullname, email, password, role = 'member',have_site=0,have_stock=0,inventory_value='0',is_active=1,phone } = dto; 
+    if(!email && !phone)  throw Error("something wrong !")
      email=email.toLowerCase().trim()
    
     const existingUser = await query(
@@ -22,7 +24,7 @@ export class UserRepository {
     if (existingUser.length > 0) {
       throw new Error('User with this email already exists');
     }
-    const ghlcheck=await this.checkinghlwon(email)
+    const ghlcheck=await this.checkinghlwon(email,phone)
     if(!ghlcheck)
      {
 
@@ -31,14 +33,14 @@ export class UserRepository {
     
    const sql = `
        INSERT INTO "User" (
-         id, fullname, email, password,role,have_site,have_stock,inventory_value,is_active
+         id, fullname, email, password,role,have_site,have_stock,inventory_value,is_active,phone
        )
        VALUES (
-         gen_random_uuid(), $1, $2, $3, $4,$5,$6,$7,$8
+         gen_random_uuid(), $1, $2, $3, $4,$5,$6,$7,$8,$9
        )
-       RETURNING id, fullname, email, role, created_at, last_login;
+       RETURNING id, fullname, email, role, created_at, last_login,phone;
      `;
-     const values = [fullname, email, hashedPassword, role,have_site,have_stock,inventory_value,0];
+     const values = [fullname, email, hashedPassword, role,have_site,have_stock,inventory_value,0,phone];
      
      const res = await query(sql, values);
       throw new Error('User is not in ghl won stage');
@@ -301,34 +303,70 @@ return res[0];
 
   }
 
-  private async checkinghlwon(email:string)
-  {
-     var url = "https://services.leadconnectorhq.com/opportunities/search"
-    + "?location_id=0jUuoXuSJVQGki9cRwUx"
-    + "&pipeline_id=xLLFc3s2wXBCu8Ms50eh"
-    + "&pipeline_stage_id=00964150-abc3-4a57-923b-3799b165a06d"
-    + `&q=${email}`
-  
-  var options = {
+private async checkinghlwon(email: string, phone: string) {
+  const baseUrl = "https://services.leadconnectorhq.com/opportunities/search";
+  const params = new URLSearchParams({
+    location_id: "0jUuoXuSJVQGki9cRwUx",
+    pipeline_id: "xLLFc3s2wXBCu8Ms50eh",
+    pipeline_stage_id: "00964150-abc3-4a57-923b-3799b165a06d"
+  });
+
+  const opportunityOptions = {
     method: "get",
     headers: {
       "Accept": "application/json",
       "Version": "2021-07-28",
-      "Authorization":`Bearer ${this.ghlkey}`
-        },
+      "Authorization": `Bearer ${this.ghltoken}`
+    },
     muteHttpExceptions: true
   };
 
-  var res =await fetch(url, options);
-  const data=await res.json()
- 
-  if(data&&data.opportunities&&data.opportunities.length>0)
-  {
-   return 1
-  }
-  return 0 
+  const contactOptions = {
+    method: "get",
+    headers: {
+      "Authorization": `Bearer ${this.ghlkey}`
+    },
+    muteHttpExceptions: true
+  };
 
+  
+  const [emailOpportunityRes, contactRes] = await Promise.all([
+    fetch(`${baseUrl}?${params}&q=${email}`, opportunityOptions),
+    fetch(`https://rest.gohighlevel.com/v1/contacts/lookup?phone=+${phone}`, contactOptions)
+  ]);
+  console.log("Befor parseing:")
+  console.log("email search:->",emailOpportunityRes)
+  console.log("constact lookup->",contactRes)
+
+  // Parse both responses
+  const [emailOpportunityData, contactData] = await Promise.all([
+    emailOpportunityRes.json(),
+    contactRes.json()
+  ]);
+  console.log("After parseing:")
+  console.log("email search:->",emailOpportunityData)
+  console.log("constact lookup->",contactData)
+  
+  // Check if email search found opportunities
+  if (emailOpportunityData?.opportunities?.length > 0) {
+    return 1;
   }
+
+  // Check if we have a contact ID to search by
+  const contactId = contactData?.contacts?.[0]?.id;
+  if (!contactId) {
+    return 0;
+  }
+
+  // Search by contact ID
+  const idOpportunityRes = await fetch(
+    `${baseUrl}?${params}&contact_id=${contactId}`, 
+    opportunityOptions
+  );
+  const idOpportunityData = await idOpportunityRes.json();
+  console.log("find contact using contact id=>",idOpportunityData)
+  return idOpportunityData?.opportunities?.length > 0 ? 1 : 0;
+}
 }
 
 

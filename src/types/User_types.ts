@@ -4,6 +4,7 @@ export type usertype={
     email:string,
     password:string,
     role:string,
+    phone:string,
     is_active?:boolean
 }
 export type SignupDto = {
@@ -13,6 +14,7 @@ export type SignupDto = {
   role?: string;
   have_site?:boolean;
   have_stock?:boolean;
+  phone:string,
   inventory_value?:string;
   is_active?:boolean;
 }
