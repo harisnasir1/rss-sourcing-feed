@@ -52,15 +52,15 @@ export class UserRepository {
     
    const sql = `
   INSERT INTO "User" (
-    id, fullname, email, password,role,have_site,have_stock,inventory_value
+    id, fullname, email, password,role,have_site,have_stock,inventory_value,phone
   )
   VALUES (
-    gen_random_uuid(), $1, $2, $3, $4,$5,$6,$7
+    gen_random_uuid(), $1, $2, $3, $4,$5,$6,$7,$8
   )
-  RETURNING id, fullname, email, role, created_at, last_login;
+  RETURNING id, fullname, email, role, created_at, last_login,phone;
 `;
 
-const values = [fullname, email, hashedPassword, role,have_site,have_stock,inventory_value];
+const values = [fullname, email, hashedPassword, role,have_site,have_stock,inventory_value,phone];
 
 const res = await query(sql, values);
 return res[0];
