@@ -48,17 +48,25 @@ export default function App() {
     }
   });
 
-  const [user, setUser] = useState<{ name: string; email?: string; role:String } | null>(() => {
+  const [user, setUser] = useState<{ name: string; email?: string; role:String,token:string } | null>(() => {
     try {
       const raw = localStorage.getItem('user');
      
       const d= raw ? JSON.parse(raw) : null;
-      setToken(d?.token)
+      
       return d
     } catch {
       return null;
     }
   });
+
+  useEffect(()=>{
+    if(user && user.token)
+    {
+      setToken(user.token)
+    }
+
+  },[user?.token])
 
   const [loginOpen, setLoginOpen] = useState(false);
    const [AdminOpen, setadminopen] = useState(false);

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
 import { Link } from 'react-router-dom'
-export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string; role:String } | null) => void; onSwitch?: () => void }) {
+export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string; role:String ,token:string} | null) => void; onSwitch?: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
@@ -64,10 +64,8 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
       const base = import.meta.env.DEV
         ? '/api/users'
         :  'http://localhost:4000/api/users'
-      // const base='http://localhost:4000/api/users'
-      const loginUrl = `${import.meta.env.VITE_RUNPOD_URL}/api/users/Login`;
-     
-      const res = await fetch(`${loginUrl}`, {
+      //  const base='http://localhost:4000/api/users'
+      const res = await fetch(`${base}/Login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ email, password }),
