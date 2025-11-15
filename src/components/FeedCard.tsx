@@ -8,10 +8,12 @@ export default function FeedCard({
   item,
   loggedIn = false,
   onRequireAuth,
+  onlogout
 }: {
   item: Item
   loggedIn?: boolean
   onRequireAuth?: () => void
+  onlogout?:()=>void
 }) {
   const {token}=useAuth()
   const formatDate = (iso?: string) => {
@@ -110,6 +112,11 @@ const handleClick = useCallback(async (e: React.MouseEvent<HTMLAnchorElement>) =
         headers: { 'Content-Type': 'application/json',  'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ vendorid: item.raw.vendorId }),
       })
+     
+        if (response.status === 401 || response.status === 403) {
+          onlogout()
+          return;
+        }
 
       const data = await response.json()
       

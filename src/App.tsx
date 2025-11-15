@@ -781,6 +781,13 @@ export default function App() {
                               item={item}
                               loggedIn={loggedIn}
                               onRequireAuth={() => setSignupOpen(true)}
+                              onlogout={()=>{
+                              setLoggedIn(false);
+                              setUser(null);
+                              setLoginOpen(true)
+                              try {
+                                localStorage.removeItem('user');
+                              } catch {}}}
                             />
                           )}
                         />
