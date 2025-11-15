@@ -131,7 +131,7 @@ const getMaxLength = (code) => {
         have_stock: hasInventory ? 1 : 0,
         inventory_value: hasInventory ? inventoryBand : '',
       }
-      const res = await fetch(`${base}/Register`, {
+      const res = await fetch(`${import.meta.env.VITE_RUNPOD_URL.toString()}/api/users/Register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', accept: 'application/json' },
         body: JSON.stringify(payload),

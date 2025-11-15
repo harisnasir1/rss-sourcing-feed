@@ -105,7 +105,7 @@ const handleClick = useCallback(async (e: React.MouseEvent<HTMLAnchorElement>) =
         ? '/api/vendors'
         : 'http://localhost:4000/api/vendors'
 
-      const response = await fetch(`${base}/getnumber`, {
+      const response = await fetch(`${import.meta.env.VITE_RUNPOD_URL.toString()}/api/vendors/getnumber`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json',  'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ vendorid: item.raw.vendorId }),

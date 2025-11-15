@@ -30,17 +30,17 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
  const [base,setbase]=useState(  import.meta.env.DEV
         ? '/api/users'
         : 'http://localhost:4000/api/users')
-  const {token}=useAuth();
+  const {token,loading}=useAuth();
   
  
   const getusers=async()=>{
-    console.log(token)
+   
     
-    if(!token) return
+    if(!token&&user&&user.role!=='admin') return
      const headers: Record<string, string> = { Accept: 'application/json',
        Authorization:`Bearer ${token}`
       };
-    const re = await fetch(`${base}`, {
+    const re = await fetch(`${import.meta.env.VITE_RUNPOD_URL.toString()}/api/users`, {
   method: "GET", // optional, defaults to GET
   headers,       // you must wrap headers inside an options object
 });
@@ -50,6 +50,9 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
   }
 
   useEffect(()=>{
+   
+    if (loading) return;
+      if (!token || !user) return;
     if(user&&user.role==="admin")
     {
        getusers()
@@ -57,7 +60,7 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
     else{
        
     }
-  },[token])
+  },[token,user,loading])
 
   if (!open) return null;
 
@@ -67,7 +70,7 @@ export default function AdminPanel({ open, onClose,user }: AdminPanelProps) {
         return;
     }
     
-     const feturl=`${base}/status_update`
+     const feturl=`${import.meta.env.VITE_RUNPOD_URL.toString()}/api/users/status_update`
       const res = await fetch(feturl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'accept': 'application/json','Authorization':`Bearer ${token}` },
