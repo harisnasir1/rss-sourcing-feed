@@ -64,8 +64,8 @@ export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open:
       const base = import.meta.env.DEV
         ? '/api/users'
         :  'http://localhost:4000/api/users'
-      //  const base='http://localhost:4000/api/users'
-      const res = await fetch(`${base}/Login`, {
+      const loginUrl = `${import.meta.env.VITE_RUNPOD_URL}/api/users/Login`;
+      const res = await fetch(`${loginUrl}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
         body: JSON.stringify({ email, password }),
