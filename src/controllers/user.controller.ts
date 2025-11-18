@@ -34,7 +34,7 @@ export const login=async(req:Request , res:Response)=>{
   const udata:LoginDto=req.body;
  const user = await userRepository.login(udata);
         const token = generateToken({
-      userId: user.id, // adjust based on what userRepository.login returns
+      userId: user.id, 
       email: user.email,
       fullname: user.fullname,
       role:user.role
@@ -59,6 +59,7 @@ export const login=async(req:Request , res:Response)=>{
   }
 
    else {
+    console.log("error on login:->",e instanceof Error &&e.message)
      return res.status(500).json({
       success: false,
       message: 'Login unsuccessful'

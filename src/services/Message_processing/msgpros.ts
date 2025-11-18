@@ -4,7 +4,7 @@ import {
     WAMessage
 } from '@whiskeysockets/baileys';
 import P from 'pino'
-import { VendorRepo } from '../../repositories/vendors_repo';
+import { vendorRepo } from '../../repositories/vendors_repo';
 import { MessageBuffer, Listing, Vendor, msgtype,AI_Response } from '../../types/Data_types';
 import { listing_repo } from '../../repositories/listing_repo';
 import { ImgProcessing } from './imgpros';
@@ -14,7 +14,7 @@ export class Message_processing {
 
     private _sock: WASocket;
     private groupMetadataCache: Map<string, { groupName: string, timestamp: number }>;
-    private _rvendor: VendorRepo;
+    private _rvendor;
     private _rlist: listing_repo;
     private _imgpro: ImgProcessing;
     private _ai:AI;
@@ -23,7 +23,7 @@ export class Message_processing {
     constructor(sock: WASocket) {
         this._sock = sock
         this.groupMetadataCache = new Map()
-        this._rvendor = new VendorRepo()
+        this._rvendor =vendorRepo
         this._rlist = new listing_repo()
         this._imgpro = new ImgProcessing()
         this._ai=new AI()
