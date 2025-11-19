@@ -1,6 +1,6 @@
 import { query } from '../utils/db_connection';
 import { Listing } from '../types/Data_types';
-
+import {b2bquery} from '../utils/db_b2b_connection'
 export class listing_repo{
 
     public async create_listing(listing:Listing): Promise<Listing[]>
@@ -44,6 +44,89 @@ export class listing_repo{
     const res = await query(sql, values);
   return res;
     } 
+
+public async create_listing_b2b(listing: Listing,vinfo:any): Promise<boolean> {
+    try {
+      //console.log("MSSQl vin=>",vinfo)
+        const sql = `
+            INSERT INTO WAListing (
+                Id,
+                VendorPhoneNumber,
+                VendorName,
+                GroupName,
+                RawMessage,
+                Description,
+                Images,
+                Price,
+                Currency,
+                Brand,
+                ProductType,
+                Gender,
+                Size,
+                Condition,
+                Status,
+                IsWTB,
+                IsWTS,
+                CreatedAt,
+                UpdatedAt
+            )
+            VALUES (
+                NEWID(),
+                @vendorPhone,
+                @vendorName,
+                @groupName,
+                @rawMessage,
+                @description,
+                @images,
+                @price,
+                @currency,
+                @brand,
+                @productType,
+                @gender,
+                @size,
+                @condition,
+                @status,
+                @isWTB,
+                @isWTS,
+                @createdAt,
+                @updatedAt
+            )
+        `;
+
+        // You'll need to get vendor phone and name from vendorId
+        // Assuming you have a method to get vendor info
+        // const vendorInfo = await this.getVendorInfo(listing.vendorId);
+
+        const params = {
+            vendorPhone: vinfo.phonenumber, 
+            vendorName: vinfo.displayname,  
+            groupName: listing.groupName,
+            rawMessage: JSON.stringify( listing.rawMessage)||" ",
+            description: listing.description||" ",
+            images: JSON.stringify(listing.images), // Convert array to JSON string
+            price: listing.price ,
+            currency: listing.currency || 'GBP',
+            brand: listing.brand || "",
+            productType: listing.productType || "",
+            gender: listing.gender || "",
+            size: listing.size || "",
+            condition: listing.condition || "",
+            status: listing.status || 'active',
+            isWTB: listing.isWTB ? 1 : 0,  
+            isWTS: listing.isWTS ? 1 : 0,  
+            createdAt: listing.createdAt || new Date(),
+            updatedAt: listing.updatedAt || new Date()
+        };
+
+        await b2bquery(sql, params);
+        console.log('✅ Listing created in WAListings (B2B)');
+        return true;
+
+    } catch (error) {
+        console.error('❌ Failed to create B2B listing:', error);
+        return false;
+    }
+}
     public async getlisting(searchTerm:string,page:number,limit:number,offset:number)
     {
       
