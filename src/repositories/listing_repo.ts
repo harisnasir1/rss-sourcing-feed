@@ -47,14 +47,14 @@ export class listing_repo{
 
 public async create_listing_b2b(listing: Listing,vinfo:any): Promise<boolean> {
     try {
-      console.log("MSSQl vin=>",vinfo)
+      //console.log("MSSQl vin=>",vinfo)
         const sql = `
-            INSERT INTO WAListings (
+            INSERT INTO WAListing (
                 Id,
                 VendorPhoneNumber,
                 VendorName,
                 GroupName,
-                
+                RawMessage,
                 Description,
                 Images,
                 Price,
@@ -75,7 +75,7 @@ public async create_listing_b2b(listing: Listing,vinfo:any): Promise<boolean> {
                 @vendorPhone,
                 @vendorName,
                 @groupName,
-               
+                @rawMessage,
                 @description,
                 @images,
                 @price,
@@ -98,21 +98,22 @@ public async create_listing_b2b(listing: Listing,vinfo:any): Promise<boolean> {
         // const vendorInfo = await this.getVendorInfo(listing.vendorId);
 
         const params = {
-            vendorPhone: vinfo.phonenumber, // Need to get from vendor info
-            vendorName: vinfo.displayname,  // Need to get from vendor info
+            vendorPhone: vinfo.phonenumber, 
+            vendorName: vinfo.displayname,  
             groupName: listing.groupName,
-            description: listing.description,
+            rawMessage: JSON.stringify( listing.rawMessage)||" ",
+            description: listing.description||" ",
             images: JSON.stringify(listing.images), // Convert array to JSON string
-            price: listing.price || null,
+            price: listing.price ,
             currency: listing.currency || 'GBP',
-            brand: listing.brand || null,
-            productType: listing.productType || null,
-            gender: listing.gender || null,
-            size: listing.size || null,
-            condition: listing.condition || null,
+            brand: listing.brand || "",
+            productType: listing.productType || "",
+            gender: listing.gender || "",
+            size: listing.size || "",
+            condition: listing.condition || "",
             status: listing.status || 'active',
-            isWTB: listing.isWTB ? 1 : 0,  // Convert boolean to bit
-            isWTS: listing.isWTS ? 1 : 0,  // Convert boolean to bit
+            isWTB: listing.isWTB ? 1 : 0,  
+            isWTS: listing.isWTS ? 1 : 0,  
             createdAt: listing.createdAt || new Date(),
             updatedAt: listing.updatedAt || new Date()
         };
