@@ -6,6 +6,11 @@ const config: sql.config = {
   server:process.env.MS_DB_HOST || "",
   database:process.env.MS_DB_NAME,
   port:Number(process.env.MS_DB_PORT)||14233,
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  },
   options: {
     encrypt: true,                // ✔ .NET default
     trustServerCertificate: true, // ✔ same as .NET
