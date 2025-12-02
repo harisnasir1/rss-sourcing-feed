@@ -9,7 +9,8 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'password',
   port: Number(process.env.DB_PORT) || 5432,
    ssl: { rejectUnauthorized: false },
-   max:10,
+   max:5,
+   min:0,
    idleTimeoutMillis:30000,
    connectionTimeoutMillis:10000,
 });
