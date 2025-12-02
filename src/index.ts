@@ -60,7 +60,7 @@ app.listen(PORT, async () => {
         const whatsapp = new WhatsAppClient();
 
         try {
-          //await whatsapp.initialize();
+          await whatsapp.initialize();
           console.log('✅ WhatsApp initialized successfully');
         } catch (whatsappError) {
           console.error('❌ WhatsApp initialization failed:', whatsappError);
