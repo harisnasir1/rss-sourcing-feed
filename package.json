@@ -15,6 +15,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.901.0",
     "@hapi/boom": "^10.0.1",
+    "@neondatabase/serverless": "^1.0.2",
+    "@types/mssql": "^9.1.8",
     "@types/nodemailer": "^7.0.3",
     "@whiskeysockets/baileys": "^6.7.20",
     "aws-sdk": "^2.1692.0",
@@ -28,6 +30,7 @@
     "groq-sdk": "^0.33.0",
     "jsonrepair": "^3.13.1",
     "jsonwebtoken": "^9.0.2",
+    "mssql": "^12.1.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.10",
     "open": "^10.2.0",
