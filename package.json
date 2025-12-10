@@ -18,7 +18,7 @@
     "@neondatabase/serverless": "^1.0.2",
     "@types/mssql": "^9.1.8",
     "@types/nodemailer": "^7.0.3",
-    "@whiskeysockets/baileys": "^6.7.20",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "aws-sdk": "^2.1692.0",
     "baileys": "^7.0.0-rc.4",
     "bcrypt": "^6.0.0",

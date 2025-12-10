@@ -35,7 +35,7 @@ export class WhatsAppClient {
     this.saveCreds = saveCreds;
     this.sock =  makeWASocket({
       auth: state,
-      version : [2, 3000, 1025190524],
+      
       logger: P({ level: 'silent' }),
       browser: Browsers.ubuntu('ack'),
       generateHighQualityLinkPreview: true,
