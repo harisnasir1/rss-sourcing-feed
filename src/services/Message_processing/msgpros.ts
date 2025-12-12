@@ -164,16 +164,18 @@ export class Message_processing {
             groupid = this.getgroupid(msg);
             
             if (!groupid||groupid=="") return null
+
+
             let k = await this.getgroupname(msg.key.remoteJid||"")
+
             if (k == "" || k == null) return null
             groupname = k;
             vendorWhatsappId = msg.key.participant ? msg.key.participant.split("@")[0] : ""
             
             if (vendorName == "") return null
-            if (msg.key.participantPn) {
-                vendorPhoneNumber = msg.key.participantPn.split(':')[0]
+            if (msg.key.participantAlt) {
+                vendorPhoneNumber = msg.key.participantAlt.split(':')[0]
                 vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
-              
             }
         }
         if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" ) return null
