@@ -273,6 +273,7 @@ export class Message_processing {
     
     if ((msg as any).messageStubType) {
         console.log('⏭️ Skipping system message');
+         console.log(msg)
         return false;
     }
     if((msg as any).remoteJidAlt)
@@ -283,6 +284,7 @@ export class Message_processing {
     const isGroup = msg.key.remoteJid?.endsWith('@g.us');
     if (!isGroup) {
         console.log('⏭️ Skipping non-group message');
+        console.log(msg)
         return false;
     }
     
