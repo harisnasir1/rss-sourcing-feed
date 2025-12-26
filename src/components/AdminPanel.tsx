@@ -32,7 +32,7 @@ export default function AdminPanel({ open, onClose, user }: AdminPanelProps) {
     
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/users`, {
+      const res = await fetch(`${import.meta.env.VITE_RUNPOD_URL}/api/users`, {
         headers: {
           Accept: 'application/json',
           Authorization: `Bearer ${token}`,
