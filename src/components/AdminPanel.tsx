@@ -62,7 +62,7 @@ export default function AdminPanel({ open, onClose, user }: AdminPanelProps) {
     setLoadingUsers(prev => new Set(prev).add(userId));
 
     try {
-      const res = await fetch(`/api/users/status_update`, {
+      const res = await fetch(`${import.meta.env.VITE_RUNPOD_URL}/api/users/status_update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
