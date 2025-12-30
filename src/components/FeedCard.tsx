@@ -174,8 +174,17 @@ window.location.href = finalUrl;
   {/* Right: Content column (pad-right so text doesn't sit under the floating NEW badge) */}
   <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 pr-16">
   {/* Title */}
-  <div className="feed-title text-animate break-words">{item.name || item.description}</div>
-
+ {/* Title */}<div 
+  className="feed-title text-animate break-words"
+  style={{
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden'
+  }}
+>
+  {item.name || item.description}
+</div>
         {/* Details line: sizes + price PP + optional phrase */}
         <div className="feed-meta mt-1 text-animate flex flex-wrap items-center gap-2">
           {details.length ? details : null}
