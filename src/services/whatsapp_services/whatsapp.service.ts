@@ -142,10 +142,10 @@ export class WhatsAppClient {
 
     while(this.messageQueue.length>0)
     {
-     try{ const popmsg=this.messageQueue.shift();
+     try{
+       const popmsg=this.messageQueue.shift();
      await  this.msg_p?.messageparser(popmsg)
-    
-     await this.sleep(1000);
+  
     }
       catch(e)
       {

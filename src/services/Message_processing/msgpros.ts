@@ -107,7 +107,10 @@ export class Message_processing {
         }
         const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
         console.log("data form ai=>",aidata)
-        if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))) throw new Error(aidata?JSON.stringify(aidata):"something wrong with data")
+        if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))){ 
+             console.log(aidata?JSON.stringify(aidata):"something wrong with data");
+             return null;
+        }
 
         const list: Listing = {
             vendorId: vinfo.id,
@@ -178,7 +181,11 @@ export class Message_processing {
                 vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
             }
         }
-        if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" ) return null
+        if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" )
+        {
+            console.log("participant id drop: ",msg);
+            return null
+        } 
         const vdata = {
             whatsappId: vendorWhatsappId,
             phoneNumber: vendorPhoneNumber,
@@ -256,13 +263,16 @@ export class Message_processing {
 
     private async handle_image(msg:WAMessage)
     {
- 
-            let imgbuff: Buffer | null = await this.downloadimage(msg)
-            
-            if (!imgbuff) return
-            
-            return await this._imgpro.upload_image(imgbuff)
-            
+
+         try{
+           let imgbuff: Buffer | null = await this.downloadimage(msg);
+           if (!imgbuff) return   null      
+           return await this._imgpro.upload_image(imgbuff)
+         }
+         catch(e){
+           console.log("Error downloading and decoding image: ")
+           return null;
+         }
     }
 
     private isValidMessage(msg: WAMessage): boolean {
