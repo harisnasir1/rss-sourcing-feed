@@ -43,7 +43,7 @@ export default function ProductPage({
       ; (async () => {
         try {
           setLoading(true)
-          const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+          const baseUrl = import.meta.env.VITE_RUNPOD_URL || 'http://localhost:4000'
           const res = await fetch(`${baseUrl}/api/product/getproduct/${id}`)
           const json = await res.json()
           if (json?.data?.success) {
