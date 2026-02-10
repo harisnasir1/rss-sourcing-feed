@@ -23,10 +23,12 @@ export class NotificationManager {
                 console.log(`this person with vendorid :${vendor.phoneNumber} is in RR community`)
             }
             else {
-                console.log(`sending webhook to  person with vendorid :${vendor.id}`)
+              
                 const alreadySent = await this._notirepo?.isWtsSent(vendor.whatsappId)
-                if (alreadySent) return
-                try {
+                 if (alreadySent) return
+                  console.log(`sending webhook to  person with vendorid :${vendor.id}`)
+               
+                     try {
                    
                  
 
