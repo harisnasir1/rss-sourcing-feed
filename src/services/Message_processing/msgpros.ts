@@ -149,7 +149,7 @@ export class Message_processing {
                       }
                
         let venderget =   await this._rvendor.updateVendor(vinfo.phonenumber,d)
-        if(venderget.length>0&&venderget[0].id){
+        if(venderget.length>0&&venderget[0].id && aidata.iswts==true){
              //now send to notification service
              this._notiman.SendWtsnotifications(venderget[0],list);
             }
