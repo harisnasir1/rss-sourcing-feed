@@ -196,11 +196,10 @@ export default function App() {
     }
 
     const safeName = itemName.replace(/"/g, "'");
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-    const res = `${baseUrl}/api/product/getproduct/${itemid}`
+   const productUrl = `${window.location.origin}/product/${itemid}`
     const text = itemName
-      ? `Referred from resellersync.io, have you still got "${safeName}" available?\n\n${res}`
-      : `Referred from resellersync.io, have you still got this available?\n\n${res}`;
+      ? `Referred from resellersync.io, have you still got "${safeName}" available?\n\n${productUrl}`
+      : `Referred from resellersync.io, have you still got this available?\n\n${productUrl}`;
 
     const number = data.Number.replace(/\D/g, '');
     window.location.href = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
