@@ -4,18 +4,23 @@ import makeWASocket, {
   Browsers,
   DisconnectReason,
   BaileysEventMap,
-  proto
+  proto,
+  GroupMetadata
 } from '@whiskeysockets/baileys';
 import P from 'pino';
 import QRCode from 'qrcode';
 import { Boom } from '@hapi/boom';
 import { Message_processing } from '../Message_processing/msgpros';
+import { GroupManager } from './Group_manager_service';
+import {wscontainer} from '../Container/ws_container'
+
 
 export class WhatsAppClient {
   private sock!: WASocket;
   private saveCreds!: () => Promise<void>;
   private readonly authFolder: string;
   public msg_p:Message_processing|null=null;
+  public groupmanager:GroupManager|null=null;
   private messageQueue: any[] = [];
   private isProcessingQueue = false;
   private isReconnecting = false;
@@ -50,6 +55,7 @@ export class WhatsAppClient {
 
   this.bindEvents();
   this.msg_p=new Message_processing(this.sock)
+  this.groupmanager=new GroupManager(this.sock);
    
     return this.sock;
   }
@@ -71,7 +77,17 @@ export class WhatsAppClient {
         console.log('✅ Connected to WhatsApp Web');
         this.reconnectries=0;
         this.isReconnecting=false
+
+        await this.groupmanager?.fetchAllGroups();
+        wscontainer.sock=this.sock;
+        if(this.groupmanager){
+        wscontainer.groupManager=this.groupmanager;
         this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+      }
+      else{
+        console.log("groupmanager dismounted")
+      }      
+        
       }
  if (qr) {
       console.log('QR code received, saving to qr.png...');

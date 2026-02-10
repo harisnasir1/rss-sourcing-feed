@@ -10,6 +10,7 @@ import { listing_repo } from '../../repositories/listing_repo';
 import { ImgProcessing } from './imgpros';
 import {AI} from '../AI_Services/Ai'
 import { Message_Buffer } from './msgbuff';
+import { NotificationManager } from '../whatsapp_services/Notification_Service';
 export class Message_processing {
 
     private _sock: WASocket;
@@ -19,6 +20,7 @@ export class Message_processing {
     private _imgpro: ImgProcessing;
     private _ai:AI;
     private _msgbuff:Message_Buffer;
+    private _notiman:NotificationManager;
 
     constructor(sock: WASocket) {
         this._sock = sock
@@ -28,6 +30,7 @@ export class Message_processing {
         this._imgpro = new ImgProcessing()
         this._ai=new AI()
         this._msgbuff=new Message_Buffer()
+        this._notiman=new NotificationManager();
     }
     
     public async messageparser(msg: WAMessage) {
@@ -146,7 +149,12 @@ export class Message_processing {
                       }
                
         let venderget =   await this._rvendor.updateVendor(vinfo.phonenumber,d)
-      return re;
+        if(venderget.length>0&&venderget[0].id){
+             //now send to notification service
+             this._notiman.SendWtsnotifications(venderget[0],list);
+            }
+        
+            return re;
         }
         catch(e)
         {
