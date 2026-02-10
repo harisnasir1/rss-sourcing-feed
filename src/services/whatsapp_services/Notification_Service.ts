@@ -36,7 +36,7 @@ export class NotificationManager {
                              body: JSON.stringify({
                              vendor: {
                                name: (vendor as any).displayname,
-                               phone: (vendor as any).phone
+                               phone: (vendor as any).phonenumber
                              },
                              listing 
                            })
