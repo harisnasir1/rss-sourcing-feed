@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState,useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import CookieBanner, { openCookieManager } from './components/CookieBanner';
 import { Link, Routes, Route, useLocation } from 'react-router-dom';
 import ForgetPasswordRequest from './components/ForgetPasswordRequest';
 import ResetPassword from './components/ResetPassword';
+import ProductPage from './Pages/ProductPage'
 
 import gsap from 'gsap';
 import FeedCard from './components/FeedCard';
@@ -48,7 +49,7 @@ export default function App() {
     }
   });
 
-  const [user, setUser] = useState<{ name: string; email?: string; role:String,token:string } | null>(() => {
+  const [user, setUser] = useState<{ name: string; email?: string; role:string,token:string } | null>(() => {
     try {
       const raw = localStorage.getItem('user');
      
@@ -161,6 +162,53 @@ export default function App() {
     }
     return null;
   };
+  
+  const handleWhatsAppClick = useCallback(async (
+  vendorId: string,
+  itemName: string,
+  itemid:string,
+  onLogout: () => void
+) => {
+  if (!token) return;
+
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_RUNPOD_URL}/api/vendors/getnumber`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ vendorid: vendorId }),
+      }
+    );
+
+    if (response.status === 401 || response.status === 403) {
+      onLogout();
+      return;
+    }
+
+    const data = await response.json();
+    if (!data?.Number) {
+      alert('Could not fetch WhatsApp number.');
+      return;
+    }
+
+    const safeName = itemName.replace(/"/g, "'");
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+    const res = `${baseUrl}/api/product/getproduct/${itemid}`
+    const text = itemName
+      ? `Referred from resellersync.io, have you still got "${safeName}" available?\n\n${res}`
+      : `Referred from resellersync.io, have you still got this available?\n\n${res}`;
+
+    const number = data.Number.replace(/\D/g, '');
+    window.location.href = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+  } catch (err) {
+    console.error('Error fetching WhatsApp number:', err);
+    alert('Something went wrong fetching the WhatsApp number.');
+  }
+}, [token]);
 
   const normalizeAndSet = (payload: any) => {
     if (!payload) return false;
@@ -776,11 +824,13 @@ export default function App() {
                           className="space-y-3"
                           instantRemove
                           renderItem={(item) => (
+
                             <FeedCard
                               key={item.id}
                               item={item}
                               loggedIn={loggedIn}
                               onRequireAuth={() => setSignupOpen(true)}
+                              onWhatsApp={handleWhatsAppClick}
                               onlogout={()=>{
                               setLoggedIn(false);
                               setUser(null);
@@ -821,6 +871,14 @@ export default function App() {
               <Route path="/privacy" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Privacy Policy</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><p>This Privacy Policy explains how ResellerSync ("we", "us") collects and uses your information when you use our website and services.</p><h2>Who we are</h2><p>Data Controller: ResellerSync. Contact: <a href="mailto:support@resellersync.io">support@resellersync.io</a>. We are UK based. You may contact the ICO if you have concerns.</p><h2>What we collect</h2><ul><li>Account details (email, name you provide).</li><li>Usage data (IP address, device, and interaction data).</li><li>Cookies and similar technologies (see Cookie Policy).</li></ul><h2>Why we use your data (lawful bases)</h2><ul><li>Provide and maintain the service (Contract/Legitimate Interests).</li><li>Improve the service (Consent for analytics where required).</li><li>Communicate incl. support (Contract/Legitimate Interests; Consent for marketing).</li><li>Security and abuse prevention (Legitimate Interests).</li></ul><h2>Retention</h2><p>We retain data only as long as necessary and as required by law.</p><h2>Sharing and processors</h2><p>We use trusted vendors: Vercel (hosting/CDN), Runpod (infrastructure), Email provider (support/transactional), Analytics provider (if enabled by your cookie choices). We do not sell personal data.</p><h2>International transfers</h2><p>Data may be processed outside the UK with appropriate safeguards (SCCs).</p><h2>Your rights</h2><ul><li>Access, rectification, erasure, restriction, portability, objection.</li><li>Withdraw consent at any time for consent-based activities.</li></ul><p>To exercise rights, contact <a href="mailto:support@resellersync.io">support@resellersync.io</a>.</p><h2>Complaints</h2><p>Complain to the ICO: <a href="https://ico.org.uk/" target="_blank" rel="noreferrer">ico.org.uk</a>.</p><h2>Changes</h2><p>We may update this Policy and post the new date here.</p></div></div>} />
               <Route path="/terms" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Terms of Service</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><h2>Agreement</h2><p>By using ResellerSync, you agree to these terms.</p><h2>Use of Service</h2><ul><li>No abuse, scraping, or interference; no unauthorized access.</li><li>We may update or discontinue features at any time.</li><li>You are responsible for your account and compliance with laws.</li></ul><h2>Content</h2><p>We aggregate or normalize content. No guarantees of accuracy; not affiliated with brands mentioned.</p><h2>Availability</h2><p>Service is provided “as is”, without warranty; no guarantee of uninterrupted operation.</p><h2>Liability</h2><p>Liability is limited to amounts paid in the last 12 months, to the extent permitted by law.</p><h2>Governing Law</h2><p>Laws of England and Wales. Exclusive jurisdiction of its courts.</p><h2>Contact</h2><p><a href="mailto:support@resellersync.io">support@resellersync.io</a></p></div></div>} />
               <Route path="/cookies" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Cookie Policy</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><p>This Cookie Policy explains how ResellerSync uses cookies and similar technologies.</p><h2>Categories</h2><ul><li><strong>Necessary</strong>: Required for core functionality. Always on.</li><li><strong>Analytics</strong>: Understand usage and improve the product. Only set with your consent.</li><li><strong>Marketing</strong>: Personalization and measuring campaigns. Only set with your consent.</li></ul><h2>Managing cookies</h2><p>You can change your choices at any time via <button className="underline" onClick={() => window.dispatchEvent(new CustomEvent('open-cookie-manager'))}>Manage cookies</button>.</p><h2>Third parties</h2><ul><li>Vercel (hosting/CDN)</li><li>Runpod (infrastructure)</li><li>Analytics provider (only if you opt in)</li><li>Email provider (support/transactional)</li></ul><h2>More info</h2><p>See our <a href="/privacy">Privacy Policy</a> for data handling info.</p></div></div>} />
+              <Route path="/product/:id" element={<ProductPage loggedIn={loggedIn} onRequireAuth={() => setSignupOpen(true)}   onWhatsApp={handleWhatsAppClick}
+                              onlogout={()=>{
+                              setLoggedIn(false);
+                              setUser(null);
+                              setLoginOpen(true)
+                              try {
+                                localStorage.removeItem('user');
+                              } catch {}}} />} />
             </Routes>
           </section>
 

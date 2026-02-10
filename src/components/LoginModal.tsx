@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { validateEmail, validationMessage } from '../utils/validateEmail'
 import { Link } from 'react-router-dom'
-export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string; role:String ,token:string} | null) => void; onSwitch?: () => void }) {
+export default function LoginModal({ open, onClose, onLogin, onSwitch }: { open: boolean; onClose: () => void; onLogin: (user: { name: string; email?: string; hasWebsite?: boolean; hasInventory?: boolean; inventoryValueBand?: string; role:string ,token:string} | null) => void; onSwitch?: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState<string | null>(null)

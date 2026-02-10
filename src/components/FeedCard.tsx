@@ -2,18 +2,21 @@ import React, { useEffect, useMemo, useState,useCallback } from 'react'
 import { buildWhatsAppHref } from '../utils/whatsapp'
 import { Item as NormalizedItem } from '../utils/normalizeItem'
 import { useAuth } from '../utils/AuthContext'
+import { Link } from 'react-router-dom'
 type Item = NormalizedItem
 
 export default function FeedCard({
   item,
   loggedIn = false,
   onRequireAuth,
-  onlogout
+  onlogout,
+  onWhatsApp
 }: {
   item: Item
   loggedIn?: boolean
   onRequireAuth?: () => void
   onlogout?:()=>void
+   onWhatsApp?: (vendorId: string, itemName: string,itemid:string, onLogout: () => void) => void
 }) {
   const {token}=useAuth()
   const formatDate = (iso?: string) => {
@@ -93,130 +96,93 @@ const [loading, setLoading] = useState(false)
     return () => clearTimeout(t)
   }, [])
 
-const handleClick = useCallback(async (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-   console.log(messageHref)
-    if (!loggedIn && !token) {
-      alert('Please log in first.')
-      return
-    }
-
-    try {
-      // setLoading(true)
-       const base = import.meta.env.DEV
-        ? '/api/vendors'
-        : 'http://localhost:4000/api/vendors'
-
-      const response = await fetch(`${import.meta.env.VITE_RUNPOD_URL.toString()}/api/vendors/getnumber`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json',  'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ vendorid: item.raw.vendorId }),
-      })
-     
-        if (response.status === 401 || response.status === 403) {
-          onlogout()
-          return;
-        }
-
-      const data = await response.json()
-      
-      if (!data?.Number) {
-        alert('Could not fetch WhatsApp number.')
-        return
-      }
-
-      // Build the message text
-      const name = (item.name || item.description || '').toString().trim()
-      const safeName = name.replace(/\"/g, "'")
-      const text = name
-        ? `Referred from resellersync.io, have you still got "${safeName}" available?`
-        : `Referred from resellersync.io, have you still got this available?`
-
-      // Build WhatsApp URL with message
-         const number = data.Number.replace(/\D/g, '')
-   const encodedText = encodeURIComponent(text)
-   const finalUrl = `https://wa.me/${number}?text=${encodedText}`
-      
-      // Redirect to WhatsApp
-window.location.href = finalUrl;
-
-    } catch (err) {
-      console.error('Error fetching WhatsApp number:', err)
-      alert('Something went wrong fetching the WhatsApp number.')
-    } finally {
-    }
-  }, [item, loggedIn])
+const handleClick = useCallback((e: React.MouseEvent) => {
+  e.preventDefault()
+  if (!loggedIn) {
+    onRequireAuth?.()
+    return
+  }
+  const name = (item.name || item.description || '').toString().trim()
+  onWhatsApp?.(item.raw.vendorId, name,item.id, onlogout!)
+}, [item, loggedIn, onWhatsApp, onlogout])
 
   return (
-    <div
-      className={
-        `feed-card transform-gpu transition-all duration-300 ease-out flex flex-row items-center gap-5 p-[0.625rem]`
-        + (entered ? ' feed-card-enter' : ' feed-card-initial')
-        + (isRecent ? ' recent-15' : '')
-      }
-    >
-      {isRecent ? (
-        <div className="recent-badge recent-badge-float recent-badge-glow">New</div>
-      ) : null}
-      {/* Left: Photo container */}
-      <div className="flex-none rounded overflow-hidden" style={{ width: '6.3125rem', height: '6.375rem' }}>
-        {item.images && item.images[0] ? (
-          <img
-            src={item.images[0]}
-            alt={item.name || item.description}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : null}
-      </div>
+<div
+  className={
+    `feed-card flex items-start gap-4 p-4 rounded-lg border border-white/10 bg-gray-900 shadow-sm relative`
+    + (entered ? ' feed-card-enter' : ' feed-card-initial')
+  }
+>
+  {/* NEW badge stays exactly like your original */}
+  {isRecent && (
+    <div className="recent-badge recent-badge-float recent-badge-glow">New</div>
+  )}
 
-  {/* Right: Content column (pad-right so text doesn't sit under the floating NEW badge) */}
-  <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 pr-16">
-  {/* Title */}
- {/* Title */}<div 
-  className="feed-title text-animate break-words"
-  style={{
+  {/* Left: Image */}
+  <Link to={`/product/${item.id}`} className="flex-none w-24 h-24 rounded overflow-hidden">
+    {item.images?.[0] && (
+      <img
+        src={item.images[0]}
+        alt={item.name || item.description}
+        className="w-full h-full object-cover"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+      />
+    )}
+  </Link>
+
+  {/* Right: Text */}
+  <div className="flex-1 flex flex-col justify-between min-w-0">
+    <Link to={`/product/${item.id}`} className="no-underline text-white">
+      <div className="feed-title font-semibold text-sm" style={{
     display: '-webkit-box',
     WebkitLineClamp: 3,
     WebkitBoxOrient: 'vertical',
-    overflow: 'hidden'
-  }}
->
-  {item.name || item.description}
-</div>
-        {/* Details line: sizes + price PP + optional phrase */}
-        <div className="feed-meta mt-1 text-animate flex flex-wrap items-center gap-2">
-          {details.length ? details : null}
-        </div>
-
-        {/* Posted date/time */}
-        {(date || time) ? (
-          <div className="mt-1 text-xs text-white/60">Posted {date}{date && time ? ' - ' : ''}{time}</div>
-        ) : null}
-
-
-        <div className="mt-2">
-          {loggedIn ? (
-            <a
-              href="#"
-              onClick={handleClick}
-              className="btn-blue px-5 py-2.5 inline-block text-center card-btn-label"
-            >
-              Message on WhatsApp
-            </a>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onRequireAuth?.()}
-              className="btn-blue px-5 py-2.5 inline-block text-center card-btn-label"
-              title="Login or sign up to contact on WhatsApp"
-            >
-              Sign up to message
-            </button>
-          )}
-        </div>
-      </div>
+    overflow: 'hidden',
+    paddingRight: '3rem'
+  }}>
+    {item.name || item.description}
+  </div>
+  <div className="feed-meta mt-1 text-sm text-white/70 flex flex-wrap items-center gap-2">
+    {details.length ? details : null}
+  </div>
+  {(date || time) && (
+    <div className="text-xs text-white/50 mt-1">
+      Posted {date}{date && time ? ' - ' : ''}{time}
     </div>
+  )}
+    </Link>
+
+    {/* WhatsApp button */}
+    <div className="mt-2">
+      {loggedIn ? (
+        <a
+          href="#"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleClick(e)
+          }}
+          className="btn-blue px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 transition-colors inline-block"
+        >
+          Message on WhatsApp
+        </a>
+      ) : (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onRequireAuth?.()
+          }}
+          className="btn-blue px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 transition-colors inline-block"
+          title="Login or sign up to contact on WhatsApp"
+        >
+          Sign up to message
+        </button>
+      )}
+    </div>
+  </div>
+</div>
+
+
   )
 }
