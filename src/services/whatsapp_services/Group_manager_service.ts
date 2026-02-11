@@ -64,6 +64,7 @@ export class GroupManager {
       }
       else{
         if (!parent.subGroups.includes(jid)) {
+          console.log("they existed before fetching just did not lineked =>",this._groupCache.get(jid)?.metadata.subject,"=>",this._groupCache.get(jid)?.metadata.participants.length)
              parent.subGroups.push(jid)
             }
       }
