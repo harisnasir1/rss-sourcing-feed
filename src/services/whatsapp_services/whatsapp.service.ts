@@ -47,7 +47,7 @@ export class WhatsAppClient {
     // ✅ These options prevent history sync
     syncFullHistory: false,           // Don't sync full message history
     markOnlineOnConnect: false,       // Don't show as "online" when connecting
-    shouldSyncHistoryMessage: () => false,// Disable history message sync
+   // shouldSyncHistoryMessage: () => false,// Disable history message sync
     keepAliveIntervalMs: 30000 
     });
     console.log('✅ WhatsApp client initialized');
@@ -83,7 +83,7 @@ export class WhatsAppClient {
         wscontainer.sock=this.sock;
         if(this.groupmanager){
         wscontainer.groupManager=this.groupmanager;
-        this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+       // this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
       }
       else{
         console.log("groupmanager dismounted")
