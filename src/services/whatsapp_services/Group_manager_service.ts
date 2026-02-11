@@ -126,12 +126,23 @@ export class GroupManager {
 
 
 
-  isParticipant(groupJid: string, userJid: string): boolean {
-    const data = this._groupCache.get(groupJid);
+  isParticipant( userJid: string): boolean {
+    const data = this._groupCache.get(this.COMMUNITY_JID);
 
 
+    
     if (!data) return false;
+const targetLid = '279391951134733@lid'
+const targetPhone = '447522299382@s.whatsapp.net'
 
+data.subGroups.forEach(sug => {
+  const sugdata = this._groupCache.get(sug)
+  const byLid = sugdata?.metadata.participants.find(p => p.id === targetLid)
+  const byPhone = sugdata?.metadata.participants.find(p => (p as any).phoneNumber === targetPhone)
+  if (byLid || byPhone) {
+    console.log(sugdata?.metadata.subject, 'LID match:', byLid?.id, 'Phone match:', (byPhone as any)?.phoneNumber, 'Their LID:', byPhone?.id)
+  }
+})
     // community-level participants
     if (
       data.metadata.participants.some(par => par.id === userJid)
