@@ -61,6 +61,11 @@ export class GroupManager {
         }
 
       }
+      else{
+        if (!parent.subGroups.includes(jid)) {
+             parent.subGroups.push(jid)
+            }
+      }
     }
 }
     console.log(`Cached ${this._groupCache.size} groups`)
