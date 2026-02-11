@@ -109,7 +109,7 @@ export class Message_processing {
             return null
         }
         const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
-        console.log("data form ai=>",aidata)
+        // console.log("data form ai=>",aidata)
         if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))){ 
              console.log(aidata?JSON.stringify(aidata):"something wrong with data");
              return null;
@@ -150,7 +150,7 @@ export class Message_processing {
                
         let venderget =   await this._rvendor.updateVendor(vinfo.phonenumber,d)
         if(venderget.length>0&&venderget[0].id && list.isWTS==true && list.isWTB!=true){
-             //now send to notification service
+             
             await this._notiman.SendWtsnotifications(venderget[0],list);
             }
         

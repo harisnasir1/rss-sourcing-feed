@@ -15,7 +15,7 @@ import { Vendor } from '../types/Data_types';
 
  
   public async getVendorByPhone(phone: string): Promise<Vendor[]> {
-    console.log("phone number which its getting ->", phone)
+   
     return await query(`SELECT * FROM "Vendor" WHERE phonenumber = $1`, [phone]);
   }
 

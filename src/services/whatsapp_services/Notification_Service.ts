@@ -17,7 +17,7 @@ export class NotificationManager {
         if (listing && listing.isWTS  && vendor.id && this._webhookurl) {
             await this._notirepo?.create(vendor.id);
             let wid = (vendor as any).whatsappid+ "@lid"
-            console.log(vendor)
+            console.log("notification get vendor:",vendor)
             var isincommuity = wscontainer.groupManager.isParticipant("120363295018117451@g.us", wid);
             if (isincommuity) {
                 console.log(`this person with vendorid :${(vendor as any).phonenumber} is in RR community`)
@@ -25,13 +25,13 @@ export class NotificationManager {
             else {
               
                 const alreadySent = await this._notirepo?.isWtsSent((vendor as any).whatsappid)
-                 if (alreadySent) return
+                 if (alreadySent) {
+                console.log("already sent")
+                    return
+                }
                   console.log(`sending webhook to  person with vendorid :${vendor.id}`)
                
                      try {
-                   
-                 
-
                     const res = await fetch(this._webhookurl!, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +53,7 @@ export class NotificationManager {
                 } catch (err) {
                     console.error('Webhook error:', err)
                 }
-                this._notirepo?.isWtsSent(vendor.id)
+              
             }
         }
         else {
