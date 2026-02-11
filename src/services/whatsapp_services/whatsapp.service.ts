@@ -78,13 +78,13 @@ export class WhatsAppClient {
         this.reconnectries=0;
         this.isReconnecting=false
 
-        await this.groupmanager?.fetchAllGroups();
-        //console.log(await this.groupmanager?.getRRcomunity())
-        console.log(await this.groupmanager?.isParticipant("279391951134733@lid"))
+       await this.groupmanager?.fetchAllGroups();
+
+       
         wscontainer.sock=this.sock;
         if(this.groupmanager){
         wscontainer.groupManager=this.groupmanager;
-      // this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+      this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
       }
       else{
         console.log("groupmanager dismounted")
