@@ -15,12 +15,12 @@ export class Message_Buffer{
 
     public async addimagetobuffer(vinfo:Vendor,msg:WAMessage,groupname:string,buffertype:msgtype,img:string[])
     {
-      try  {  console.log("getting in image to buffer class")
+      try  {  
           if(!vinfo ||!vinfo.id || !msg || !groupname || !buffertype||!msg.key.remoteJid||!msg.messageTimestamp) return null;
           //first check if there is messagebuffer before using vendorid
-          console.log("getting in image to buffer class passed first condition.")
+          
           const pbuff=await this._buffrepo.getByVendorId(vinfo.id,msg.key.remoteJid)
-          console.log("getting buffer data=>",pbuff)
+         
           if(pbuff && pbuff.id )
           {
              await this._buffrepo.appendImage(pbuff.id,img);
@@ -49,9 +49,9 @@ export class Message_Buffer{
     {
          try{ 
           if(!vinfo ||!vinfo.id || !msg || !buffertype||!msg.key.remoteJid||!msg.messageTimestamp) return null;
-            console.log("getting in image to buffer class passed first condition.")
+            // console.log("getting in image to buffer class passed first condition.")
             const pbuff=await this._buffrepo.getByVendorId(vinfo.id,msg.key.remoteJid)
-            console.log("getting buffer data=>",pbuff)
+            // console.log("getting buffer data=>",pbuff)
           if(pbuff && pbuff.id )
           {
             const k:MessageBuffer= await this._buffrepo.appendtext(pbuff.id,desc);

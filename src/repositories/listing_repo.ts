@@ -192,8 +192,8 @@ export class listing_repo {
     }
     public async checkdublicate(des: string, vid: string): Promise<Boolean> {
         try {
-            console.log("description which they ", des)
-            console.log("vendor id ", vid)
+            //console.log("description which they ", des)
+            //console.log("vendor id ", vid)
             let sql = `
         SELECT COUNT(*)
         FROM "Listing"
@@ -208,9 +208,9 @@ export class listing_repo {
             const params: any[] = [];
             params.push(des);
             params.push(vid)
-            console.log("params =>", params)
+           // console.log("params =>", params)
             const k = await query(sql, params);
-            console.log("dublicate query result", k)
+           // console.log("dublicate query result", k)
             const count = parseInt(k[0].count, 10);
             return count > 0;
         }
@@ -221,7 +221,7 @@ export class listing_repo {
     }
     public async getListingById(id: uuid) {
         try {
-            console.log(id);
+          
             const sql = `
             SELECT 
                 l.id,

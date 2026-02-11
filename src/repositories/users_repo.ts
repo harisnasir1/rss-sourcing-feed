@@ -321,18 +321,11 @@ private async checkinghlwon(email: string, phone: string) {
     fetch(`${baseUrl}?${params}&q=${email}`, opportunityOptions),
     fetch(`https://rest.gohighlevel.com/v1/contacts/lookup?phone=+${phone}`, contactOptions)
   ]);
-  console.log("Befor parseing:")
-  console.log("email search:->",emailOpportunityRes)
-  console.log("constact lookup->",contactRes)
-
   // Parse both responses
   const [emailOpportunityData, contactData] = await Promise.all([
     emailOpportunityRes.json(),
     contactRes.json()
   ]);
-  console.log("After parseing:")
-  console.log("email search:->",emailOpportunityData)
-  console.log("constact lookup->",contactData)
   
   // Check if email search found opportunities
   if (emailOpportunityData?.opportunities?.length > 0) {
@@ -351,7 +344,7 @@ private async checkinghlwon(email: string, phone: string) {
     opportunityOptions
   );
   const idOpportunityData = await idOpportunityRes.json();
-  console.log("find contact using contact id=>",idOpportunityData)
+  
   return idOpportunityData?.opportunities?.length > 0 ? 1 : 0;
 }
 }
