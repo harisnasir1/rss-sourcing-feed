@@ -130,7 +130,9 @@ export class GroupManager {
     const data = this._groupCache.get(this.COMMUNITY_JID);
 
 
-    
+    console.log('Community exists:', !!data)
+console.log('SubGroups count:', data?.subGroups.length)
+console.log('SubGroups:', data?.subGroups)
     if (!data) return false;
 const targetLid = '279391951134733@lid'
 const targetPhone = '447522299382@s.whatsapp.net'
