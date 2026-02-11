@@ -43,7 +43,7 @@ export class GroupManager {
      if(parent) 
 {
   const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
-   
+   console.log(community)
    
     for (const subGroup of community.linkedGroups) {
       const jid = subGroup.id;
