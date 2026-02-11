@@ -15,15 +15,14 @@ export class NotificationManager {
     async SendWtsnotifications(vendor: Vendor, listing: Listing,) //jid is whatsappid in our db.
     {
         if (listing && listing.isWTS  && vendor.id && this._webhookurl) {
-            await this._notirepo?.create(vendor.id);
+           
             let wid = (vendor as any).whatsappid+ "@lid"
             console.log("notification get vendor:",vendor)
-            var isincommuity = wscontainer.groupManager.isParticipant("120363295018117451@g.us", wid);
+            var isincommuity = wscontainer.groupManager.isParticipant(wid);
             if (isincommuity) {
                 console.log(`this person with vendorid :${(vendor as any).phonenumber} is in RR community`)
             }
             else {
-              
                 const alreadySent = await this._notirepo?.isWtsSent((vendor as any).whatsappid)
                  if (alreadySent) {
                 console.log("already sent")
@@ -46,6 +45,7 @@ export class NotificationManager {
                     })
 
                     if (res.ok) {
+                         await this._notirepo?.create(vendor.id);
                         await this._notirepo?.markWtsSent((vendor as any).whatsappid)
                     } else {
                         console.error('Webhook failed:', res.status)
