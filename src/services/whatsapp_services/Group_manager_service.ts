@@ -76,8 +76,13 @@ export class GroupManager {
     if(!jid) return;
     if (!this._groupCache.has(jid)) {
       
-      const meta = await this._sock.groupMetadata(jid)
+      try{const meta = await this._sock.groupMetadata(jid)
       this._groupCache.set(jid, { metadata: meta, type: 'group', subGroups: [] })
+    }
+    catch(e)
+    {
+      console.warn(`Skipping ${subGroup.id} - no access ,${e}`)
+    }
     }
      const parent = this._groupCache.get(COMMUNITY_JID)
     if (parent) parent.subGroups.push(jid)
