@@ -42,7 +42,7 @@ export class GroupManager {
      const parent = this._groupCache.get(this.COMMUNITY_JID);
      if(parent) 
 {
-    const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
+  const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
    
     console.log(community)
     for (const subGroup of community.linkedGroups) {
@@ -53,6 +53,7 @@ export class GroupManager {
       if (!this._groupCache.get(jid)) {
         try {
           const meta = await this._sock.groupMetadata(jid)
+          console.log("getting for RR=>",meta)
           this._groupCache.set(jid, { metadata: meta, type: 'group', subGroups: [] })
           parent.subGroups.push(jid);
         }
