@@ -8,7 +8,7 @@ interface CachedGroups {
 export class GroupManager {
   private _sock: WASocket;
   private _groupCache: Map<string, CachedGroups>
-
+  private COMMUNITY_JID:string = '120363295018117451@g.us'
   constructor(sock: WASocket) {
     this._sock = sock
     this._groupCache = new Map()
@@ -38,11 +38,11 @@ export class GroupManager {
     }
     //force to get our community data if that groups or scales we need to add db array here and then force to get all the subgroups.
     
-    const COMMUNITY_JID = '120363295018117451@g.us'
-     const parent = this._groupCache.get(COMMUNITY_JID);
+     
+     const parent = this._groupCache.get(this.COMMUNITY_JID);
      if(parent) 
 {
-    const community = await this._sock.communityFetchLinkedGroups(COMMUNITY_JID)
+    const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
    
     console.log(community)
     for (const subGroup of community.linkedGroups) {
@@ -69,7 +69,11 @@ export class GroupManager {
   }
 
   getCommunities(): CachedGroups[] {
-    return [...this._groupCache.values()].filter(g => g.type == "community")
+    return [...this._groupCache.values()].filter(g => g.type == "community" )
+  }
+
+  getRRcomunity():CachedGroups|undefined{
+    return this._groupCache.get(this.COMMUNITY_JID);
   }
 
   getGroupByJid(jid: string): CachedGroups | undefined {
@@ -77,7 +81,7 @@ export class GroupManager {
   }
 
   async getCommnitiesWithsubgroups() {
-    const COMMUNITY_JID = '120363295018117451@g.us'
+
 
 
     const groups = await this._sock.groupFetchAllParticipating()
@@ -92,7 +96,7 @@ export class GroupManager {
     }
 
     // Fetch community sub-groups directly from WhatsApp
-    const community = await this._sock.communityFetchLinkedGroups(COMMUNITY_JID)
+    const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
     console.log(community)
     for (const subGroup of community.linkedGroups) {
       const jid = subGroup.id
@@ -107,11 +111,11 @@ export class GroupManager {
           console.warn(`Skipping ${subGroup.id} - no access ,${e}`)
         }
       }
-      const parent = this._groupCache.get(COMMUNITY_JID)
+      const parent = this._groupCache.get(this.COMMUNITY_JID)
       if (parent) parent.subGroups.push(jid)
     }
 
-    console.log(`Cached ${this._groupCache.size} groups, community has ${this._groupCache.get(COMMUNITY_JID)?.subGroups.length} sub-groups`)
+    console.log(`Cached ${this._groupCache.size} groups, community has ${this._groupCache.get(this.COMMUNITY_JID)?.subGroups.length} sub-groups`)
 
   }
 
