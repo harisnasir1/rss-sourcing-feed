@@ -24,7 +24,12 @@ interface ProductPageProps {
   loggedIn: boolean
   onRequireAuth: () => void
   onlogout?: () => void
-  onWhatsApp?: (vendorId: string, itemName: string, itemid, onLogout: () => void) => void
+  onWhatsApp?: (
+    vendorId: string,
+    itemName: string,
+    itemid: string,
+    onLogout: () => void
+  ) => void
 }
 
 export default function ProductPage({
@@ -40,28 +45,28 @@ export default function ProductPage({
 
   useEffect(() => {
     if (!id) return
-      ; (async () => {
-        try {
-          setLoading(true)
-          const baseUrl = import.meta.env.VITE_RUNPOD_URL || 'http://localhost:4000'
-          const res = await fetch(`${baseUrl}/api/product/getproduct/${id}`)
-          const json = await res.json()
-          if (json?.data?.success) {
-            const item = json.data.data
-            const normalized: Listing = {
-              ...item,
-              name: item.description?.split('\n')[0] || 'Untitled',
-              images: Array.isArray(item.images) ? item.images : [item.images],
-            }
-            setProduct(normalized)
-            setActiveImg(normalized.images[0])
+    ;(async () => {
+      try {
+        setLoading(true)
+        const baseUrl = import.meta.env.VITE_RUNPOD_URL || 'http://localhost:4000'
+        const res = await fetch(`${import.meta.env.VITE_RUNPOD_URL}/api/product/getproduct/${id}`)
+        const json = await res.json()
+        if (json?.data?.success) {
+          const item = json.data.data
+          const normalized: Listing = {
+            ...item,
+            name: item.description?.split('\n')[0] || 'Untitled',
+            images: Array.isArray(item.images) ? item.images : [item.images],
           }
-        } catch (e) {
-          console.error(e)
-        } finally {
-          setLoading(false)
+          setProduct(normalized)
+          setActiveImg(normalized.images[0])
         }
-      })()
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [id])
 
   const handleWhatsApp = useCallback(
@@ -70,8 +75,7 @@ export default function ProductPage({
       if (!loggedIn) return onRequireAuth()
       if (!product) return
       const name = product.name || product.description || ''
-      console.log(product)
-      onWhatsApp?.(product.vendorId, name, product.id, onlogout!)
+      onWhatsApp?.(product.vendorId!, name, product.id, onlogout!)
     },
     [loggedIn, product, onWhatsApp, onlogout, onRequireAuth]
   )
@@ -108,9 +112,10 @@ export default function ProductPage({
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="flex flex-col lg:flex-row gap-12">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Images */}
           <div className="lg:w-[58%] flex flex-col gap-4">
+            {/* Main Image */}
             <div className="aspect-square rounded-2xl bg-white/[0.03] flex items-center justify-center overflow-hidden">
               <img
                 src={activeImg}
@@ -119,13 +124,14 @@ export default function ProductPage({
               />
             </div>
 
+            {/* Thumbnails */}
             {product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
+              <div className="flex gap-2 overflow-x-auto py-2">
                 {product.images.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => setActiveImg(img)}
-                    className={`w-20 h-20 rounded-xl overflow-hidden bg-white/[0.03] border transition
+                    className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-white/[0.03] border transition
                       ${img === activeImg
                         ? 'border-sky-400/50'
                         : 'border-white/10 opacity-60 hover:opacity-100'
@@ -139,7 +145,7 @@ export default function ProductPage({
           </div>
 
           {/* Info */}
-          <div className="lg:w-[42%] flex flex-col gap-8 lg:sticky lg:top-10 self-start">
+          <div className="lg:w-[42%] flex flex-col gap-8 lg:sticky lg:top-10 lg:self-start">
             {/* Title */}
             <div>
               {product.brand && (
@@ -162,12 +168,10 @@ export default function ProductPage({
                   ? 'POA'
                   : `£${Number(product.price).toLocaleString()}`}
               </div>
-
-              
             </div>
 
             {/* Details */}
-            <div className="rounded-2xl bg-white/[0.03] divide-y divide-white/[0.06]">
+            <div className="rounded-2xl bg-white/[0.03] divide-y divide-white/[0.06] w-full">
               <Detail label="Condition" value={product.condition} />
               <Detail label="Size" value={product.size} />
               <Detail label="Type" value={product.productType} />
@@ -181,33 +185,14 @@ export default function ProductPage({
               {loggedIn ? (
                 <button
                   onClick={handleWhatsApp}
-                  className="
-    inline-flex items-center gap-2
-    h-11 px-6
-    rounded-full
-    btn-blue
-    text-sm font-medium
-    leading-none
-    whitespace-nowrap
-    transition-all
-    hover:scale-[1.02]
-    active:scale-[0.98]
-  "
+                  className="inline-flex items-center gap-2 h-11 px-6 rounded-full btn-blue text-sm font-medium leading-none whitespace-nowrap transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Message on WhatsApp
                 </button>
-
               ) : (
                 <button
                   onClick={onRequireAuth}
-                  className="
-                    inline-flex items-center
-                    h-11 px-6
-                    rounded-full
-                    btn-blue
-                    text-sm font-medium
-                    whitespace-nowrap
-                  "
+                  className="inline-flex items-center h-11 px-6 rounded-full btn-blue text-sm font-medium whitespace-nowrap"
                 >
                   Sign up to message
                 </button>
@@ -234,11 +219,13 @@ export default function ProductPage({
 
 function Detail({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="flex justify-between px-4 py-3">
-      <span className="text-xs text-gray-500 uppercase tracking-wide">
+    <div className="flex justify-between items-baseline px-5 py-3.5 gap-4">
+      <span className="text-xs text-gray-500 uppercase tracking-wide flex-shrink-0">
         {label}
       </span>
-      <span className="text-sm text-gray-200">{value || '—'}</span>
+      <span className="text-sm text-gray-200 text-right break-words min-w-0">
+        {value || '—'}
+      </span>
     </div>
   )
 }
