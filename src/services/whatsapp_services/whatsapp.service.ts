@@ -79,7 +79,7 @@ export class WhatsAppClient {
         this.isReconnecting=false
 
         await this.groupmanager?.fetchAllGroups();
-        console.log(await this.groupmanager?.getCommunities())
+        console.log(await this.groupmanager?.getRRcomunity())
         wscontainer.sock=this.sock;
         if(this.groupmanager){
         wscontainer.groupManager=this.groupmanager;
