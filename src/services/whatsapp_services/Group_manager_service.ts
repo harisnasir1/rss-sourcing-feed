@@ -8,7 +8,7 @@ interface CachedGroups {
 export class GroupManager {
   private _sock: WASocket;
   private _groupCache: Map<string, CachedGroups>
-  private COMMUNITY_JID:string = '120363295018117451@g.us'
+  private COMMUNITY_JID: string = '120363295018117451@g.us'
   constructor(sock: WASocket) {
     this._sock = sock
     this._groupCache = new Map()
@@ -37,82 +37,61 @@ export class GroupManager {
       }
     }
     //force to get our community data if that groups or scales we need to add db array here and then force to get all the subgroups.
-    
-     
-     const parent = this._groupCache.get(this.COMMUNITY_JID);
-     if(parent) 
-{
-  const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
-   console.log(community)
-   
-   for (const subGroup of community.linkedGroups) {
-  console.log("--------------------------------------------------");
-  console.log("Processing new linked group...");
-  console.log("Raw subGroup object:", subGroup);
 
-  const jid = subGroup.id;
-  console.log("Extracted JID:", jid);
 
-  if (!jid) {
-    console.log("❌ Skipping because JID is missing");
-    continue;
-  }
+    const parent = this._groupCache.get(this.COMMUNITY_JID);
+    if (parent) {
+      const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
+      for (const subGroup of community.linkedGroups) {
+        console.log("--------------------------------------------------");
+        console.log("Processing subgroup:", subGroup);
 
-  const cached = this._groupCache.get(jid);
+        const jid = subGroup?.id;
+        if (!jid) {
+          console.log("❌ Skipping — missing JID");
+          continue;
+        }
+        try {
+          console.log("📥 Fetching fresh metadata for:", jid);
 
-  if (!cached) {
-    console.log("📥 Group not found in cache. Fetching metadata from WhatsApp...");
+          const meta = await this._sock.groupMetadata(jid);
 
-    try {
-      const meta = await this._sock.groupMetadata(jid);
+          console.log("✅ Fetched:");
+          console.log("   ➜ Subject:", meta.subject);
+          console.log("   ➜ Participants:", meta.participants?.length);
+          console.log("   ➜ Participants sample:", meta.participants[1]);
+          // Always overwrite cache
+          this._groupCache.set(jid, {
+            metadata: meta,
+            type: 'group',
+            subGroups: []
+          });
 
-      console.log("✅ Metadata fetched successfully:");
-      console.log("   ➜ Subject:", meta.subject);
-      console.log("   ➜ Participants:", meta.participants?.length);
+          console.log("💾 Cache updated (overwritten if existed)");
 
-      this._groupCache.set(jid, {
-        metadata: meta,
-        type: 'group',
-        subGroups: []
-      });
+          // Always relink
+          parent.subGroups.push(jid);
+          console.log("🔗 Linked to parent");
 
-      console.log("💾 Stored in cache");
+        } catch (e) {
+          console.warn("⚠️ Failed to fetch metadata for:", jid);
+          console.warn("   ➜ Error:", e);
+        }
 
-      parent.subGroups.push(jid);
-      console.log("🔗 Linked subgroup to parent");
-    } catch (e) {
-      console.warn("⚠️ Failed to fetch metadata");
-      console.warn("   ➜ JID:", jid);
-      console.warn("   ➜ Error:", e?.message || e);
+
+      }
+
     }
-
-  } else {
-    console.log("📦 Group already exists in cache");
-    console.log("   ➜ Subject:", cached?.metadata?.subject);
-    console.log("   ➜ Participants:", cached?.metadata?.participants?.length);
-
-    if (!parent.subGroups.includes(jid)) {
-      console.log("🔗 Not yet linked to parent. Linking now...");
-      parent.subGroups.push(jid);
-    } else {
-      console.log("✔ Already linked to parent. No action needed.");
-    }
-  }
-
-  console.log("Finished processing JID:", jid);
-}
-
-}
     console.log(`Cached ${this._groupCache.size} groups`)
 
     return this._groupCache
   }
 
   getCommunities(): CachedGroups[] {
-    return [...this._groupCache.values()].filter(g => g.type == "community" )
+    return [...this._groupCache.values()].filter(g => g.type == "community")
   }
 
-  getRRcomunity():CachedGroups|undefined{
+  getRRcomunity(): CachedGroups | undefined {
     return this._groupCache.get(this.COMMUNITY_JID);
   }
 
@@ -160,49 +139,49 @@ export class GroupManager {
   }
 
 
-isParticipant(userJid: string): boolean {
-  const data = this._groupCache.get(this.COMMUNITY_JID)
-  if (!data) return false
+  isParticipant(userJid: string): boolean {
+    const data = this._groupCache.get(this.COMMUNITY_JID)
+    if (!data) return false
 
-  console.log('=== PARTICIPANT CHECK ===')
-  console.log('Looking for:', userJid)
+    console.log('=== PARTICIPANT CHECK ===')
+    console.log('Looking for:', userJid)
 
-  // Community-level check
-  const communityMatch = data.metadata.participants.find(p => p.id === userJid)
-  if (communityMatch) {
-    console.log('FOUND at community level')
-    return true
-  }
-
-  // Sub-group check
-  let found = false
-  for (const sug of data.subGroups) {
-    const sugdata = this._groupCache.get(sug)
-    if (!sugdata) continue
-
-    const match = sugdata.metadata.participants.find(p => p.id === userJid)
-    if (match) {
-      console.log(`FOUND in: ${sugdata.metadata.subject} (${sug})`)
-      console.log('Match:', match)
-      found = true
-      break
+    // Community-level check
+    const communityMatch = data.metadata.participants.find(p => p.id === userJid)
+    if (communityMatch) {
+      console.log('FOUND at community level')
+      return true
     }
-  }
 
-  if (!found) {
-    console.log('NOT FOUND in any group')
-    // Log total participants per sub-group
+    // Sub-group check
+    let found = false
     for (const sug of data.subGroups) {
       const sugdata = this._groupCache.get(sug)
-      console.log(`${sugdata?.metadata.subject}: ${sugdata?.metadata.participants.length} participants`)
-    }
-    // Log sample LID format from first sub-group
-    const first = this._groupCache.get(data.subGroups[0])
-    console.log('Sample LID format:', first?.metadata.participants[0]?.id)
-    console.log('Your LID format:', userJid)
-  }
+      if (!sugdata) continue
 
-  console.log('=== END CHECK ===')
-  return found
-}
+      const match = sugdata.metadata.participants.find(p => p.id === userJid)
+      if (match) {
+        console.log(`FOUND in: ${sugdata.metadata.subject} (${sug})`)
+        console.log('Match:', match)
+        found = true
+        break
+      }
+    }
+
+    if (!found) {
+      console.log('NOT FOUND in any group')
+      // Log total participants per sub-group
+      for (const sug of data.subGroups) {
+        const sugdata = this._groupCache.get(sug)
+        console.log(`${sugdata?.metadata.subject}: ${sugdata?.metadata.participants.length} participants`)
+      }
+      // Log sample LID format from first sub-group
+      const first = this._groupCache.get(data.subGroups[0])
+      console.log('Sample LID format:', first?.metadata.participants[0]?.id)
+      console.log('Your LID format:', userJid)
+    }
+
+    console.log('=== END CHECK ===')
+    return found
+  }
 }
