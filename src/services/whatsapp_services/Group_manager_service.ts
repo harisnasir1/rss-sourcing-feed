@@ -15,34 +15,37 @@ export class GroupManager {
 
   }
 
+
   async fetchAllGroups(): Promise<Map<string, CachedGroups>> {
 
-    const groups = await this._sock.groupFetchAllParticipating()
+    const groups = await this._sock.groupFetchAllParticipating();
 
-    this._groupCache.clear()
+    const newGroupCache = new Map<string, CachedGroups>();
+
     for (const [jid, metadata] of Object.entries(groups)) {
-      this._groupCache.set(jid, {
+      newGroupCache.set(jid, {
         metadata,
         type: metadata.isCommunity ? 'community' : 'group',
         subGroups: []
-      })
+      });
     }
 
     for (const [jid, metadata] of Object.entries(groups)) {
       if (metadata.linkedParent) {
-        const parent = this._groupCache.get(metadata.linkedParent);
-        if (parent && parent != null) {
-          parent.subGroups.push(jid)
+        const parent = newGroupCache.get(metadata.linkedParent);
+        if (parent) {
+          parent.subGroups.push(jid);
         }
       }
     }
-    //force to get our community data if that groups or scales we need to add db array here and then force to get all the subgroups.
 
+    const parent = newGroupCache.get(this.COMMUNITY_JID);
 
-    const parent = this._groupCache.get(this.COMMUNITY_JID);
     if (parent) {
-      const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
+      const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID);
+
       for (const subGroup of community.linkedGroups) {
+
         console.log("--------------------------------------------------");
         console.log("Processing subgroup:", subGroup);
 
@@ -51,6 +54,7 @@ export class GroupManager {
           console.log("❌ Skipping — missing JID");
           continue;
         }
+
         try {
           console.log("📥 Fetching fresh metadata for:", jid);
 
@@ -59,33 +63,35 @@ export class GroupManager {
           console.log("✅ Fetched:");
           console.log("   ➜ Subject:", meta.subject);
           console.log("   ➜ Participants:", meta.participants?.length);
-          console.log("   ➜ Participants sample:", meta.participants[1]);
-          // Always overwrite cache
-          this._groupCache.set(jid, {
+
+          newGroupCache.set(jid, {
             metadata: meta,
             type: 'group',
             subGroups: []
           });
 
-          console.log("💾 Cache updated (overwritten if existed)");
+          if (!parent.subGroups.includes(jid)) {
+            parent.subGroups.push(jid);
+          }
 
-          // Always relink
-          parent.subGroups.push(jid);
-          console.log("🔗 Linked to parent");
+          console.log("💾 Updated in new cache & linked");
 
         } catch (e) {
           console.warn("⚠️ Failed to fetch metadata for:", jid);
           console.warn("   ➜ Error:", e);
         }
-
-
       }
-
     }
-    console.log(`Cached ${this._groupCache.size} groups`)
 
-    return this._groupCache
+    this._groupCache = newGroupCache;
+
+    console.log(`Cached ${this._groupCache.size} groups`);
+
+    return this._groupCache;
   }
+
+
+
 
   getCommunities(): CachedGroups[] {
     return [...this._groupCache.values()].filter(g => g.type == "community")

@@ -9,6 +9,7 @@ import {query} from './utils/db_connection'
 
 import {WhatsAppClient} from './services/whatsapp_services/whatsapp.service'
 import "./cronjobs/bufferjobs"
+import "./cronjobs/Groupjobs"
 const app = express();
 const PORT = 4000;
 const allowedOrigins = [
