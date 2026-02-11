@@ -151,7 +151,7 @@ export class Message_processing {
         let venderget =   await this._rvendor.updateVendor(vinfo.phonenumber,d)
         if(venderget.length>0&&venderget[0].id && list.isWTS==true && list.isWTB!=true){
              //now send to notification service
-             this._notiman.SendWtsnotifications(venderget[0],list);
+            await this._notiman.SendWtsnotifications(venderget[0],list);
             }
         
             return re;
