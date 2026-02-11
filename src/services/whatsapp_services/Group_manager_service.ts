@@ -45,7 +45,6 @@ export class GroupManager {
   }
 
   getCommunities(): CachedGroups[] {
-
     return [...this._groupCache.values()].filter(g => g.type=="community")
   }
 
@@ -53,9 +52,45 @@ export class GroupManager {
     return this._groupCache.get(jid)
   }
 
+  async getCommnitiesWithsubgroups()
+  {
+          const COMMUNITY_JID = '120363295018117451@g.us'
   
 
-  isParticipant(groupJid: string, userJid: string): boolean {   //here the groupjid is the one i wanted to block and it is community id
+  const groups = await this._sock.groupFetchAllParticipating()
+  this._groupCache.clear()
+
+  for (const [jid, metadata] of Object.entries(groups)) {
+    this._groupCache.set(jid, {
+      metadata,
+      type: metadata.isCommunity ? 'community' : 'group',
+      subGroups: []
+    })
+  }
+
+  // Fetch community sub-groups directly from WhatsApp
+  const community = await this._sock.communityFetchLinkedGroups(COMMUNITY_JID)
+  console.log(community)
+  for (const subGroup of community.linkedGroups) {
+    const jid = subGroup.id 
+    if(!jid) return;
+    if (!this._groupCache.has(jid)) {
+      
+      const meta = await this._sock.groupMetadata(jid)
+      this._groupCache.set(jid, { metadata: meta, type: 'group', subGroups: [] })
+    }
+     const parent = this._groupCache.get(COMMUNITY_JID)
+    if (parent) parent.subGroups.push(jid)
+  }
+
+  console.log(`Cached ${this._groupCache.size} groups, community has ${this._groupCache.get(COMMUNITY_JID)?.subGroups.length} sub-groups`)
+
+  
+  }
+
+  
+
+  isParticipant(groupJid: string, userJid: string): boolean {   
    const data = this._groupCache.get(groupJid);
 
   
