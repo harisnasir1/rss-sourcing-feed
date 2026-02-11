@@ -45,30 +45,63 @@ export class GroupManager {
   const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
    console.log(community)
    
-    for (const subGroup of community.linkedGroups) {
-      const jid = subGroup.id;
-      console.log(subGroup)
-      if (!jid) continue;
+   for (const subGroup of community.linkedGroups) {
+  console.log("--------------------------------------------------");
+  console.log("Processing new linked group...");
+  console.log("Raw subGroup object:", subGroup);
 
-      if (!this._groupCache.get(jid)) {
-        try {
-          const meta = await this._sock.groupMetadata(jid)
-          console.log("getting for RR=>",meta)
-          this._groupCache.set(jid, { metadata: meta, type: 'group', subGroups: [] })
-          parent.subGroups.push(jid);
-        }
-        catch (e) {
-          console.warn(`Skipping ${subGroup.id} - no access ,${e}`)
-        }
+  const jid = subGroup.id;
+  console.log("Extracted JID:", jid);
 
-      }
-      else{
-        if (!parent.subGroups.includes(jid)) {
-          console.log("they existed before fetching just did not lineked =>",this._groupCache.get(jid)?.metadata.subject,"=>",this._groupCache.get(jid)?.metadata.participants.length)
-             parent.subGroups.push(jid)
-            }
-      }
+  if (!jid) {
+    console.log("❌ Skipping because JID is missing");
+    continue;
+  }
+
+  const cached = this._groupCache.get(jid);
+
+  if (!cached) {
+    console.log("📥 Group not found in cache. Fetching metadata from WhatsApp...");
+
+    try {
+      const meta = await this._sock.groupMetadata(jid);
+
+      console.log("✅ Metadata fetched successfully:");
+      console.log("   ➜ Subject:", meta.subject);
+      console.log("   ➜ Participants:", meta.participants?.length);
+
+      this._groupCache.set(jid, {
+        metadata: meta,
+        type: 'group',
+        subGroups: []
+      });
+
+      console.log("💾 Stored in cache");
+
+      parent.subGroups.push(jid);
+      console.log("🔗 Linked subgroup to parent");
+    } catch (e) {
+      console.warn("⚠️ Failed to fetch metadata");
+      console.warn("   ➜ JID:", jid);
+      console.warn("   ➜ Error:", e?.message || e);
     }
+
+  } else {
+    console.log("📦 Group already exists in cache");
+    console.log("   ➜ Subject:", cached?.metadata?.subject);
+    console.log("   ➜ Participants:", cached?.metadata?.participants?.length);
+
+    if (!parent.subGroups.includes(jid)) {
+      console.log("🔗 Not yet linked to parent. Linking now...");
+      parent.subGroups.push(jid);
+    } else {
+      console.log("✔ Already linked to parent. No action needed.");
+    }
+  }
+
+  console.log("Finished processing JID:", jid);
+}
+
 }
     console.log(`Cached ${this._groupCache.size} groups`)
 
