@@ -20,11 +20,11 @@ export class NotificationManager {
             console.log(vendor)
             var isincommuity = wscontainer.groupManager.isParticipant("120363295018117451@g.us", wid);
             if (isincommuity) {
-                console.log(`this person with vendorid :${vendor.phonenumber} is in RR community`)
+                console.log(`this person with vendorid :${(vendor as any).phonenumber} is in RR community`)
             }
             else {
               
-                const alreadySent = await this._notirepo?.isWtsSent(vendor.whatsappid)
+                const alreadySent = await this._notirepo?.isWtsSent((vendor as any).whatsappid)
                  if (alreadySent) return
                   console.log(`sending webhook to  person with vendorid :${vendor.id}`)
                

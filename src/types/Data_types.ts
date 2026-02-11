@@ -1,14 +1,14 @@
 import {WAMessage} from '@whiskeysockets/baileys';
 export interface Vendor {
   id?: string;                 // UUID
-  whatsappid: string;         // varchar(50)
-  phonenumber: string;        // varchar(50)
-  displayname: string;        // varchar(100)
+  whatsappId: string;         // varchar(50)
+  phoneNumber: string;        // varchar(50)
+  displayName: string;        // varchar(100)
   totalListings: number;      // integer, default 0
-  avgrating: number;          // numeric(3,2), default 0
-  totalratings: number;       // integer, default 0
+  avgRating: number;          // numeric(3,2), default 0
+  totalRatings: number;       // integer, default 0
   isBlocked: boolean;         // boolean, default false
-  lastmessageat?: Date;       // timestamp, nullable
+  lastMessageAt?: Date;       // timestamp, nullable
   createdAt?: Date;            // timestamp, default now()
   updatedAt?: Date;            // timestamp, default now()
 }
