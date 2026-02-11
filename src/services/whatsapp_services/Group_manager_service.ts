@@ -125,39 +125,49 @@ export class GroupManager {
   }
 
 
+isParticipant(userJid: string): boolean {
+  const data = this._groupCache.get(this.COMMUNITY_JID)
+  if (!data) return false
 
-  isParticipant( userJid: string): boolean {
-    const data = this._groupCache.get(this.COMMUNITY_JID);
+  console.log('=== PARTICIPANT CHECK ===')
+  console.log('Looking for:', userJid)
 
-
-    console.log('Community exists:', !!data)
-console.log('SubGroups count:', data?.subGroups.length)
-console.log('SubGroups:', data?.subGroups)
-    if (!data) return false;
-const targetLid = '279391951134733@lid'
-const targetPhone = '447522299382@s.whatsapp.net'
-
-data.subGroups.forEach(sug => {
-  const sugdata = this._groupCache.get(sug)
-  const byLid = sugdata?.metadata.participants.find(p => p.id === targetLid)
-  const byPhone = sugdata?.metadata.participants.find(p => (p as any).phoneNumber === targetPhone)
-  if (byLid || byPhone) {
-    console.log(sugdata?.metadata.subject, 'LID match:', byLid?.id, 'Phone match:', (byPhone as any)?.phoneNumber, 'Their LID:', byPhone?.id)
+  // Community-level check
+  const communityMatch = data.metadata.participants.find(p => p.id === userJid)
+  if (communityMatch) {
+    console.log('FOUND at community level')
+    return true
   }
-})
-    // community-level participants
-    if (
-      data.metadata.participants.some(par => par.id === userJid)
-    ) {
-      return true;
+
+  // Sub-group check
+  let found = false
+  for (const sug of data.subGroups) {
+    const sugdata = this._groupCache.get(sug)
+    if (!sugdata) continue
+
+    const match = sugdata.metadata.participants.find(p => p.id === userJid)
+    if (match) {
+      console.log(`FOUND in: ${sugdata.metadata.subject} (${sug})`)
+      console.log('Match:', match)
+      found = true
+      break
     }
-
-    // sub-groups
-    return data.subGroups.some(sug => {
-      const sugdata = this._groupCache.get(sug);
-      return sugdata?.metadata.participants.some(
-        par => par.id === userJid
-      );
-    });
   }
+
+  if (!found) {
+    console.log('NOT FOUND in any group')
+    // Log total participants per sub-group
+    for (const sug of data.subGroups) {
+      const sugdata = this._groupCache.get(sug)
+      console.log(`${sugdata?.metadata.subject}: ${sugdata?.metadata.participants.length} participants`)
+    }
+    // Log sample LID format from first sub-group
+    const first = this._groupCache.get(data.subGroups[0])
+    console.log('Sample LID format:', first?.metadata.participants[0]?.id)
+    console.log('Your LID format:', userJid)
+  }
+
+  console.log('=== END CHECK ===')
+  return found
+}
 }
