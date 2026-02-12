@@ -42,6 +42,19 @@ export default function ProductPage({
   const [product, setProduct] = useState<Listing | null>(null)
   const [activeImg, setActiveImg] = useState('')
   const [loading, setLoading] = useState(true)
+function normalizeImages(images: any): string[] {
+  if (!images) return [];
+
+  const arr = Array.isArray(images) ? images : [images];
+
+  return arr
+    .filter(Boolean)
+    .map((img: string) =>
+      img.replace(/['{}"]/g, '') // removes ', {, }, "
+    )
+    .filter(Boolean);
+}
+
 
   useEffect(() => {
     if (!id) return
@@ -53,11 +66,13 @@ export default function ProductPage({
         const json = await res.json()
         if (json?.data?.success) {
           const item = json.data.data
+          
           const normalized: Listing = {
             ...item,
             name: item.description?.split('\n')[0] || 'Untitled',
-            images: Array.isArray(item.images) ? item.images : [item.images],
+            images:normalizeImages(item.images),
           }
+          console.log(normalized.images)
           setProduct(normalized)
           setActiveImg(normalized.images[0])
         }
