@@ -8,6 +8,7 @@ interface CachedGroups {
 export class GroupManager {
   private _sock: WASocket;
   private _groupCache: Map<string, CachedGroups>
+   private _cacheReady = false;
   private COMMUNITY_JID: string = '120363295018117451@g.us'
   constructor(sock: WASocket) {
     this._sock = sock
@@ -15,9 +16,11 @@ export class GroupManager {
 
   }
 
-
   async fetchAllGroups(): Promise<Map<string, CachedGroups>> {
 
+    try{
+
+   
     const groups = await this._sock.groupFetchAllParticipating();
 
     const newGroupCache = new Map<string, CachedGroups>();
@@ -46,8 +49,6 @@ export class GroupManager {
 
       for (const subGroup of community.linkedGroups) {
 
-        console.log("--------------------------------------------------");
-        console.log("Processing subgroup:", subGroup);
 
         const jid = subGroup?.id;
         if (!jid) {
@@ -56,13 +57,7 @@ export class GroupManager {
         }
 
         try {
-          console.log("📥 Fetching fresh metadata for:", jid);
-
           const meta = await this._sock.groupMetadata(jid);
-
-          console.log("✅ Fetched:");
-          console.log("   ➜ Subject:", meta.subject);
-          console.log("   ➜ Participants:", meta.participants?.length);
 
           newGroupCache.set(jid, {
             metadata: meta,
@@ -74,24 +69,24 @@ export class GroupManager {
             parent.subGroups.push(jid);
           }
 
-          console.log("💾 Updated in new cache & linked");
-
         } catch (e) {
           console.warn("⚠️ Failed to fetch metadata for:", jid);
           console.warn("   ➜ Error:", e);
+          continue;
         }
       }
     }
 
     this._groupCache = newGroupCache;
-
+    this._cacheReady=true;
     console.log(`Cached ${this._groupCache.size} groups`);
-
+    return this._groupCache;
+     }
+    catch (e: any) {
+    console.error('fetchAllGroups failed:', e?.message);
     return this._groupCache;
   }
-
-
-
+  }
 
   getCommunities(): CachedGroups[] {
     return [...this._groupCache.values()].filter(g => g.type == "community")
@@ -144,7 +139,6 @@ export class GroupManager {
 
   }
 
-
   isParticipant(userJid: string): boolean {
     const data = this._groupCache.get(this.COMMUNITY_JID)
     if (!data) return false
@@ -190,4 +184,43 @@ export class GroupManager {
     console.log('=== END CHECK ===')
     return found
   }
+
+  async isPhoneInCommunity(phone: string): Promise<boolean> {
+  if (!this._groupCache.size || !this._sock) return false;
+
+  const jid = phone.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+
+  
+  let lid = await this._sock.signalRepository.lidMapping.getLIDForPN(jid);
+
+  if (!lid) {
+    try
+    {
+      console.log("on sighnup the cache don't have this person so fetching......")
+      const result = await this._sock.onWhatsApp(jid);
+      if (!result?.[0].exists) return false;
+      lid = await this._sock.signalRepository.lidMapping.getLIDForPN(jid);
+    } 
+    catch 
+    {
+      return false;
+    }
+  }
+
+  if (!lid) return false;
+
+   if (this._cacheReady) {
+    return this.isParticipant(lid);
+  }
+  // Cache not ready - check directly
+  try {
+    const community = await this._sock?.groupMetadata(this.COMMUNITY_JID);
+    return community?.participants.some(p => p.id === lid) || false;
+  } 
+  catch(e) {
+    console.log("trying to get data before cache complete")
+    return false;
+  }
+  }
+
 }

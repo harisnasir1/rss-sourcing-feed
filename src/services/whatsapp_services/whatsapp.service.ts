@@ -78,7 +78,19 @@ export class WhatsAppClient {
         this.reconnectries=0;
         this.isReconnecting=false
 
-       await this.groupmanager?.fetchAllGroups();
+       if (this.groupmanager)
+       {
+         wscontainer.groupManager = this.groupmanager;
+         setTimeout(() => {
+        this.groupmanager?.fetchAllGroups().catch(e => {
+          console.error('Background fetch failed:', e?.message);
+        });
+      }, 3000);
+
+       }
+       else {
+      console.log("groupmanager dismounted");
+       }
 
        
         wscontainer.sock=this.sock;
@@ -139,7 +151,7 @@ export class WhatsAppClient {
                 setTimeout(() => this.reconnect(), 10000);
                 return;
             }
-                console.warn(`🔄 Unknown disconnect reason (${reason}) - reconnecting in 10 seconds...`);
+            console.warn(`🔄 Unknown disconnect reason (${reason}) - reconnecting in 10 seconds...`);
             setTimeout(() => this.reconnect(), 10000);
     }
    

@@ -13,6 +13,11 @@ cron.schedule('0 * * * *', async () => {
     console.warn("⚠️ [Cron] Group Manager is not awake Yet. Skipping...");
     return;
    }
+   if(!wscontainer.sock.user)
+   {
+     console.warn("⚠️ [Cron] Socket not connected. Skipping...");
+     return;
+   }
   isRunning = true;
   console.log("♻️ [Cron] Starting community cache refresh...");
 

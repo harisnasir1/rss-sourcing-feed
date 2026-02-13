@@ -95,7 +95,7 @@ return res.status(409).json({
       ghl:true
     });
     }
-    else if(e instanceof Error && e.message === 'User is not in ghl won stage')
+    else if(e instanceof Error && e.message === 'User is not a Member')
     {
       return res.status(409).json({
       success: false,

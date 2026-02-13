@@ -1,21 +1,24 @@
 import { query } from '../utils/db_connection';
-import {SignupDto,LoginDto,usertype,SafeUser} from "../types/User_types"
+import { SignupDto, LoginDto, usertype, SafeUser } from "../types/User_types"
 import { token_repo } from './token_repo';
 import bcrypt from 'bcrypt';
 import crypto from "crypto"
 import { email_service } from '../services/Email_Services/EmailService';
+import { wscontainer } from '../services/Container/ws_container';
 export class UserRepository {
-  private readonly SALT_ROUNDS=10;
-  private readonly ghlkey=process.env.GHL_API_KEY
-  private readonly ghltoken=process.env.GHL_API_Token
+  private readonly SALT_ROUNDS = 10;
+  private readonly ghlkey = process.env.GHL_API_KEY
+  private readonly ghltoken = process.env.GHL_API_Token
 
   //auth logic
 
   async signup(dto: SignupDto): Promise<SafeUser> {
-    let { fullname, email, password, role = 'member',have_site=0,have_stock=0,inventory_value='0',is_active=1,phone } = dto; 
-    if(!email && !phone)  throw Error("something wrong !")
-     email=email.toLowerCase().trim()
-   
+
+    let { fullname, email, password, role = 'member', have_site = 0, have_stock = 0, inventory_value = '0', is_active = 1, phone } = dto;
+    if (!email || !phone || phone === "" || email === "") throw Error("something wrong !")
+    email = email.toLowerCase().trim()
+    phone = phone.replace(/[^0-9]/g, '').trim();
+
     const existingUser = await query(
       'SELECT id FROM "User" WHERE email = $1',
       [email]
@@ -24,14 +27,12 @@ export class UserRepository {
     if (existingUser.length > 0) {
       throw new Error('User with this email already exists');
     }
-    const ghlcheck=await this.checkinghlwon(email,phone)
-    if(!ghlcheck)
-     {
 
-    const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
+    const passed = await this.eitherCheckPasses(email, phone);
+    if (!passed) {
+      const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
-    
-   const sql = `
+      const sql = `
        INSERT INTO "User" (
          id, fullname, email, password,role,have_site,have_stock,inventory_value,is_active,phone
        )
@@ -40,17 +41,15 @@ export class UserRepository {
        )
        RETURNING id, fullname, email, role, created_at, last_login,phone;
      `;
-     const values = [fullname, email, hashedPassword, role,have_site,have_stock,inventory_value,0,phone];
-     
-     const res = await query(sql, values);
-      throw new Error('User is not in ghl won stage');
+      const values = [fullname, email, hashedPassword, role, have_site, have_stock, inventory_value, 0, phone];
+
+      const res = await query(sql, values);
+      throw new Error('User is not a Member');
     }
-    
-    
+
     const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
-    
-   const sql = `
+    const sql = `
   INSERT INTO "User" (
     id, fullname, email, password,role,have_site,have_stock,inventory_value,phone
   )
@@ -60,17 +59,16 @@ export class UserRepository {
   RETURNING id, fullname, email, role, created_at, last_login,phone;
 `;
 
-const values = [fullname, email, hashedPassword, role,have_site,have_stock,inventory_value,phone];
+    const values = [fullname, email, hashedPassword, role, have_site, have_stock, inventory_value, phone];
 
-const res = await query(sql, values);
-return res[0];
-
+    const res = await query(sql, values);
+    return res[0];
   }
 
   async login(dto: LoginDto): Promise<SafeUser> {
     const { email, password } = dto;
 
-    
+
     const User = await query(
       'SELECT id,email,password,role,created_at,fullname,is_active FROM "User" WHERE email = $1',
       [email.trim().toLowerCase()]
@@ -80,11 +78,10 @@ return res[0];
     }
 
     const user = User[0];
-    if(!user.is_active)
-    {
- throw new Error('unauthorized');
+    if (!user.is_active) {
+      throw new Error('unauthorized');
     }
-  
+
 
 
     // Verify password
@@ -104,64 +101,62 @@ return res[0];
     return safeUser;
   }
 
-  async Forget_pass_request(email:string){
+  async Forget_pass_request(email: string) {
     //check if user exists or not
-    if(!email)throw Error("undefined id")
-    const euser=await this.findByEmail(email);
-    if(!euser) throw Error("Email does not exists")
-    if(!euser.is_active) throw Error("UnAutharized")
-    
+    if (!email) throw Error("undefined id")
+    const euser = await this.findByEmail(email);
+    if (!euser) throw Error("Email does not exists")
+    if (!euser.is_active) throw Error("UnAutharized")
+
     //check if token is there
-    const userid=euser.id
-    const token=crypto.randomBytes(32).toString('hex');
+    const userid = euser.id
+    const token = crypto.randomBytes(32).toString('hex');
 
-    const expires_at=new Date();
-    expires_at.setHours(expires_at.getHours()+1);
+    const expires_at = new Date();
+    expires_at.setHours(expires_at.getHours() + 1);
 
-    const existingtoken=await token_repo.getTokenByUserId(userid);
+    const existingtoken = await token_repo.getTokenByUserId(userid);
 
     let tokenrecord;
-    const htoken=await this.hashtoken(token);
-    if(existingtoken)
-    {
-      tokenrecord=await token_repo.updateusertoken(userid,htoken,expires_at);
+    const htoken = await this.hashtoken(token);
+    if (existingtoken) {
+      tokenrecord = await token_repo.updateusertoken(userid, htoken, expires_at);
     }
-    else{
-      tokenrecord=await token_repo.createToken(userid,htoken,expires_at);
+    else {
+      tokenrecord = await token_repo.createToken(userid, htoken, expires_at);
     }
-    const link=`${process.env.Client_Add}/reset-password?id=${userid}&token=${token}`
-    if(!(await email_service.verifyConnection()))throw Error("Email service problem")
-    await email_service.sendmail(euser.email,link,euser.fullname)
+    const link = `${process.env.Client_Add}/reset-password?id=${userid}&token=${token}`
+    if (!(await email_service.verifyConnection())) throw Error("Email service problem")
+    await email_service.sendmail(euser.email, link, euser.fullname)
     return tokenrecord
   }
 
-  async Forget_change_pass(userid:string,token:string,password:string):Promise<boolean>
-  {
+  async Forget_change_pass(userid: string, token: string, password: string): Promise<boolean> {
     //check if token is valid
-   if(! await token_repo.validateToken(userid,token)) return false
-     
-   const k= await this.updatePassword(userid,password)
-     if(!k) return false;
-     token_repo.deleteToken(userid)
-     return true
+    if (! await token_repo.validateToken(userid, token)) return false
+
+    const k = await this.updatePassword(userid, password)
+    if (!k) return false;
+    token_repo.deleteToken(userid)
+    return true
   }
 
-   private async hashtoken(token:string){
-    return await bcrypt.hash(token,4);
+  private async hashtoken(token: string) {
+    return await bcrypt.hash(token, 4);
   }
 
-  
+
   //users logic
 
   async findById(id: string): Promise<SafeUser | null> {
-    
+
     const result = await query(
       `SELECT id, fullname, email, role, created_at, last_login
        FROM "User"
        WHERE id = $1`,
       [id]
     );
-    
+
 
     return result[0] || null;
   }
@@ -190,11 +185,11 @@ return res[0];
   async updatePassword(userId: string, newPassword: string): Promise<boolean> {
     const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
 
-   const data= await query(
+    const data = await query(
       'UPDATE "User" SET password = $1 WHERE id = $2 RETURNING id ',
       [hashedPassword, userId]
     );
-    if(data.length<1) return false
+    if (data.length < 1) return false
 
     return true;
   }
@@ -244,7 +239,7 @@ return res[0];
       'SELECT password FROM "User" WHERE id = $1',
       [userId]
     );
-    
+
     if (result.length === 0) {
       return false;
     }
@@ -254,7 +249,7 @@ return res[0];
 
   async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
     const isValid = await this.verifyPassword(userId, oldPassword);
-    
+
     if (!isValid) {
       throw new Error('Current password is incorrect');
     }
@@ -262,91 +257,119 @@ return res[0];
     await this.updatePassword(userId, newPassword);
   }
 
-  public async Change_active_status(userid:string,status:boolean)
-  {
-     if (!userid) {
-    throw Error("User ID is required");
-  }
+  public async Change_active_status(userid: string, status: boolean) {
+    if (!userid) {
+      throw Error("User ID is required");
+    }
 
-  const result = await query(
-    `UPDATE "User" 
+    const result = await query(
+      `UPDATE "User" 
      SET is_active = $1
      WHERE id = $2 AND role != 'admin'
      RETURNING id, fullname, email, role, created_at, last_login`,
-    [status, userid.trim()]
-  );
-    
+      [status, userid.trim()]
+    );
 
-  if (!result || result.length < 1) {
-    // Could be user not found OR user is admin
-    const user = await query('SELECT role FROM "User" WHERE id = $1', [userid.trim()]);
-    
-    if (!user[0]) throw Error("User not found");
-    if (user[0].role === "admin") throw Error("Cannot change the status of admin");
-    
-    throw Error("Failed to update user status");
+
+    if (!result || result.length < 1) {
+      // Could be user not found OR user is admin
+      const user = await query('SELECT role FROM "User" WHERE id = $1', [userid.trim()]);
+
+      if (!user[0]) throw Error("User not found");
+      if (user[0].role === "admin") throw Error("Cannot change the status of admin");
+
+      throw Error("Failed to update user status");
+    }
+
+    return result[0];
   }
 
-  return result[0];
+  private async checkinghlwon(email: string, phone: string) {
+    const baseUrl = "https://services.leadconnectorhq.com/opportunities/search";
+    const params = new URLSearchParams({
+      location_id: "0jUuoXuSJVQGki9cRwUx",
+      pipeline_id: "xLLFc3s2wXBCu8Ms50eh",
+      pipeline_stage_id: "00964150-abc3-4a57-923b-3799b165a06d"
+    });
+
+    const opportunityOptions = {
+      method: "get",
+      headers: {
+        "Accept": "application/json",
+        "Version": "2021-07-28",
+        "Authorization": `Bearer ${this.ghltoken}`
+      },
+      muteHttpExceptions: true
+    };
+
+    const contactOptions = {
+      method: "get",
+      headers: {
+        "Authorization": `Bearer ${this.ghlkey}`
+      },
+      muteHttpExceptions: true
+    };
+
+
+    const [emailOpportunityRes, contactRes] = await Promise.all([
+      fetch(`${baseUrl}?${params}&q=${email}`, opportunityOptions),
+      fetch(`https://rest.gohighlevel.com/v1/contacts/lookup?phone=+${phone}`, contactOptions)
+    ]);
+    // Parse both responses
+    const [emailOpportunityData, contactData] = await Promise.all([
+      emailOpportunityRes.json(),
+      contactRes.json()
+    ]);
+
+    // Check if email search found opportunities
+    if (emailOpportunityData?.opportunities?.length > 0) {
+      return 1;
+    }
+
+    // Check if we have a contact ID to search by
+    const contactId = contactData?.contacts?.[0]?.id;
+    if (!contactId) {
+      return 0;
+    }
+
+    // Search by contact ID
+    const idOpportunityRes = await fetch(
+      `${baseUrl}?${params}&contact_id=${contactId}`,
+      opportunityOptions
+    );
+    const idOpportunityData = await idOpportunityRes.json();
+
+    const flag= idOpportunityData?.opportunities?.length > 0 ? 1 : 0;
+     
+    if(flag==1)
+    {
+      console.log("Person was in ghl")
+    }
+
+    return flag
+  }
+  private async checkCommunityMembership(phone: string): Promise<boolean> {
+    if (!phone || !wscontainer.groupManager) return false;
+    try {
+      return await wscontainer.groupManager.isPhoneInCommunity(phone);
+    } catch {
+      return false;
+    }
   }
 
-private async checkinghlwon(email: string, phone: string) {
-  const baseUrl = "https://services.leadconnectorhq.com/opportunities/search";
-  const params = new URLSearchParams({
-    location_id: "0jUuoXuSJVQGki9cRwUx",
-    pipeline_id: "xLLFc3s2wXBCu8Ms50eh",
-    pipeline_stage_id: "00964150-abc3-4a57-923b-3799b165a06d"
-  });
+  private async eitherCheckPasses(email: string, phone: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      let pending = 2;
 
-  const opportunityOptions = {
-    method: "get",
-    headers: {
-      "Accept": "application/json",
-      "Version": "2021-07-28",
-      "Authorization": `Bearer ${this.ghltoken}`
-    },
-    muteHttpExceptions: true
-  };
+      this.checkinghlwon(email, phone)
+        .then(result => { if (result) resolve(true); else if (--pending === 0) resolve(false); })
+        .catch(() => { if (--pending === 0) resolve(false); });
 
-  const contactOptions = {
-    method: "get",
-    headers: {
-      "Authorization": `Bearer ${this.ghlkey}`
-    },
-    muteHttpExceptions: true
-  };
-
-  
-  const [emailOpportunityRes, contactRes] = await Promise.all([
-    fetch(`${baseUrl}?${params}&q=${email}`, opportunityOptions),
-    fetch(`https://rest.gohighlevel.com/v1/contacts/lookup?phone=+${phone}`, contactOptions)
-  ]);
-  // Parse both responses
-  const [emailOpportunityData, contactData] = await Promise.all([
-    emailOpportunityRes.json(),
-    contactRes.json()
-  ]);
-  
-  // Check if email search found opportunities
-  if (emailOpportunityData?.opportunities?.length > 0) {
-    return 1;
+      this.checkCommunityMembership(phone)
+        .then(result => { if (result) resolve(true); else if (--pending === 0) resolve(false); })
+        .catch(() => { if (--pending === 0) resolve(false); });
+    });
   }
-
-  // Check if we have a contact ID to search by
-  const contactId = contactData?.contacts?.[0]?.id;
-  if (!contactId) {
-    return 0;
-  }
-
-  // Search by contact ID
-  const idOpportunityRes = await fetch(
-    `${baseUrl}?${params}&contact_id=${contactId}`, 
-    opportunityOptions
-  );
-  const idOpportunityData = await idOpportunityRes.json();
-  
-  return idOpportunityData?.opportunities?.length > 0 ? 1 : 0;
-}
 }
 
 
