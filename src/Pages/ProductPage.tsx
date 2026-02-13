@@ -176,13 +176,13 @@ function normalizeImages(images: any): string[] {
             {/* Price */}
             <div className="relative">
               <div
-                className={`text-3xl font-bold ${!loggedIn ? 'blur-md select-none' : ''
-                  }`}
-              >
-                {Number(product.price) === 0
-                  ? 'POA'
-                  : `£${Number(product.price).toLocaleString()}`}
-              </div>
+  className={`text-3xl font-bold ${!loggedIn ? 'blur-md select-none' : ''}`}
+>
+  {loggedIn
+    ? (Number(product.price) === 0 ? 'POA' : `£${Number(product.price).toLocaleString()}`)
+    : '£•••'
+  }
+</div>
             </div>
 
             {/* Details */}
@@ -191,7 +191,7 @@ function normalizeImages(images: any): string[] {
               <Detail label="Size" value={product.size} />
               <Detail label="Type" value={product.productType} />
               {product.gender && <Detail label="Gender" value={product.gender} />}
-              <Detail label="Vendor" value={product.vendorName} />
+              <Detail label="Vendor" value={product.vendorName} loggedIn={loggedIn} />
               <Detail label="Ref" value={product.id.split('-')[0]} />
             </div>
 
@@ -232,14 +232,14 @@ function normalizeImages(images: any): string[] {
   )
 }
 
-function Detail({ label, value }: { label: string; value?: string }) {
+function Detail({ label, value, loggedIn = true }: { label: string; value?: string; loggedIn?: boolean }) {
   return (
     <div className="flex justify-between items-baseline px-5 py-3.5 gap-4">
       <span className="text-xs text-gray-500 uppercase tracking-wide flex-shrink-0">
         {label}
       </span>
-      <span className="text-sm text-gray-200 text-right break-words min-w-0">
-        {value || '—'}
+      <span className={`text-sm text-gray-200 text-right break-words min-w-0 ${!loggedIn ? 'blur-md select-none' : ''}`}>
+        {loggedIn ? value : '••••••'}
       </span>
     </div>
   )
