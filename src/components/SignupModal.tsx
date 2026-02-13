@@ -140,7 +140,7 @@ const getMaxLength = (code) => {
       console.log(data)
       if (data && data.ghl === false) {
         const msg = data.message || 'Please complete the onboarding form first.'
-        try { window.open('https://forms.gle/Na1yHnniRvA2rbYu7', '_blank', 'noopener'); } catch { }
+        try { window.open('https://form.typeform.com/to/RvObdfn3', '_blank', 'noopener'); } catch { }
         setFormError(String(msg))
         return
       }
@@ -195,7 +195,7 @@ const getMaxLength = (code) => {
         </button>
         <h3 className="headline-gradient">Sign up</h3>
         <p className="mt-2 text-sm text-gray-400">Create an account to unlock contact details.</p>
-        <div className="mt-2 text-sm text-sky-300">It's completely free — create an account to message sellers.</div>
+
 
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
           {/* Honeypot field (off-screen) */}
