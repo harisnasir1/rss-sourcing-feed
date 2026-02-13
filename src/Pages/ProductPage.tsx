@@ -192,7 +192,7 @@ function normalizeImages(images: any): string[] {
               <Detail label="Type" value={product.productType} />
               {product.gender && <Detail label="Gender" value={product.gender} />}
               <Detail label="Vendor" value={product.vendorName} loggedIn={loggedIn} />
-              <Detail label="Ref" value={product.id.split('-')[0]} />
+              {/* <Detail label="Ref" value={product.id.split('-')[0]} /> */}
             </div>
 
             {/* CTA */}
