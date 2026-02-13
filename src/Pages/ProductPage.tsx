@@ -182,6 +182,7 @@ function normalizeImages(images: any): string[] {
     ? (Number(product.price) === 0 ? 'POA' : `£${Number(product.price).toLocaleString()}`)
     : '£•••'
   }
+  
 </div>
             </div>
 
