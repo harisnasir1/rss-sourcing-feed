@@ -10,6 +10,7 @@ import { listing_repo } from '../../repositories/listing_repo';
 import { ImgProcessing } from './imgpros';
 import {AI} from '../AI_Services/Ai'
 import { Message_Buffer } from './msgbuff';
+import { NotificationManager } from '../whatsapp_services/Notification_Service';
 export class Message_processing {
 
     private _sock: WASocket;
@@ -19,6 +20,7 @@ export class Message_processing {
     private _imgpro: ImgProcessing;
     private _ai:AI;
     private _msgbuff:Message_Buffer;
+    private _notiman:NotificationManager;
 
     constructor(sock: WASocket) {
         this._sock = sock
@@ -28,6 +30,7 @@ export class Message_processing {
         this._imgpro = new ImgProcessing()
         this._ai=new AI()
         this._msgbuff=new Message_Buffer()
+        this._notiman=new NotificationManager();
     }
     
     public async messageparser(msg: WAMessage) {
@@ -106,8 +109,11 @@ export class Message_processing {
             return null
         }
         const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
-        console.log("data form ai=>",aidata)
-        if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))) throw new Error(aidata?JSON.stringify(aidata):"something wrong with data")
+        // console.log("data form ai=>",aidata)
+        if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))){ 
+             console.log(aidata?JSON.stringify(aidata):"something wrong with data");
+             return null;
+        }
 
         const list: Listing = {
             vendorId: vinfo.id,
@@ -130,9 +136,9 @@ export class Message_processing {
             isWTS:aidata.iswts ?? true
         }
     
-       console.log("Listing trying to be created with ->",list)
-       const re= await this._rlist.create_listing(list)
-        
+        console.log("Listing trying to be created with ->",list)
+        const re= await this._rlist.create_listing(list)
+        const k=await this._rlist.create_listing_b2b(list,vinfo)
         //now update the vendor
         const d = {
                        totallistings: (vinfo.totallistings || 0) + 1,
@@ -143,7 +149,12 @@ export class Message_processing {
                       }
                
         let venderget =   await this._rvendor.updateVendor(vinfo.phonenumber,d)
-      return re;
+        if(venderget.length>0&&venderget[0].id && list.isWTS==true && list.isWTB!=true){
+             
+            await this._notiman.SendWtsnotifications(venderget[0],list);
+            }
+        
+            return re;
         }
         catch(e)
         {
@@ -164,19 +175,25 @@ export class Message_processing {
             groupid = this.getgroupid(msg);
             
             if (!groupid||groupid=="") return null
+
+
             let k = await this.getgroupname(msg.key.remoteJid||"")
+
             if (k == "" || k == null) return null
             groupname = k;
             vendorWhatsappId = msg.key.participant ? msg.key.participant.split("@")[0] : ""
             
             if (vendorName == "") return null
-            if (msg.key.participantPn) {
-                vendorPhoneNumber = msg.key.participantPn.split(':')[0]
+            if (msg.key.participantAlt) {
+                vendorPhoneNumber = msg.key.participantAlt.split(':')[0]
                 vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
-              
             }
         }
-        if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" ) return null
+        if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" )
+        {
+            console.log("participant id drop: ",msg);
+            return null
+        } 
         const vdata = {
             whatsappId: vendorWhatsappId,
             phoneNumber: vendorPhoneNumber,
@@ -254,13 +271,16 @@ export class Message_processing {
 
     private async handle_image(msg:WAMessage)
     {
- 
-            let imgbuff: Buffer | null = await this.downloadimage(msg)
-            
-            if (!imgbuff) return
-            
-            return await this._imgpro.upload_image(imgbuff)
-            
+
+         try{
+           let imgbuff: Buffer | null = await this.downloadimage(msg);
+           if (!imgbuff) return   null      
+           return await this._imgpro.upload_image(imgbuff)
+         }
+         catch(e){
+           console.log("Error downloading and decoding image: ")
+           return null;
+         }
     }
 
     private isValidMessage(msg: WAMessage): boolean {
@@ -271,6 +291,7 @@ export class Message_processing {
     
     if ((msg as any).messageStubType) {
         console.log('⏭️ Skipping system message');
+         console.log(msg)
         return false;
     }
     if((msg as any).remoteJidAlt)
@@ -281,6 +302,7 @@ export class Message_processing {
     const isGroup = msg.key.remoteJid?.endsWith('@g.us');
     if (!isGroup) {
         console.log('⏭️ Skipping non-group message');
+        console.log(msg)
         return false;
     }
     

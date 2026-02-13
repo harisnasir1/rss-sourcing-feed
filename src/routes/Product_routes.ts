@@ -1,8 +1,9 @@
 import { Router } from "express";
-import {getlistings, getqrcode} from "../controllers/Productcontroller"
+import {getlistings,getproduct} from "../controllers/Productcontroller"
 
 const router = Router();
 
 
 router.get("/getlisting",getlistings)
+router.get("/getproduct/:id",getproduct)
 export default router;

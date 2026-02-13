@@ -32,11 +32,11 @@ export class ImgProcessing{
         Body: image_url,  //<-buffer write  
         ContentType: "image/png",
       };
+     
      await (await this.s3).send(new PutObjectCommand(uploadParams));
-      await waitUntilObjectExists(
-    { client: this.s3, maxWaitTime: 10 },
-    { Bucket: this.Bucketname, Key: key }
-  );
+     await waitUntilObjectExists(
+      { client: this.s3, maxWaitTime: 10 },
+      { Bucket: this.Bucketname, Key: key });
       return [`https://${this.Bucketname}.s3.${this.Region}.amazonaws.com/${key}`];
     }
    

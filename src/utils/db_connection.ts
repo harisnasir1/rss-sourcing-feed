@@ -1,32 +1,17 @@
+import { Pool } from '@neondatabase/serverless';
+import ws from 'ws';
+import { neonConfig } from '@neondatabase/serverless';
 
-import { Pool } from 'pg';
+neonConfig.webSocketConstructor = ws;
 
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'mydatabase',
-  password: process.env.DB_PASSWORD || 'password',
-  port: Number(process.env.DB_PORT) || 5432,
-   ssl: { rejectUnauthorized: false },
-   max:10,
-   idleTimeoutMillis:30000,
-   connectionTimeoutMillis:10000,
-});
+// Warm the connection on startup
+pool.query('SELECT 1').then(() => {
+  console.log('DB pool warmed');
+}).catch(console.error);
 
-
-export const query=async(text:string,params?: any[])=>{
-
-  const client=await pool.connect();
-  try{
-    const res=await client.query(text,params);
-    return res.rows;
-  }
-   catch (err) {
-    console.error('❌ Query error:', err);
-    throw err;
-  } 
-  finally{
-    client.release();
-  }
+export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {
+  const result = await pool.query(text, params);
+  return result.rows as T[];
 }
