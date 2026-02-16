@@ -20,3 +20,11 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
   req.user = decoded;
   next();
 };
+
+export const isAdmin=(req:Request,res:Response,next:NextFunction)=>{
+  if(req.user?.role!=='admin')
+  {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  next();
+}

@@ -72,6 +72,7 @@ import { Vendor } from '../types/Data_types';
 
     return await this.getVendorByPhone(phone);
   }
+
    public async getvendornumber(vendorid:string)
     {
       try{
@@ -88,5 +89,64 @@ import { Vendor } from '../types/Data_types';
     
       }
     }
+
+   public async Gelallvendors(limit: number, offset: number)
+   {
+    try{    
+    let sql=`
+     Select 
+         id, 
+         phonenumber,
+         displayname,
+         totallistings,
+         avgrating,
+         totalratings,
+         isblocked,
+         lastmessageat,
+         createdat,
+         updatedat
+        from "Vendor"
+        WHERE totallistings > 0`;
+        const params: any[] = [];
+
+        if(limit !== undefined && offset !== undefined)
+        {
+           sql += ` ORDER BY createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+           params.push(limit, offset);
+        }
+
+      var result=await query(sql,params);
+      return result;
+      }
+    catch(e)
+      {
+      console.error('Error fetching all vendor information:', e);
+    
+      }
+   }
+
+   public async ToogleBlockVendor(id:string,blocked:boolean)
+   {
+     try{
+      if(!id) throw Error("Missing id params in ToogleBlockVendor ");
+
+       let sql=`UPDATE "Vendor" SET isblocked=$1 WHERE id=$2 RETURNING id,phonenumber,displayname,totallistings,isblocked`;
+
+       var result = await query(sql,[blocked,id])
+
+       if(!result || result.length<1)
+       {
+         throw Error("Something wrong with ToogleBlockVendor query ");
+       }
+
+       return result[0];
+      
+     }
+     catch(e)
+      {
+      console.error('Error fetching all vendor information:', e);
+    
+      }
+   }
 }
 export const vendorRepo=new VendorRepo();

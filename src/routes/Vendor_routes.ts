@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { getvendorphonenumber } from "../controllers/Vendorcontroller";
-import {authenticateJWT} from "../middleware/auth.middleware"
+import { getvendorphonenumber,ToogleVendorAccess,GetAllVendors } from "../controllers/Vendorcontroller";
+import {authenticateJWT, isAdmin} from "../middleware/auth.middleware"
 const router = Router();
 
 router.post("/getnumber",authenticateJWT,getvendorphonenumber);
+router.post("/toogleaccess",ToogleVendorAccess);
+router.get("/getallvendros",authenticateJWT,isAdmin,GetAllVendors);
 
 export default router
