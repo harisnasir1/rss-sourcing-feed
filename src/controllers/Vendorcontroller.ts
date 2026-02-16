@@ -1,26 +1,82 @@
 import { Request, Response } from "express";
 import { vendorRepo } from "../repositories/vendors_repo";
+import { status_update } from '../types/User_types';
+export const getvendorphonenumber = async (req: Request, res: Response) => {
 
-export const getvendorphonenumber=async(req:Request,res:Response)=>{
+  try {
+    const vendorid: string = req.body.vendorid;
+
+    if (!vendorid) throw Error("invalid vendroid")
+    const re = await vendorRepo.getvendornumber(vendorid)
+
+    if (!re) throw Error("somehting wrong while vendor info")
+    return res.status(200).json({
+      success: true,
+      Number: re[0].phonenumber
+    });
+  }
+  catch (e) {
+    console.error("Something wron while fetching vendor phone number", e)
+    return res.status(500).json({
+      success: false,
+      message: "Something wron while fetching vendor phone number",
+    });
+  }
+}
+
+export const GetAllVendors = async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string);
+    const search = (req.query.search as string) || '';
+    const offset = (page - 1) * limit;
+  
+    const re = await vendorRepo.Gelallvendors(limit, offset,search);
+
+    if (!re) throw Error("somehting wrong while vendors info")
+
+    return res.status(200).json({
+      success: true,
+      data: re.data,
+      total: re.total,
+      blocked:re.blocked,
+      active:re.active,
+      page,
+      limit,
+    })
+
+  }
+  catch (e) {
+    console.error("Something wron while fetching vendor phone number", e)
+    return res.status(500).json({
+      success: false,
+      message: "Something wrong while fetching vendors information",
+    });
+  }
+}
+
+export const ToogleVendorAccess = async (req: Request, res: Response) => {
+  try {
+    const udata: status_update = req.body;
     
-    try{
-        const vendorid:string=req.body.vendorid;
-      
-     if(!vendorid) throw Error("invalid vendroid")
-         const re=  await vendorRepo.getvendornumber(vendorid)
-       
-          if(!re ) throw Error("somehting wrong while vendor info")
-            return res.status(200).json({
-              success: true,
-              Number:re[0].phonenumber
-             });
-        }
-        catch(e)
-        {
-            console.error("Something wron while fetching vendor phone number",e)
-            return res.status(500).json({
-              success: false,
-              message: "Something wron while fetching vendor phone number",
-             });
-        }
+    if (!udata.id || udata.blocked===undefined) {
+      throw Error("somehting wrong with reuest data ")
+    }
+
+    const re = await vendorRepo.ToogleBlockVendor(udata.id, udata.blocked);
+
+    if (!re) { throw Error("somehting wrong while vendors info") }
+
+    return res.status(200).json({
+      success: true,
+      vendors: re
+    })
+  }
+  catch (e) {
+    console.error("Something wron while fetching vendor phone number", e)
+    return res.status(500).json({
+      success: false,
+      message: "Something wrong while Toogling vendors Access",
+    });
+  }
 }

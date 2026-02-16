@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { getUsers,login,Signup,update_status,Forget_password,Forgetnewpassword } from "../controllers/user.controller";
-import {authenticateJWT} from "../middleware/auth.middleware"
+import {authenticateJWT,isAdmin} from "../middleware/auth.middleware"
 const router = Router();
-router.get("/",authenticateJWT, getUsers);
+router.get("/",authenticateJWT,isAdmin,getUsers);
 router.post("/Register",Signup);
 router.post("/Login",login);
 router.post("/status_update",authenticateJWT,update_status)

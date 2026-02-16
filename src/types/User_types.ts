@@ -30,7 +30,8 @@ export interface JwtPayload {
 }
 export type status_update={
   id:string;
-  is_active:boolean;
+  is_active?:boolean;
+  blocked?: boolean;
 }
 export type SafeUser = Omit<usertype, 'password'>;
 

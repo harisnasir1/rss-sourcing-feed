@@ -149,7 +149,7 @@ export class listing_repo {
                 v.displayname AS "vendorName"
             FROM "Listing" l
             INNER JOIN "Vendor" v ON l.vendorid = v.id
-            WHERE l.status = 'active' AND l.iswts=true
+            WHERE l.status = 'active' AND l.iswts=true AND v.isblocked=false
             AND l.createdat > NOW() - INTERVAL '72 hours'
         `;
 

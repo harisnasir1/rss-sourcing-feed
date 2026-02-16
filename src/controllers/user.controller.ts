@@ -5,16 +5,23 @@ import {generateToken} from "../utils/jwt"
 import { tooEarly } from "@hapi/boom";
 export const getUsers =async (req: Request, res: Response) => {
   try{
- 
-    const users=await userRepository.findAll();
-    if(users.length<=0)
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string);
+     const search = (req.query.search as string) || '';
+    const offset = (page - 1) * limit;
+    const users=await userRepository.findAll(limit, offset,search);
+    if(users.data.length<=0)
     {
       throw Error("No users to fetch")
     }
     return res.status(200).json({
-      success: true,
-      users: users,
-      count:users.length
+       success: true,
+      users: users.data,
+      total: users.total,
+      active:users.active,
+      inactive:users.inactive,
+      page,
+      limit,
     });
   }
   catch(e)
@@ -119,6 +126,12 @@ export const update_status=async(req:Request,res:Response)=>{
   try{
 
     const udata:status_update=req.body;
+    if(!udata.id || udata.is_active===undefined) 
+        return res.status(500).json({
+      success: true,
+      message: 'status updated successfully',
+    });
+
    
     const user=await userRepository.Change_active_status(udata.id,udata.is_active);
 
