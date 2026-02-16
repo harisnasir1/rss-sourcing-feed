@@ -1,25 +1,25 @@
 import { query } from '../utils/db_connection';
 import { Vendor } from '../types/Data_types';
 
-  class VendorRepo {
+class VendorRepo {
 
-  
+
   public async getVendorByName(vendorName: string): Promise<Vendor[]> {
     return await query(`SELECT * FROM "Vendor" WHERE displayname = $1`, [vendorName]);
   }
 
-  
+
   public async getVendorById(id: string): Promise<Vendor[]> {
     return await query(`SELECT * FROM "Vendor" WHERE id = $1`, [id]);
   }
 
- 
+
   public async getVendorByPhone(phone: string): Promise<Vendor[]> {
-   
+
     return await query(`SELECT * FROM "Vendor" WHERE phonenumber = $1`, [phone]);
   }
 
-  
+
   public async createVendor(vendata: Vendor): Promise<Vendor[]> {
     await query(
       `INSERT INTO "Vendor" (
@@ -46,11 +46,11 @@ import { Vendor } from '../types/Data_types';
     return await this.getVendorByPhone(vendata.phoneNumber);
   }
 
-  public async updateVendor(phone: string, data:{totallistings:number,lastmessageat:Date}): Promise<Vendor[]> {
+  public async updateVendor(phone: string, data: { totallistings: number, lastmessageat: Date }): Promise<Vendor[]> {
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
-   
+
     for (const [key, value] of Object.entries(data)) {
       if (key === 'id' || key === 'createdat') continue;
       fields.push(`"${key}" = $${idx}`);
@@ -58,14 +58,14 @@ import { Vendor } from '../types/Data_types';
       idx++;
     }
 
-    if (fields.length === 0) return []; 
-   
+    if (fields.length === 0) return [];
+
     fields.push(`"updatedat" = NOW()`);
-    
+
     const sql = `UPDATE "Vendor" SET ${fields.join(', ')} WHERE phonenumber = $${idx}`;
     values.push(phone);
 
-    
+
 
 
     await query(sql, values);
@@ -73,80 +73,85 @@ import { Vendor } from '../types/Data_types';
     return await this.getVendorByPhone(phone);
   }
 
-   public async getvendornumber(vendorid:string)
-    {
-      try{
-     
-       let sql='Select phonenumber from "Vendor" where id=$1';
-       const params=[]
-       params.push(vendorid)
-       const k=await query(sql,params);
-       return k
-      }
-      catch(e)
-      {
-      console.error('Error fetching vendor phone number:', e);
-    
-      }
+  public async getvendornumber(vendorid: string) {
+    try {
+
+      let sql = 'Select phonenumber from "Vendor" where id=$1';
+      const params = []
+      params.push(vendorid)
+      const k = await query(sql, params);
+      return k
     }
+    catch (e) {
+      console.error('Error fetching vendor phone number:', e);
 
-   public async Gelallvendors(limit: number, offset: number)
-   {
-    try{    
-    let sql=`
-     Select 
-         id, 
-         phonenumber,
-         displayname,
-         totallistings,
-         avgrating,
-         totalratings,
-         isblocked,
-         lastmessageat,
-         createdat,
-         updatedat
-        from "Vendor"
-        WHERE totallistings > 0`;
-        const params: any[] = [];
+    }
+  }
 
-        if(limit !== undefined && offset !== undefined)
-        {
-           sql += ` ORDER BY createdat DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-           params.push(limit, offset);
-        }
+  public async Gelallvendors(limit: number, offset: number, search?: string) {
+    try {
+      let sql = `
+      SELECT id, phonenumber, displayname, totallistings, avgrating,
+             totalratings, isblocked, lastmessageat, createdat, updatedat
+      FROM "Vendor"
+      WHERE totallistings > 0`;
+      const params: any[] = [];
 
-      var result=await query(sql,params);
-      return result;
+      if (search && search.trim()) {
+        params.push(`%${search.trim()}%`);
+        sql += ` AND (displayname ILIKE $${params.length} OR phonenumber ILIKE $${params.length})`;
       }
-    catch(e)
-      {
+
+      sql += ` ORDER BY createdat DESC`;
+
+      if (limit !== undefined && offset !== undefined) {
+        sql += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(limit, offset);
+      }
+
+      const result = await query(sql, params);
+
+
+      let countSql = `SELECT 
+     COUNT(*) as total,
+     COUNT(*) FILTER (WHERE isblocked = true) as blocked,
+     COUNT(*) FILTER (WHERE isblocked = false) as active
+     FROM "Vendor" WHERE totallistings > 0`;
+      const countParams: any[] = [];
+      if (search && search.trim()) {
+        countParams.push(`%${search.trim()}%`);
+        countSql += ` AND (displayname ILIKE $${countParams.length} OR phonenumber ILIKE $${countParams.length})`;
+      }
+      const countResult = await query(countSql, countParams);
+      const { total, blocked, active } = countResult[0];
+
+      return { data: result, total: parseInt(total), blocked: parseInt(blocked), active: parseInt(active) };
+    }
+     catch (e) {
       console.error('Error fetching all vendor information:', e);
-    
+       return null;   
+    }
+  }
+
+  public async ToogleBlockVendor(id: string, blocked: boolean) {
+    try {
+      if (!id) throw Error("Missing id params in ToogleBlockVendor ");
+
+      let sql = `UPDATE "Vendor" SET isblocked=$1 WHERE id=$2 RETURNING id,phonenumber,displayname,totallistings,isblocked`;
+
+      var result = await query(sql, [blocked, id])
+
+      if (!result || result.length < 1) {
+        throw Error("Something wrong with ToogleBlockVendor query ");
       }
-   }
 
-   public async ToogleBlockVendor(id:string,blocked:boolean)
-   {
-     try{
-      if(!id) throw Error("Missing id params in ToogleBlockVendor ");
+      return result[0];
 
-       let sql=`UPDATE "Vendor" SET isblocked=$1 WHERE id=$2 RETURNING id,phonenumber,displayname,totallistings,isblocked`;
-
-       var result = await query(sql,[blocked,id])
-
-       if(!result || result.length<1)
-       {
-         throw Error("Something wrong with ToogleBlockVendor query ");
-       }
-
-       return result[0];
-      
-     }
-     catch(e)
-      {
+    }
+    catch (e) {
       console.error('Error fetching all vendor information:', e);
-    
-      }
-   }
+
+    }
+  }
 }
-export const vendorRepo=new VendorRepo();
+export const vendorRepo = new VendorRepo();

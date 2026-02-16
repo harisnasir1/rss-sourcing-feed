@@ -172,15 +172,41 @@ export class UserRepository {
     return result[0] || null;
   }
 
-  async findAll(): Promise<SafeUser[]> {
-    const result = await query(
-      `SELECT *
-       FROM "User"
-       ORDER BY created_at DESC`
-    );
+ async findAll(limit: number, offset: number, search?: string): Promise<{ data: SafeUser[]; total: number,active:number,inactive:number}> {
+  let sql = `SELECT id, fullname, email, role, phone, is_active, have_site, have_stock, inventory_value, created_at, last_login FROM "User"`;
+  const params: any[] = [];
 
-    return result;
+  if (search && search.trim()) {
+    params.push(`%${search.trim()}%`);
+    sql += ` WHERE (fullname ILIKE $${params.length} OR email ILIKE $${params.length} OR phone ILIKE $${params.length})`;
   }
+
+  sql += ` ORDER BY created_at DESC`;
+
+  if (limit !== undefined && offset !== undefined) {
+    sql += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+  }
+
+  const result = await query(sql, params);
+
+ let countSql = `SELECT 
+  COUNT(*) as total,
+  COUNT(*) FILTER (WHERE is_active = true) as active,
+  COUNT(*) FILTER (WHERE is_active = false) as inactive
+FROM "User"`;
+const countParams: any[] = [];
+if (search && search.trim()) {
+  countParams.push(`%${search.trim()}%`);
+  countSql += ` WHERE (fullname ILIKE $${countParams.length} OR email ILIKE $${countParams.length} OR phone ILIKE $${countParams.length})`;
+}
+const countResult = await query(countSql, countParams);
+const { total, active, inactive } = countResult[0];
+
+return { data: result, total: parseInt(total), active: parseInt(active), inactive: parseInt(inactive) };
+}
+
+  
 
   async updatePassword(userId: string, newPassword: string): Promise<boolean> {
     const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);

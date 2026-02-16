@@ -5,6 +5,6 @@ const router = Router();
 
 router.post("/getnumber",authenticateJWT,getvendorphonenumber);
 router.post("/toogleaccess",ToogleVendorAccess);
-router.get("/getallvendros",authenticateJWT,isAdmin,GetAllVendors);
+router.get("/getallvendors",authenticateJWT,isAdmin,GetAllVendors);
 
 export default router

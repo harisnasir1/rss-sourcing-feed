@@ -28,15 +28,21 @@ export const GetAllVendors = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string);
+    const search = (req.query.search as string) || '';
     const offset = (page - 1) * limit;
-    console.log(limit, offset)
-    const re = await vendorRepo.Gelallvendors(limit, offset);
+  
+    const re = await vendorRepo.Gelallvendors(limit, offset,search);
 
     if (!re) throw Error("somehting wrong while vendors info")
 
     return res.status(200).json({
       success: true,
-      vendors: re
+      data: re.data,
+      total: re.total,
+      blocked:re.blocked,
+      active:re.active,
+      page,
+      limit,
     })
 
   }
@@ -52,12 +58,12 @@ export const GetAllVendors = async (req: Request, res: Response) => {
 export const ToogleVendorAccess = async (req: Request, res: Response) => {
   try {
     const udata: status_update = req.body;
-   
-    if (!udata.id || !udata.is_active) {
+    
+    if (!udata.id || udata.blocked===undefined) {
       throw Error("somehting wrong with reuest data ")
     }
 
-    const re = await vendorRepo.ToogleBlockVendor(udata.id, udata.is_active);
+    const re = await vendorRepo.ToogleBlockVendor(udata.id, udata.blocked);
 
     if (!re) { throw Error("somehting wrong while vendors info") }
 
