@@ -14,6 +14,7 @@ interface User {
   email: string;
   is_active: boolean;
   role: string;
+  phone?:string;
   have_site: boolean;
   have_stock: boolean;
   inventoryValueBand?: string;
@@ -40,6 +41,7 @@ export default function AdminPanel({ open, onClose, user }: AdminPanelProps) {
       });
       const data = await res.json();
       if (data.users) setUsers(data.users);
+      console.log(data.users)
     } catch (err) {
       console.error('Failed to fetch users:', err);
     } finally {
@@ -91,16 +93,20 @@ export default function AdminPanel({ open, onClose, user }: AdminPanelProps) {
       });
     }
   };
-
-  const filteredUsers = useMemo(
-    () =>
-      users.filter(
-        u =>
-          u.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          u.email.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [users, searchQuery]
-  );
+const filteredUsers = useMemo(
+  () =>
+    users.filter(u => {
+      const query = searchQuery.toLowerCase();
+      const normalizedQuery = query.replace(/\+/g, '');
+      
+      return (
+        u.fullname.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query) ||
+        (u.phone && u.phone.replace(/\+/g, '').includes(normalizedQuery))
+      );
+    }),
+  [users, searchQuery]
+);
 
   const { activeCount, inactiveCount } = useMemo(() => {
     const active = users.filter(u => u.is_active).length;
@@ -165,6 +171,7 @@ export default function AdminPanel({ open, onClose, user }: AdminPanelProps) {
                   <tr className="border-b border-white/10">
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">User</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">phone</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Role</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Website</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Inventory</th>
@@ -193,8 +200,12 @@ export default function AdminPanel({ open, onClose, user }: AdminPanelProps) {
                             </div>
                           </div>
                         </td>
+
                         <td className="px-4 py-4">
                           <div className="text-sm text-gray-300">{u.email}</div>
+                        </td>
+                          <td className="px-4 py-4">
+                          <div className="text-sm text-gray-300">+{u.phone}</div>
                         </td>
                         <td className="px-4 py-4">
                           <span
