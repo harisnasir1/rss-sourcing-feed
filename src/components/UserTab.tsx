@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { SearchInput, ToggleSwitch, PaginationControls, useDebounce } from './Adminshared';
+import { SearchInput, ToggleSwitch, PaginationControls, StatBadge, useDebounce } from './Adminshared';
 
 interface User {
   id: string;
@@ -22,19 +22,18 @@ export default function UsersTab({ token }: { token: string | null }) {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true); // true initially
+  const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
 
   const debouncedSearch = useDebounce(searchQuery);
   const totalPages = Math.max(1, Math.ceil(stats.total / LIMIT));
 
- const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async () => {
     if (!token) return;
     setIsFetching(true);
     try {
-       const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
+      const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
-
       const res = await fetch(`${import.meta.env.VITE_RUNPOD_URL}/api/users?${params}`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       });
@@ -80,29 +79,24 @@ export default function UsersTab({ token }: { token: string | null }) {
 
   return (
     <>
-      <div className="px-4 sm:px-6 py-4 border-b border-white/10 bg-black/20">
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, email, or phone..." />
-          <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm flex-wrap">
-            <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded">
-              <span className="text-gray-400">Total: </span><span className="text-white font-semibold">{stats.total}</span>
-            </div>
-            <div className="px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded">
-              <span className="text-gray-400">Active: </span><span className="text-green-400 font-semibold">{stats.active}</span>
-            </div>
-            <div className="px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded">
-              <span className="text-gray-400">Inactive: </span><span className="text-red-400 font-semibold">{stats.inactive}</span>
-            </div>
-          </div>
+      {/* Search + Stats */}
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 bg-black/20 flex-shrink-0">
+        <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search name, email, phone..." />
+        <div className="flex gap-2 mt-2.5">
+          <StatBadge label="Total" value={stats.total} />
+          <StatBadge label="Active" value={stats.active} color="green" />
+          <StatBadge label="Inactive" value={stats.inactive} color="red" />
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
+      {/* Content */}
+      <div className="flex-1 overflow-auto min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" /></div>
         ) : (
-          <div  className={`transition-opacity duration-150 ${isFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-            <div className="hidden md:block min-w-full">
+          <div className={`transition-opacity duration-150 ${isFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            {/* Desktop Table */}
+            <div className="hidden md:block px-6 py-4">
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-gradient-to-b from-gray-900 to-gray-900/95 backdrop-blur-sm z-10">
                   <tr className="border-b border-white/10">
@@ -153,25 +147,21 @@ export default function UsersTab({ token }: { token: string | null }) {
               </table>
             </div>
 
-            <div className="md:hidden space-y-3">
+            {/* Mobile Cards — compact */}
+            <div className="md:hidden px-3 py-3 space-y-2">
               {users.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">{searchQuery ? `No users found matching "${searchQuery}"` : 'No users found'}</div>
+                <div className="text-center text-gray-500 py-8 text-sm">{searchQuery ? `No results for "${searchQuery}"` : 'No users found'}</div>
               ) : (
                 users.map(u => (
-                  <div key={u.id} className="p-4 rounded-lg border border-white/10 bg-white/5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">{u.fullname.charAt(0).toUpperCase()}</div>
-                        <div><div className="text-sm font-medium text-white">{u.fullname}</div><div className="text-xs text-gray-500">{u.email}</div></div>
-                      </div>
-                      <ToggleSwitch checked={u.is_active} loading={loadingUsers.has(u.id)} disabled={u.role === 'admin'} onClick={() => handleToggleActive(u.id, u.role, u.is_active)} />
+                  <div key={u.id} className="px-3 py-3 rounded-lg border border-white/10 bg-white/5 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">{u.fullname.charAt(0).toUpperCase()}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">{u.fullname}</div>
+                      <div className="text-xs text-gray-500 truncate">{u.email}</div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div><span className="text-gray-500">Phone: </span><span className="text-gray-300">+{u.phone}</span></div>
-                      <div><span className="text-gray-500">Role: </span><span className={u.role === 'admin' ? 'text-purple-300' : 'text-gray-300'}>{u.role}</span></div>
-                      <div><span className="text-gray-500">Website: </span><span className={u.have_site ? 'text-green-400' : 'text-gray-500'}>{u.have_site ? 'Yes' : 'No'}</span></div>
-                      <div><span className="text-gray-500">Stock: </span><span className={u.have_stock ? 'text-green-400' : 'text-gray-500'}>{u.have_stock ? 'Yes' : 'No'}</span></div>
-                      <div><span className="text-gray-500">Joined: </span><span className="text-gray-400">{new Date(u.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {u.role === 'admin' && <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded">admin</span>}
+                      <ToggleSwitch checked={u.is_active} loading={loadingUsers.has(u.id)} disabled={u.role === 'admin'} onClick={() => handleToggleActive(u.id, u.role, u.is_active)} />
                     </div>
                   </div>
                 ))
@@ -181,8 +171,10 @@ export default function UsersTab({ token }: { token: string | null }) {
         )}
       </div>
 
-      <div className="px-4 sm:px-6 py-3 border-t border-white/10 bg-black/40 flex items-center justify-between">
-        <div className="text-xs sm:text-sm text-gray-400">Page {page} of {totalPages} ({stats.total} users)</div>
+      {/* Footer */}
+      <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-white/10 bg-black/40 flex items-center justify-between flex-shrink-0">
+        <div className="text-xs text-gray-400 hidden sm:block">Page {page} of {totalPages} ({stats.total} users)</div>
+        <div className="sm:hidden text-xs text-gray-400">{stats.total} users</div>
         <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
     </>

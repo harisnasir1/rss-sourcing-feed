@@ -11,6 +11,8 @@ export function useDebounce(value: string, delay: number = 400) {
 }
 
 // --- Pagination Controls ---
+// Mobile: simple prev/next with page indicator
+// Desktop: full page numbers
 export function PaginationControls({
   currentPage,
   totalPages,
@@ -39,63 +41,61 @@ export function PaginationControls({
   };
 
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded border border-white/10 text-gray-400 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
-      >
-        Prev
-      </button>
-      {getPageNumbers().map((p, i) =>
-        p === '...' ? (
-          <span key={`dots-${i}`} className="px-1 text-gray-500 text-xs sm:text-sm">...</span>
-        ) : (
-          <button
-            key={p}
-            onClick={() => onPageChange(p as number)}
-            className={`w-7 h-7 sm:w-8 sm:h-8 text-xs sm:text-sm rounded transition ${
-              currentPage === p
-                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                : 'text-gray-400 hover:bg-white/5 border border-transparent'
-            }`}
-          >
-            {p}
-          </button>
-        )
-      )}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded border border-white/10 text-gray-400 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
-      >
-        Next
-      </button>
-    </div>
-  );
-}
+    <>
+      {/* Mobile: just prev / page x of y / next */}
+      <div className="flex sm:hidden items-center gap-3">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-4 py-2 text-sm rounded-lg border border-white/10 text-gray-300 active:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >
+          Prev
+        </button>
+        <span className="text-xs text-gray-400">{currentPage}/{totalPages}</span>
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 text-sm rounded-lg border border-white/10 text-gray-300 active:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >
+          Next
+        </button>
+      </div>
 
-// --- Tab Button ---
-export function TabButton({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-        active
-          ? 'text-sky-400 border-sky-400 bg-white/5'
-          : 'text-gray-400 border-transparent hover:text-gray-300 hover:bg-white/5'
-      }`}
-    >
-      {label}
-    </button>
+      {/* Desktop: full page numbers */}
+      <div className="hidden sm:flex items-center gap-2">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-1.5 text-sm rounded border border-white/10 text-gray-400 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >
+          Prev
+        </button>
+        {getPageNumbers().map((p, i) =>
+          p === '...' ? (
+            <span key={`dots-${i}`} className="px-1 text-gray-500 text-sm">...</span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => onPageChange(p as number)}
+              className={`w-8 h-8 text-sm rounded transition ${
+                currentPage === p
+                  ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                  : 'text-gray-400 hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              {p}
+            </button>
+          )
+        )}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1.5 text-sm rounded border border-white/10 text-gray-400 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >
+          Next
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -115,7 +115,7 @@ export function SearchInput({
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full sm:w-80 px-4 py-2 rounded-lg border border-white/20 bg-gradient-to-b from-white/5 to-white/10 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/30 transition"
+      className="w-full sm:w-80 px-3 py-2 rounded-lg border border-white/20 bg-gradient-to-b from-white/5 to-white/10 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/30 transition"
     />
   );
 }
@@ -140,7 +140,7 @@ export function ToggleSwitch({
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
         disabled ? 'bg-gray-700 cursor-not-allowed opacity-50' : loading ? 'bg-gray-500 cursor-wait' : checked ? activeColor : inactiveColor
       }`}
       role="switch"
@@ -148,5 +148,23 @@ export function ToggleSwitch({
     >
       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'} ${loading ? 'opacity-50' : ''}`} />
     </button>
+  );
+}
+
+// --- Stat Badge ---
+export function StatBadge({ label, value, color = 'white' }: { label: string; value: number; color?: string }) {
+  const colorMap: Record<string, string> = {
+    white: 'bg-white/5 border-white/10 text-white',
+    green: 'bg-green-500/10 border-green-500/20 text-green-400',
+    red: 'bg-red-500/10 border-red-500/20 text-red-400',
+    sky: 'bg-sky-500/10 border-sky-500/20 text-sky-400',
+    purple: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
+  };
+  const c = colorMap[color] || colorMap.white;
+  return (
+    <div className={`px-2.5 py-1 border rounded text-xs ${c}`}>
+      <span className="text-gray-400">{label}: </span>
+      <span className="font-semibold">{value}</span>
+    </div>
   );
 }

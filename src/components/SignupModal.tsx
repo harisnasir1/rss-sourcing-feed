@@ -147,7 +147,12 @@ export default function SignupModal({ open, onClose, onSignup, onSwitch }: { ope
       console.log(data)
       if (data && data.ghl === false) {
         const msg = data.message || 'Please complete the onboarding form first.'
-        try { window.open('https://form.typeform.com/to/RvObdfn3', '_blank', 'noopener'); } catch { }
+        try 
+        { 
+        //window.open('https://form.typeform.com/to/RvObdfn3', '_blank', 'noopener');
+         window.location.href='https://form.typeform.com/to/RvObdfn3';
+        }
+       catch { }
         setFormError(String(msg))
         return
       }

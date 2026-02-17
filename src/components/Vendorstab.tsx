@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { SearchInput, ToggleSwitch, PaginationControls, useDebounce } from './Adminshared';
+import { SearchInput, ToggleSwitch, PaginationControls, StatBadge, useDebounce } from './Adminshared';
 
 interface Vendor {
   id: string;
@@ -21,7 +21,7 @@ export default function VendorsTab({ token }: { token: string | null }) {
   const [stats, setStats] = useState({ total: 0, active: 0, blocked: 0 });
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true); // true initially
+  const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [blockingVendors, setBlockingVendors] = useState<Set<string>>(new Set());
 
@@ -30,11 +30,10 @@ export default function VendorsTab({ token }: { token: string | null }) {
 
   const fetchVendors = useCallback(async () => {
     if (!token) return;
-     setIsFetching(true);
+    setIsFetching(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
-
       const res = await fetch(`${import.meta.env.VITE_RUNPOD_URL}/api/vendors/getallvendors?${params}`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       });
@@ -44,7 +43,7 @@ export default function VendorsTab({ token }: { token: string | null }) {
     } catch (err) {
       console.error('Failed to fetch vendors:', err);
     } finally {
-       setIsLoading(false);
+      setIsLoading(false);
       setIsFetching(false);
     }
   }, [token, page, debouncedSearch]);
@@ -79,29 +78,24 @@ export default function VendorsTab({ token }: { token: string | null }) {
 
   return (
     <>
-      <div className="px-4 sm:px-6 py-4 border-b border-white/10 bg-black/20">
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search by name or phone..." />
-          <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm flex-wrap">
-            <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded">
-              <span className="text-gray-400">Vendors: </span><span className="text-white font-semibold">{stats.total}</span>
-            </div>
-            <div className="px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded">
-              <span className="text-gray-400">Active: </span><span className="text-green-400 font-semibold">{stats.active}</span>
-            </div>
-            <div className="px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded">
-              <span className="text-gray-400">Blocked: </span><span className="text-red-400 font-semibold">{stats.blocked}</span>
-            </div>
-          </div>
+      {/* Search + Stats */}
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 bg-black/20 flex-shrink-0">
+        <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search name or phone..." />
+        <div className="flex gap-2 mt-2.5">
+          <StatBadge label="Vendors" value={stats.total} />
+          <StatBadge label="Active" value={stats.active} color="green" />
+          <StatBadge label="Blocked" value={stats.blocked} color="red" />
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
+      {/* Content */}
+      <div className="flex-1 overflow-auto min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" /></div>
         ) : (
-          <div  className={`transition-opacity duration-150 ${isFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-            <div className="hidden md:block min-w-full">
+          <div className={`transition-opacity duration-150 ${isFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            {/* Desktop Table */}
+            <div className="hidden md:block px-6 py-4">
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-gradient-to-b from-gray-900 to-gray-900/95 backdrop-blur-sm z-10">
                   <tr className="border-b border-white/10">
@@ -146,25 +140,19 @@ export default function VendorsTab({ token }: { token: string | null }) {
               </table>
             </div>
 
-            <div className="md:hidden space-y-3">
+            {/* Mobile Cards — compact */}
+            <div className="md:hidden px-3 py-3 space-y-2">
               {vendors.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">{searchQuery ? `No vendors found matching "${searchQuery}"` : 'No vendors found'}</div>
+                <div className="text-center text-gray-500 py-8 text-sm">{searchQuery ? `No results for "${searchQuery}"` : 'No vendors found'}</div>
               ) : (
                 vendors.map(v => (
-                  <div key={v.id} className={`p-4 rounded-lg border border-white/10 bg-white/5 space-y-3 ${v.isblocked ? 'opacity-60' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white font-semibold text-sm">{v.displayname.charAt(0).toUpperCase()}</div>
-                        <div><div className="text-sm font-medium text-white">{v.displayname}</div><div className="text-xs text-gray-500">+{v.phonenumber}</div></div>
-                      </div>
-                      <ToggleSwitch checked={!v.isblocked} loading={blockingVendors.has(v.id)} onClick={() => handleToggleBlock(v.id, v.isblocked)} activeColor="bg-green-500" inactiveColor="bg-red-500" />
+                  <div key={v.id} className={`px-3 py-3 rounded-lg border border-white/10 bg-white/5 flex items-center gap-3 ${v.isblocked ? 'opacity-60' : ''}`}>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">{v.displayname.charAt(0).toUpperCase()}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">{v.displayname}</div>
+                      <div className="text-xs text-gray-500">{v.totallistings} listings</div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div><span className="text-gray-500">Listings: </span><span className="text-sky-400 font-semibold">{v.totallistings}</span></div>
-                      <div><span className="text-gray-500">Rating: </span><span className="text-gray-300">{v.avgrating > 0 ? `${v.avgrating}` : 'N/A'}</span></div>
-                      <div><span className="text-gray-500">Last Active: </span><span className="text-gray-400">{v.lastmessageat ? new Date(v.lastmessageat).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Never'}</span></div>
-                      <div><span className="text-gray-500">Joined: </span><span className="text-gray-400">{new Date(v.createdat).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
-                    </div>
+                    <ToggleSwitch checked={!v.isblocked} loading={blockingVendors.has(v.id)} onClick={() => handleToggleBlock(v.id, v.isblocked)} activeColor="bg-green-500" inactiveColor="bg-red-500" />
                   </div>
                 ))
               )}
@@ -173,8 +161,10 @@ export default function VendorsTab({ token }: { token: string | null }) {
         )}
       </div>
 
-      <div className="px-4 sm:px-6 py-3 border-t border-white/10 bg-black/40 flex items-center justify-between">
-        <div className="text-xs sm:text-sm text-gray-400">Page {page} of {totalPages} ({stats.total} vendors)</div>
+      {/* Footer */}
+      <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-white/10 bg-black/40 flex items-center justify-between flex-shrink-0">
+        <div className="text-xs text-gray-400 hidden sm:block">Page {page} of {totalPages} ({stats.total} vendors)</div>
+        <div className="sm:hidden text-xs text-gray-400">{stats.total} vendors</div>
         <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
     </>
