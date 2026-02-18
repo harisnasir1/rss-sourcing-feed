@@ -5,10 +5,10 @@ import {
 } from '@whiskeysockets/baileys';
 import P from 'pino'
 import { vendorRepo } from '../../repositories/vendors_repo';
-import { MessageBuffer, Listing, Vendor, msgtype,AI_Response } from '../../types/Data_types';
+import { MessageBuffer, Listing, Vendor, msgtype, AI_Response } from '../../types/Data_types';
 import { listing_repo } from '../../repositories/listing_repo';
 import { ImgProcessing } from './imgpros';
-import {AI} from '../AI_Services/Ai'
+import { AI } from '../AI_Services/Ai'
 import { Message_Buffer } from './msgbuff';
 import { NotificationManager } from '../whatsapp_services/Notification_Service';
 export class Message_processing {
@@ -18,27 +18,27 @@ export class Message_processing {
     private _rvendor;
     private _rlist: listing_repo;
     private _imgpro: ImgProcessing;
-    private _ai:AI;
-    private _msgbuff:Message_Buffer;
-    private _notiman:NotificationManager;
+    private _ai: AI;
+    private _msgbuff: Message_Buffer;
+    private _notiman: NotificationManager;
 
     constructor(sock: WASocket) {
         this._sock = sock
         this.groupMetadataCache = new Map()
-        this._rvendor =vendorRepo
+        this._rvendor = vendorRepo
         this._rlist = new listing_repo()
         this._imgpro = new ImgProcessing()
-        this._ai=new AI()
-        this._msgbuff=new Message_Buffer()
-        this._notiman=new NotificationManager();
+        this._ai = new AI()
+        this._msgbuff = new Message_Buffer()
+        this._notiman = new NotificationManager();
     }
-    
+
     public async messageparser(msg: WAMessage) {
-          if (!this.isValidMessage(msg)) return;
+        if (!this.isValidMessage(msg)) return;
         //lets decide whiter it is image or text or mixed
-        
+
         const venderifo = await this.extractVendorInfo(msg)
-        
+
         if (!venderifo) return
 
         //but first take care that the first vendor or message come we neeed to resgister them.
@@ -49,38 +49,59 @@ export class Message_processing {
 
         let imgcheck = msg.message?.imageMessage;
         let textcheck = msg.message?.extendedTextMessage?.text;
-        if(!imgcheck && !textcheck) return null;
-        let venderget =await this.vendor_handling(venderifo,msg)
-        if(!venderget|| venderget?.length==0) return
+        if (!imgcheck && !textcheck) return null;
+        let venderget = await this.vendor_handling(venderifo, msg)
+        if (!venderget || venderget?.length == 0) return
         let vendor = Array.isArray(venderget) ? venderget[0] : venderget;
-        if (imgcheck && !textcheck)
-        {
-            const img_url=await this.handle_image(msg)
-            
+        if (imgcheck && !textcheck) {
+            const img_url = await this.handle_image(msg)
+
             //Step 2:- check if there is caption or not
-            if (imgcheck?.caption && imgcheck.caption.length > 0&&imgcheck.caption!="" &&Array.isArray(img_url)&& img_url.length>0) {
+            if (imgcheck?.caption && imgcheck.caption.length > 0 && imgcheck.caption != "" && Array.isArray(img_url) && img_url.length > 0) {
                 //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
                 //we are not storing all the albumb we are only getting firs image for now in future we need to add images with caption in the
                 //buffer as well
-                   await this.creates_listings(msg, vendor,img_url)
+                let desc = await this.getdescription(msg)
+                if (!desc) return null
+
+                const aidata: AI_Response = await this._ai.extractProductInfo(desc, img_url)
+                await this.creates_listings(msg, vendor, img_url, aidata, desc)
+            }
+            else {
+                if (Array.isArray(img_url) && img_url.length > 0) {
+                    //here add message buffer with type image
+                    let gname = await this.getgroupname(msg.key.remoteJid || "");
+                    if (!gname || gname == "") return null
+                    await this._msgbuff.addimagetobuffer(vendor, msg, gname, "image", img_url)
                 }
-             else {
-            if(Array.isArray(img_url)&& img_url.length>0)
-            {
-             //here add message buffer with type image
-              let gname = await this.getgroupname(msg.key.remoteJid || "");
-              if(!gname||gname=="")return null
-             await this._msgbuff.addimagetobuffer(vendor,msg,gname,"image",img_url)
-            }}
+            }
         }
         else if (!imgcheck && textcheck && textcheck.length > 0) {
-              let desc=await this.getdescription(msg)
-             
-              if(!desc) return null
-              const re:MessageBuffer|null|undefined = await this._msgbuff.addtexttobuffer(vendor,msg,"text",desc)
-              if(!re || (!Array.isArray(re.images))||(Array.isArray(re.images)&&re.images.length==0)  ) return null
+            let desc = await this.getdescription(msg)
+
+            if (!desc) return null
+            var aidata: AI_Response|null=null; 
+            const re: MessageBuffer | null | undefined = await this._msgbuff.addtexttobuffer(vendor, msg, "text", desc)
+            if (!re || (!Array.isArray(re.images)) || (Array.isArray(re.images) && re.images.length == 0)) 
+            {
+                 const k= await this._ai.extractProductInfo(desc,[])
+                 if(!k) return null
+                 aidata=k;
+                 if(aidata.iswtb)
+                 {
+                   await this.creates_listings(msg, vendor, [], aidata, desc)        
+                 }
+                return null
+            }
+            else{
+                if(!re?.images) return null
+                 const k= await this._ai.extractProductInfo(desc, re?.images)
+                 if(!k) return null
+                 aidata=k;
+            }
             //create listing from here if we have messagebuffer which says shouldcombine false and isprocessed true
-              await this.creates_listings(msg,vendor,re.images)
+            
+            await this.creates_listings(msg, vendor, re.images, aidata, desc)
             //!!!IMOPRTANT LOOK AT THIS ASAP
             //GET THE BUFFER ALSO ON GROUPID WHICH WILL HELP YOU TO JOIN TEXT AND DESCRIPTION EVEN IF THE LISITNG HAPPEN IN DIFFERENT GROUPS.
 
@@ -91,81 +112,80 @@ export class Message_processing {
             //3->delete that messagebuffer.
         }
     }
-    
-    //need to add ai on this function
-    public async creates_listings(msg: WAMessage, vinfo: any,imgs:string[]) {
-        try{
-            
-        const gid = this.getgroupid(msg)
-        let gname = await this.getgroupname(msg.key.remoteJid || "");
-        const gt = msg.key.remoteJid
-        if (gid == null || gname == null) return null
-        const pdesc= this.getdescription(msg) || ""
-        //check here for dublicate because every end point wil come here
-        if(!pdesc||pdesc=="")return null
-        const duplicate=await this._rlist.checkdublicate(pdesc.trim(),vinfo.id)
-        if(duplicate){
-            //if we have the dublicate dublicate is true and we reutrn that
-            return null
-        }
-        const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
-        // console.log("data form ai=>",aidata)
-        if(!aidata ||(aidata && (aidata.iswtb==aidata.iswts))){ 
-             console.log(aidata?JSON.stringify(aidata):"something wrong with data");
-             return null;
-        }
 
-        const list: Listing = {
-            vendorId: vinfo.id,
-            groupId: gid,
-            groupName: gname,
-            rawMessage: msg,
-            description:pdesc,
-            images: imgs,
-            price: aidata.price,//ai
-            brand: aidata.brand,//ai
-            productType: aidata.productType,//ai
-            gender: aidata.gender||"",//ai
-            size: aidata.size,//ai
-            condition: aidata.condition,//ai
-            viewCount: 0,
-            likeCount: 0,
-            messageCount: 0,
-            status: 'active',//ai
-            isWTB: aidata.iswtb ?? false,//ai,
-            isWTS:aidata.iswts ?? true
-        }
-    
-        console.log("Listing trying to be created with ->",list)
-        const re= await this._rlist.create_listing(list)
-        const k=await this._rlist.create_listing_b2b(list,vinfo)
-        //now update the vendor
-        const d = {
-                       totallistings: (vinfo.totallistings || 0) + 1,
-                       lastmessageat: 
-                       msg.messageTimestamp != null
-                         ? new Date(Number(msg.messageTimestamp) * 1000)
-                         : new Date()
-                      }
-               
-        let venderget =   await this._rvendor.updateVendor(vinfo.phonenumber,d)
-        if(venderget.length>0&&venderget[0].id && list.isWTS==true && list.isWTB!=true){
-             
-            await this._notiman.SendWtsnotifications(venderget[0],list);
+    //need to add ai on this function
+    public async creates_listings(msg: WAMessage, vinfo: any, imgs: string[], aidata: AI_Response, pdesc: string) {
+        try {
+
+            const gid = this.getgroupid(msg)
+            let gname = await this.getgroupname(msg.key.remoteJid || "");
+            const gt = msg.key.remoteJid
+            if (gid == null || gname == null) return null
+            // const pdesc= this.getdescription(msg) || ""
+            // //check here for dublicate because every end point wil come here
+            // if(!pdesc||pdesc=="")return null
+            const duplicate = await this._rlist.checkdublicate(pdesc.trim(), vinfo.id)
+            if (duplicate) {
+                //if we have the dublicate dublicate is true and we reutrn that
+                return null
             }
-        
+            // const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
+            // console.log("data form ai=>",aidata)
+            if (!aidata || (aidata && (aidata.iswtb == aidata.iswts))) {
+                console.log(aidata ? JSON.stringify(aidata) : "something wrong with data");
+                return null;
+            }
+
+            const list: Listing = {
+                vendorId: vinfo.id,
+                groupId: gid,
+                groupName: gname,
+                rawMessage: msg,
+                description: pdesc,
+                images: imgs,
+                price: aidata.price,//ai
+                brand: aidata.brand,//ai
+                productType: aidata.productType,//ai
+                gender: aidata.gender || "",//ai
+                size: aidata.size,//ai
+                condition: aidata.condition,//ai
+                viewCount: 0,
+                likeCount: 0,
+                messageCount: 0,
+                status: 'active',//ai
+                isWTB: aidata.iswtb ?? false,//ai,
+                isWTS: aidata.iswts ?? true
+            }
+
+            console.log("Listing trying to be created with ->", list)
+            const re = await this._rlist.create_listing(list)
+            const k = await this._rlist.create_listing_b2b(list, vinfo)
+            //now update the vendor
+            const d = {
+                totallistings: (vinfo.totallistings || 0) + 1,
+                lastmessageat:
+                    msg.messageTimestamp != null
+                        ? new Date(Number(msg.messageTimestamp) * 1000)
+                        : new Date()
+            }
+
+            let venderget = await this._rvendor.updateVendor(vinfo.phonenumber, d)
+            if (venderget.length > 0 && venderget[0].id && list.isWTS == true && list.isWTB != true) {
+
+                await this._notiman.SendWtsnotifications(venderget[0], list);
+            }
+
             return re;
         }
-        catch(e)
-        {
-            console.log("Error on creating :->",e)
+        catch (e) {
+            console.log("Error on creating :->", e)
         }
     }
-    
+
     private async extractVendorInfo(msg: WAMessage) {
         const isGroup = msg.key.remoteJid?.endsWith('@g.us')
-         
-        if(!isGroup) return null
+
+        if (!isGroup) return null
         let vendorWhatsappId: string = ""
         let vendorPhoneNumber: string = ""
         let groupname: string = ""
@@ -173,27 +193,26 @@ export class Message_processing {
         let vendorName = msg.pushName || 'Unknown'
         if (isGroup) {
             groupid = this.getgroupid(msg);
-            
-            if (!groupid||groupid=="") return null
+
+            if (!groupid || groupid == "") return null
 
 
-            let k = await this.getgroupname(msg.key.remoteJid||"")
+            let k = await this.getgroupname(msg.key.remoteJid || "")
 
             if (k == "" || k == null) return null
             groupname = k;
             vendorWhatsappId = msg.key.participant ? msg.key.participant.split("@")[0] : ""
-            
+
             if (vendorName == "") return null
             if (msg.key.participantAlt) {
                 vendorPhoneNumber = msg.key.participantAlt.split(':')[0]
                 vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
             }
         }
-        if(!vendorName  ||vendorName===''|| !vendorPhoneNumber||vendorPhoneNumber===""||!vendorWhatsappId || vendorWhatsappId=="" )
-        {
-            console.log("participant id drop: ",msg);
+        if (!vendorName || vendorName === '' || !vendorPhoneNumber || vendorPhoneNumber === "" || !vendorWhatsappId || vendorWhatsappId == "") {
+            console.log("participant id drop: ", msg);
             return null
-        } 
+        }
         const vdata = {
             whatsappId: vendorWhatsappId,
             phoneNumber: vendorPhoneNumber,
@@ -206,19 +225,18 @@ export class Message_processing {
 
         return { vdata, isGroup }
     }
-    
+
     private getgroupid(msg: WAMessage) {
         if (!msg.key.remoteJid) return null
         return msg.key.remoteJid.split("@")[0];
     }
 
     public async getgroupname(groupid: string): Promise<string | null> {
-        if (groupid == null || groupid == "" || !this._sock){
-           
-          if(!this._sock)
-          {
-            console.log("socket is not established yet")
-          }
+        if (groupid == null || groupid == "" || !this._sock) {
+
+            if (!this._sock) {
+                console.log("socket is not established yet")
+            }
             return null
         }
         const cached = this.getGroupMetadata(groupid);
@@ -229,11 +247,11 @@ export class Message_processing {
             const metadata = await this._sock.groupMetadata(groupid)
             const groupname = metadata?.subject;
             this.addGroupMetadata(groupid, groupname, Date.now())
-             
+
             return groupname
         }
         catch (e) {
-           console.log("gorupname", e)
+            console.log("gorupname", e)
             return null
         }
     }
@@ -269,67 +287,64 @@ export class Message_processing {
         }
     }
 
-    private async handle_image(msg:WAMessage)
-    {
+    private async handle_image(msg: WAMessage) {
 
-         try{
-           let imgbuff: Buffer | null = await this.downloadimage(msg);
-           if (!imgbuff) return   null      
-           return await this._imgpro.upload_image(imgbuff)
-         }
-         catch(e){
-           console.log("Error downloading and decoding image: ")
-           return null;
-         }
+        try {
+            let imgbuff: Buffer | null = await this.downloadimage(msg);
+            if (!imgbuff) return null
+            return await this._imgpro.upload_image(imgbuff)
+        }
+        catch (e) {
+            console.log("Error downloading and decoding image: ")
+            return null;
+        }
     }
 
     private isValidMessage(msg: WAMessage): boolean {
-    if (msg.key.fromMe) {
-        console.log('⏭️ Skipping own message');
-        return false;
-    }
-    
-    if ((msg as any).messageStubType) {
-        console.log('⏭️ Skipping system message');
-         console.log(msg)
-        return false;
-    }
-    if((msg as any).remoteJidAlt)
-    {
+        if (msg.key.fromMe) {
+            console.log('⏭️ Skipping own message');
+            return false;
+        }
 
-    }
-    
-    const isGroup = msg.key.remoteJid?.endsWith('@g.us');
-    if (!isGroup) {
-        console.log('⏭️ Skipping non-group message');
-        console.log(msg)
-        return false;
-    }
-    
-    // Check message age
-    const messageTimestamp = (msg.messageTimestamp as number) * 1000;
-    const messageAge = Date.now() - messageTimestamp;
-    const FIVE_MINUTES = 5 * 60 * 1000;
-    
-    if (messageAge > FIVE_MINUTES) {
-        console.log('⏭️ Skipping old message');
-        return false;
+        if ((msg as any).messageStubType) {
+            console.log('⏭️ Skipping system message');
+            console.log(msg)
+            return false;
+        }
+        if ((msg as any).remoteJidAlt) {
+
+        }
+
+        const isGroup = msg.key.remoteJid?.endsWith('@g.us');
+        if (!isGroup) {
+            console.log('⏭️ Skipping non-group message');
+            console.log(msg)
+            return false;
+        }
+
+        // Check message age
+        const messageTimestamp = (msg.messageTimestamp as number) * 1000;
+        const messageAge = Date.now() - messageTimestamp;
+        const FIVE_MINUTES = 5 * 60 * 1000;
+
+        if (messageAge > FIVE_MINUTES) {
+            console.log('⏭️ Skipping old message');
+            return false;
+        }
+
+
+
+        return true;
     }
 
-    
-    
-    return true;
-    }
+    private async vendor_handling(venderifo: any, msg: WAMessage) {
+        let venderget = await this._rvendor.getVendorByPhone(venderifo.vdata.phoneNumber);
 
-    private async vendor_handling(venderifo:any,msg:WAMessage)
-    {
-        let venderget= await this._rvendor.getVendorByPhone(venderifo.vdata.phoneNumber);
-           
-            if (!venderget || venderget.length === 0) {
-          
+        if (!venderget || venderget.length === 0) {
+
             venderget = await this._rvendor.createVendor(venderifo.vdata)
-            }
-         return venderget       
+        }
+        return venderget
     }
-    
+
 }
