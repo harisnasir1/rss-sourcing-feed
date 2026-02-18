@@ -131,7 +131,8 @@ export class Message_processing {
             }
             // const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
             // console.log("data form ai=>",aidata)
-            if (!aidata || (aidata && (aidata.iswtb == aidata.iswts))) {
+            if (!aidata || (aidata && (aidata.iswtb == aidata.iswts)))
+             {
                 console.log(aidata ? JSON.stringify(aidata) : "something wrong with data");
                 return null;
             }
