@@ -127,8 +127,9 @@ export class listing_repo {
             return false;
         }
     }
-    public async getlisting(searchTerm: string, page: number, limit: number, offset: number) {
+    public async getlisting(searchTerm: string, page: number, limit: number, offset: number,iswts:boolean=true) {
 
+       
         try {
             let sql = `
             SELECT 
@@ -149,8 +150,8 @@ export class listing_repo {
                 v.displayname AS "vendorName"
             FROM "Listing" l
             INNER JOIN "Vendor" v ON l.vendorid = v.id
-            WHERE l.status = 'active' AND l.iswts=true AND v.isblocked=false
-            AND l.createdat > NOW() - INTERVAL '72 hours'
+            WHERE l.status = 'active'  AND l.${iswts ? 'iswts' : 'iswtb'}=true AND v.isblocked=false
+            
         `;
 
             const params: any[] = [];
@@ -177,6 +178,7 @@ export class listing_repo {
                 sql += `ORDER BY l.createdat DESC`;
             }
 
+            console.log(sql,params)
             const result = await query(sql, params);
 
             return ({

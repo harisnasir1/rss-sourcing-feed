@@ -9,12 +9,14 @@ export const getqrcode=()=>{
 }
 export const getlistings = async(req:Request , res:Response)=>{
   try{
-      const searchTerm = req.query.search as string || '';
+        const wts=req.query.wts as string || '';
+        const iswts = wts === 'true';
+        const searchTerm = req.query.search as string || '';
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string);
         const offset = (page - 1) * limit;
-       const k=  await  lr.getlisting(searchTerm,page,limit,offset);
-       res.status(200).json({data:k})
+        const k=  await  lr.getlisting(searchTerm,page,limit,offset,iswts);
+        res.status(200).json({data:k})
   }
   catch(e)
   {
