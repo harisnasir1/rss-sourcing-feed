@@ -5,7 +5,10 @@ let queryFn: <T = any>(text: string, params?: any[]) => Promise<T[]>;
 
 if (process.env.NODE_ENV === 'production') {
   neonConfig.webSocketConstructor = ws;
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL,
+     keepAlive: true,
+  keepAliveInitialDelayMillis: 10000
+   });
   pool.query('SELECT 1').then(() => console.log('DB pool warmed')).catch(console.error);
   
   queryFn = async <T>(text: string, params?: any[]) => {
