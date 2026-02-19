@@ -21,8 +21,8 @@ export class AI {
 
   async extractProductInfo(description: string,imgs:string[]):Promise<AI_Response> {
     try {
-      
-      const chatCompletion = await this.getGroqChatCompletion(description);
+      var hasimg=imgs?.length>0?true:false;
+      const chatCompletion = await this.getGroqChatCompletion(description,hasimg);
       const content =chatCompletion.choices[0]?.message?.content;
       
     if(!content)  throw new Error("data coming from ai is wrong!") 
@@ -30,10 +30,10 @@ export class AI {
     let cleaned =jsonrepair(content)     
     const parsed = JSON.parse(cleaned)
     let hai=null
-    if( !parsed||((parsed?.brand==""||parsed.productType=="")&&parsed.iswts===true))
+    if( !parsed||((parsed?.brand==""||parsed.productType=="")&&parsed.iswts!=parsed.iswtb))
     {
         hai= await this.getopenaicompletion(imgs[0])
-        console.log("backup ai response= ",hai)
+        // console.log("backup ai response= ",hai)
     }
     
   
@@ -69,7 +69,7 @@ export class AI {
     }
   }
   
-  private  getGroqChatCompletion(message:string) {
+  private  getGroqChatCompletion(message:string,hasimg:boolean=false) {
 
   return this.groq.chat.completions.create({
 
@@ -127,8 +127,12 @@ export class AI {
              2. If unclear, and a price exists → assume WTS.
              3. If asking questions about availability → assume WTB.
              4. If neither intent is clear → set both to false.
-             5. For iswtb to be true, the message MUST mention a specific product, brand, or category (e.g. "WTB Nike Air Max", "looking for a hoodie") 
-                Vague messages like "anyone selling?" or "what's available?" → set both to false.
+             5. For iswtb to be true:
+                - Text only: MUST mention a specific product, brand, or category
+                ${hasimg?`- Message has image: WTB intent phrases must still be present AND directed at buying
+                  (e.g. "anyone got these?", "WTB", "looking for this")
+                  Messages asking others to "send options" or "share listings" → set both to false` 
+                  :'- No image: vague messages ( eg "WTB","looking for","anyone selling?") → set both to false'}
              6. The JSON format must be exact — no markdown, no explanation, no text before or after.
              ---
              
@@ -202,7 +206,7 @@ export class AI {
                   },
                   iswtb: {
                     type: "boolean",
-                    description: "true ONLY if person wants to buy AND mentions a specific product, brand or category"
+                    description: "true ONLY if person wants to buy. With image: intent phrases sufficient. Without image: MUST mention specific product, brand or category"
                   },
                   iswts: {
                     type: "boolean",
@@ -221,6 +225,7 @@ export class AI {
 
 private async getopenaicompletion(img:string){
 
+  if(!img) return  { brand: "", product: "" };
  
 const response = await this.openai.chat.completions.create({
     model: "gpt-4o",
@@ -235,7 +240,7 @@ const response = await this.openai.chat.completions.create({
                 {
                     type: "image_url",
                     image_url: {
-                        url:  img.trim().replace(/\.$/, '')
+                        url:  img?.trim().replace(/\.$/, '')
                     }
                 }
             ]

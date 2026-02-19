@@ -34,88 +34,61 @@ export class Message_processing {
     }
 
     public async messageparser(msg: WAMessage) {
+
         if (!this.isValidMessage(msg)) return;
-        //lets decide whiter it is image or text or mixed
-        console.log(msg)
+        
         const venderifo = await this.extractVendorInfo(msg)
     
         if (!venderifo) return
 
-        //but first take care that the first vendor or message come we neeed to resgister them.
-        // don't update them we will update when listing get created.
-
-        //step-1:- get  image
-
-
+        
         let imgcheck = msg.message?.imageMessage;
         let textcheck = msg.message?.conversation||msg.message?.extendedTextMessage?.text
-        console.log("htis is ",imgcheck,textcheck)
+
         if (!imgcheck && !textcheck) return null;
        
         let venderget = await this.vendor_handling(venderifo, msg)
-        console.log(venderget)
+        
         if (!venderget || venderget?.length == 0) return
         let vendor = Array.isArray(venderget) ? venderget[0] : venderget;
         if (imgcheck && !textcheck) {
             const img_url = await this.handle_image(msg)
-            //Step 2:- check if there is caption or not
+           
             if (imgcheck?.caption && imgcheck.caption.length > 0 && imgcheck.caption != "" && Array.isArray(img_url) && img_url.length > 0) {
-                //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
-                //we are not storing all the albumb we are only getting firs image for now in future we need to add images with caption in the
-                //buffer as well
+                
                 let desc = await this.getdescription(msg)
                 if (!desc) return null
 
                 const aidata: AI_Response = await this._ai.extractProductInfo(desc, img_url)
                 await this.creates_listings(msg, vendor, img_url, aidata, desc)
             }
-            else {
+            else if (Array.isArray(img_url) && img_url.length > 0)  
+            {
                 
-                if (Array.isArray(img_url) && img_url.length > 0) {
-                    //here add message buffer with type image
-                    let gname = await this.getgroupname(msg.key.remoteJid || "");
-                    if (!gname || gname == "") return null
-                    await this._msgbuff.addimagetobuffer(vendor, msg, gname, "image", img_url)
-                }
+                let gname = await this.getgroupname(msg.key.remoteJid || "");
+                if (!gname || gname == "") return null
+                await this._msgbuff.addimagetobuffer(vendor, msg, gname, "image", img_url)
             }
+            
         }
         else if (!imgcheck && textcheck && textcheck.length > 0) {
             let desc = await this.getdescription(msg)
-                console.log("getting inside the text check",desc)
+            console.log("getting inside the text check",desc)
             if (!desc) return null
-            var aidata: AI_Response|null=null; 
             const re: MessageBuffer | null | undefined = await this._msgbuff.addtexttobuffer(vendor, msg, "text", desc)
-            if (!re || (!Array.isArray(re.images)) || (Array.isArray(re.images) && re.images.length == 0)) 
+            const hasImages = Array.isArray(re?.images) && re.images.length > 0
+            const aidata: AI_Response= await this._ai.extractProductInfo(desc,hasImages&&re&&re?.images?re?.images:[]); 
+            if (!aidata) return null
+            if (!hasImages)
             {
-                 const k= await this._ai.extractProductInfo(desc,[])
-                 if(!k) return null
-                 aidata=k;
-                 if(aidata&&aidata?.iswtb)
-                 {
-                   console.log("going to create wtb without any text:")
-                   console.log("description: ",desc);
-                   console.log("aidata:",aidata)
-                   await this.creates_listings(msg, vendor, [], aidata, desc)        
-                 }
+            if (aidata?.iswtb&&!aidata?.iswts) await this.creates_listings(msg, vendor, [], aidata, desc)
+             return null
+            }
+            if(!re?.images)
                 return null
-            }
-            else{
-                if(!re?.images) return null
-                 const k= await this._ai.extractProductInfo(desc, re?.images)
-                 if(!k) return null
-                 aidata=k;
-            }
-            //create listing from here if we have messagebuffer which says shouldcombine false and isprocessed true
+
+            await this.creates_listings(msg, vendor, re?.images, aidata, desc)
             
-            await this.creates_listings(msg, vendor, re.images, aidata, desc)
-            //!!!IMOPRTANT LOOK AT THIS ASAP
-            //GET THE BUFFER ALSO ON GROUPID WHICH WILL HELP YOU TO JOIN TEXT AND DESCRIPTION EVEN IF THE LISITNG HAPPEN IN DIFFERENT GROUPS.
-
-
-            // step3:- check here in message buffer with the whatsapp number or id and check if the last message buffer is image.
-            //1-> if the last isProcessed is true then ignore that message.
-            //2->if the last message of that vendor is image then add text to it (after ai) and then create the listing from that data.
-            //3->delete that messagebuffer.
         }
     }
 
@@ -127,16 +100,13 @@ export class Message_processing {
             let gname = await this.getgroupname(msg.key.remoteJid || "");
             const gt = msg.key.remoteJid
             if (gid == null || gname == null) return null
-            // const pdesc= this.getdescription(msg) || ""
-            // //check here for dublicate because every end point wil come here
-            // if(!pdesc||pdesc=="")return null
+         
             const duplicate = await this._rlist.checkdublicate(pdesc.trim(), vinfo.id)
             if (duplicate) {
-                //if we have the dublicate dublicate is true and we reutrn that
+              
                 return null
             }
-            // const aidata:AI_Response =await this._ai.extractProductInfo(pdesc,imgs)
-            // console.log("data form ai=>",aidata)
+           
             if (!aidata || (aidata && (aidata.iswtb == aidata.iswts)))
              {
                 console.log(aidata ? JSON.stringify(aidata) : "something wrong with data");
@@ -166,7 +136,7 @@ export class Message_processing {
 
             console.log("Listing trying to be created with ->", list)
             const re = await this._rlist.create_listing(list)
-            const k = await this._rlist.create_listing_b2b(list, vinfo)
+           // const k = await this._rlist.create_listing_b2b(list, vinfo)
             //now update the vendor
             const d = {
                 totallistings: (vinfo.totallistings || 0) + 1,
@@ -184,7 +154,8 @@ export class Message_processing {
 
             return re;
         }
-        catch (e) {
+        catch (e)
+         {
             console.log("Error on creating :->", e)
         }
     }

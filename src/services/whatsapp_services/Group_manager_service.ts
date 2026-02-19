@@ -52,7 +52,7 @@ export class GroupManager {
 
         const jid = subGroup?.id;
         if (!jid) {
-          console.log("❌ Skipping — missing JID");
+          //console.log("❌ Skipping — missing JID");
           continue;
         }
 
@@ -117,7 +117,7 @@ export class GroupManager {
 
     // Fetch community sub-groups directly from WhatsApp
     const community = await this._sock.communityFetchLinkedGroups(this.COMMUNITY_JID)
-    console.log(community)
+    //console.log(community)
     for (const subGroup of community.linkedGroups) {
       const jid = subGroup.id
       if (!jid) return;
@@ -143,13 +143,13 @@ export class GroupManager {
     const data = this._groupCache.get(this.COMMUNITY_JID)
     if (!data) return false
 
-    console.log('=== PARTICIPANT CHECK ===')
-    console.log('Looking for:', userJid)
+    // console.log('=== PARTICIPANT CHECK ===')
+    // console.log('Looking for:', userJid)
 
     // Community-level check
     const communityMatch = data.metadata.participants.find(p => p.id === userJid)
     if (communityMatch) {
-      console.log('FOUND at community level')
+      // console.log('FOUND at community level')
       return true
     }
 
@@ -161,15 +161,15 @@ export class GroupManager {
 
       const match = sugdata.metadata.participants.find(p => p.id === userJid)
       if (match) {
-        console.log(`FOUND in: ${sugdata.metadata.subject} (${sug})`)
-        console.log('Match:', match)
+        // console.log(`FOUND in: ${sugdata.metadata.subject} (${sug})`)
+        // console.log('Match:', match)
         found = true
         break
       }
     }
 
     if (!found) {
-      console.log('NOT FOUND in any group')
+      // console.log('NOT FOUND in any group')
       // Log total participants per sub-group
       for (const sug of data.subGroups) {
         const sugdata = this._groupCache.get(sug)
@@ -177,8 +177,8 @@ export class GroupManager {
       }
       // Log sample LID format from first sub-group
       const first = this._groupCache.get(data.subGroups[0])
-      console.log('Sample LID format:', first?.metadata.participants[0]?.id)
-      console.log('Your LID format:', userJid)
+      // console.log('Sample LID format:', first?.metadata.participants[0]?.id)
+      // console.log('Your LID format:', userJid)
     }
 
     console.log('=== END CHECK ===')
