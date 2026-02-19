@@ -127,8 +127,9 @@ export class AI {
              2. If unclear, and a price exists → assume WTS.
              3. If asking questions about availability → assume WTB.
              4. If neither intent is clear → set both to false.
-             5. The JSON format must be exact — no markdown, no explanation, no text before or after.
-             
+             5. For iswtb to be true, the message MUST mention a specific product, brand, or category (e.g. "WTB Nike Air Max", "looking for a hoodie") 
+                Vague messages like "anyone selling?" or "what's available?" → set both to false.
+             6. The JSON format must be exact — no markdown, no explanation, no text before or after.
              ---
              
              **Return JSON format (exactly this structure):**
@@ -201,7 +202,7 @@ export class AI {
                   },
                   iswtb: {
                     type: "boolean",
-                    description: "true if text contains product details and phrases like wtb or want to buy"
+                    description: "true ONLY if person wants to buy AND mentions a specific product, brand or category"
                   },
                   iswts: {
                     type: "boolean",
