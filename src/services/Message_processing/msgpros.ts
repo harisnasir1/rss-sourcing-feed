@@ -164,7 +164,7 @@ export class Message_processing {
 
             console.log("Listing trying to be created with ->", list)
             const re = await this._rlist.create_listing(list)
-           //s const k = await this._rlist.create_listing_b2b(list, vinfo)
+            const k = await this._rlist.create_listing_b2b(list, vinfo)
             //now update the vendor
             const d = {
                 totallistings: (vinfo.totallistings || 0) + 1,
