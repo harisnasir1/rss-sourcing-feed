@@ -130,6 +130,7 @@ export class listing_repo {
     public async getlisting(searchTerm: string, page: number, limit: number, offset: number,iswts:boolean=true) {
 
        
+       
         try {
             let sql = `
             SELECT 
@@ -151,7 +152,7 @@ export class listing_repo {
             FROM "Listing" l
             INNER JOIN "Vendor" v ON l.vendorid = v.id
             WHERE l.status = 'active'  AND l.${iswts ? 'iswts' : 'iswtb'}=true AND v.isblocked=false
-            
+            AND l.createdat > NOW() - INTERVAL '72 hours'
         `;
 
             const params: any[] = [];
