@@ -58,7 +58,6 @@ export class Message_processing {
         let vendor = Array.isArray(venderget) ? venderget[0] : venderget;
         if (imgcheck && !textcheck) {
             const img_url = await this.handle_image(msg)
-           console.log("image check")
             //Step 2:- check if there is caption or not
             if (imgcheck?.caption && imgcheck.caption.length > 0 && imgcheck.caption != "" && Array.isArray(img_url) && img_url.length > 0) {
                 //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
@@ -91,8 +90,11 @@ export class Message_processing {
                  const k= await this._ai.extractProductInfo(desc,[])
                  if(!k) return null
                  aidata=k;
-                 if(aidata.iswtb)
+                 if(aidata&&aidata?.iswtb)
                  {
+                   console.log("going to create wtb without any text:")
+                   console.log("description: ",desc);
+                   console.log("aidata:",aidata)
                    await this.creates_listings(msg, vendor, [], aidata, desc)        
                  }
                 return null
