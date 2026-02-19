@@ -36,9 +36,9 @@ export class Message_processing {
     public async messageparser(msg: WAMessage) {
         if (!this.isValidMessage(msg)) return;
         //lets decide whiter it is image or text or mixed
-
+        console.log(msg)
         const venderifo = await this.extractVendorInfo(msg)
-
+    
         if (!venderifo) return
 
         //but first take care that the first vendor or message come we neeed to resgister them.
@@ -48,14 +48,17 @@ export class Message_processing {
 
 
         let imgcheck = msg.message?.imageMessage;
-        let textcheck = msg.message?.extendedTextMessage?.text;
+        let textcheck = msg.message?.conversation||msg.message?.extendedTextMessage?.text
+        console.log("htis is ",imgcheck,textcheck)
         if (!imgcheck && !textcheck) return null;
+       
         let venderget = await this.vendor_handling(venderifo, msg)
+        console.log(venderget)
         if (!venderget || venderget?.length == 0) return
         let vendor = Array.isArray(venderget) ? venderget[0] : venderget;
         if (imgcheck && !textcheck) {
             const img_url = await this.handle_image(msg)
-
+           console.log("image check")
             //Step 2:- check if there is caption or not
             if (imgcheck?.caption && imgcheck.caption.length > 0 && imgcheck.caption != "" && Array.isArray(img_url) && img_url.length > 0) {
                 //instead of message buffer create actual listing becasue we have both image and text.implement ai on it
@@ -68,6 +71,7 @@ export class Message_processing {
                 await this.creates_listings(msg, vendor, img_url, aidata, desc)
             }
             else {
+                
                 if (Array.isArray(img_url) && img_url.length > 0) {
                     //here add message buffer with type image
                     let gname = await this.getgroupname(msg.key.remoteJid || "");
@@ -78,7 +82,7 @@ export class Message_processing {
         }
         else if (!imgcheck && textcheck && textcheck.length > 0) {
             let desc = await this.getdescription(msg)
-
+                console.log("getting inside the text check",desc)
             if (!desc) return null
             var aidata: AI_Response|null=null; 
             const re: MessageBuffer | null | undefined = await this._msgbuff.addtexttobuffer(vendor, msg, "text", desc)
@@ -160,7 +164,7 @@ export class Message_processing {
 
             console.log("Listing trying to be created with ->", list)
             const re = await this._rlist.create_listing(list)
-            const k = await this._rlist.create_listing_b2b(list, vinfo)
+           //s const k = await this._rlist.create_listing_b2b(list, vinfo)
             //now update the vendor
             const d = {
                 totallistings: (vinfo.totallistings || 0) + 1,
@@ -185,36 +189,36 @@ export class Message_processing {
 
     private async extractVendorInfo(msg: WAMessage) {
         const isGroup = msg.key.remoteJid?.endsWith('@g.us')
-
         if (!isGroup) return null
         let vendorWhatsappId: string = ""
         let vendorPhoneNumber: string = ""
         let groupname: string = ""
         let groupid: string | null = ""
         let vendorName = msg.pushName || 'Unknown'
-        if (isGroup) {
+        if (isGroup) 
+        {
             groupid = this.getgroupid(msg);
-
             if (!groupid || groupid == "") return null
-
-
             let k = await this.getgroupname(msg.key.remoteJid || "")
-
             if (k == "" || k == null) return null
             groupname = k;
             vendorWhatsappId = msg.key.participant ? msg.key.participant.split("@")[0] : ""
 
-            if (vendorName == "") return null
-            if (msg.key.participantAlt) {
+            if (vendorName == "") 
+                return null
+            if (msg.key.participantAlt)
+            {
                 vendorPhoneNumber = msg.key.participantAlt.split(':')[0]
                 vendorPhoneNumber = vendorPhoneNumber.split("@")[0];
             }
         }
-        if (!vendorName || vendorName === '' || !vendorPhoneNumber || vendorPhoneNumber === "" || !vendorWhatsappId || vendorWhatsappId == "") {
+        if (!vendorName || vendorName === '' || !vendorPhoneNumber || vendorPhoneNumber === "" || !vendorWhatsappId || vendorWhatsappId == "") 
+        {
             console.log("participant id drop: ", msg);
             return null
         }
-        const vdata = {
+        const vdata =
+        {
             whatsappId: vendorWhatsappId,
             phoneNumber: vendorPhoneNumber,
             displayName: vendorName,
@@ -223,42 +227,45 @@ export class Message_processing {
             totalRatings: 0,
             isBlocked: false,
         }
-
         return { vdata, isGroup }
     }
 
-    private getgroupid(msg: WAMessage) {
+    private getgroupid(msg: WAMessage)
+    {
         if (!msg.key.remoteJid) return null
         return msg.key.remoteJid.split("@")[0];
     }
 
     public async getgroupname(groupid: string): Promise<string | null> {
-        if (groupid == null || groupid == "" || !this._sock) {
-
-            if (!this._sock) {
+        if (groupid == null || groupid == "" || !this._sock)
+        {
+            if (!this._sock)
+            {
                 console.log("socket is not established yet")
             }
             return null
         }
         const cached = this.getGroupMetadata(groupid);
-        if (cached) {
+        if (cached)
+        {
             return cached.groupName
         }
-        try {
+        try 
+        {
             const metadata = await this._sock.groupMetadata(groupid)
             const groupname = metadata?.subject;
             this.addGroupMetadata(groupid, groupname, Date.now())
-
             return groupname
         }
-        catch (e) {
+        catch (e)
+        {
             console.log("gorupname", e)
             return null
         }
     }
 
     private getdescription(msg: WAMessage) {
-        return msg.message?.extendedTextMessage?.text?.trim() || msg.message?.imageMessage?.caption?.trim()
+        return msg.message?.conversation?.trim() || msg.message?.imageMessage?.caption?.trim()|| msg.message?.extendedTextMessage?.text
     }
 
     private addGroupMetadata(id: string, groupName: string, timestamp: number) {
