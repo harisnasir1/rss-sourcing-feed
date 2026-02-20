@@ -179,7 +179,7 @@ export class listing_repo {
                 sql += `ORDER BY l.createdat DESC`;
             }
 
-            console.log(sql,params)
+          
             const result = await query(sql, params);
 
             return ({

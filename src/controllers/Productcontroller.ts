@@ -10,7 +10,9 @@ export const getqrcode=()=>{
 export const getlistings = async(req:Request , res:Response)=>{
   try{
         const wts=req.query.wts as string || '';
-        const iswts = wts === 'true';
+      
+        const iswts = (wts === 'false' )?false:true; 
+        
         const searchTerm = req.query.search as string || '';
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string);
