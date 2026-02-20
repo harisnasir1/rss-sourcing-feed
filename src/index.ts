@@ -28,7 +28,7 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     }
-    else if (/^https:\/\/sourcing-feed-git-.*\.vercel\.app$/.test(origin))
+    else if (/^https:\/\/sourcing-feed-.*\.vercel\.app$/.test(origin))
       {
          return callback(null, true);
 
