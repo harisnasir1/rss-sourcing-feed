@@ -51,6 +51,7 @@ export class Message_processing {
         
         if (!venderget || venderget?.length == 0) return
         let vendor = Array.isArray(venderget) ? venderget[0] : venderget;
+        
         if (imgcheck && !textcheck) {
             const img_url = await this.handle_image(msg)
            
@@ -73,7 +74,7 @@ export class Message_processing {
         }
         else if (!imgcheck && textcheck && textcheck.length > 0) {
             let desc = await this.getdescription(msg)
-            console.log("getting inside the text check",desc)
+           
             if (!desc) return null
             const re: MessageBuffer | null | undefined = await this._msgbuff.addtexttobuffer(vendor, msg, "text", desc)
             const hasImages = Array.isArray(re?.images) && re.images.length > 0
