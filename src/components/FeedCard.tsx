@@ -7,12 +7,14 @@ type Item = NormalizedItem
 
 export default function FeedCard({
   item,
+  isWtb = false,
   loggedIn = false,
   onRequireAuth,
   onlogout,
   onWhatsApp
 }: {
   item: Item
+  isWtb?: boolean
   loggedIn?: boolean
   onRequireAuth?: () => void
   onlogout?:()=>void
@@ -27,6 +29,9 @@ export default function FeedCard({
     const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
     return { date, time }
   }
+  const btnClass = isWtb
+  ? 'btn-green px-4 py-2 text-sm rounded inline-block transition-colors'
+  : 'btn-blue px-4 py-2 text-sm rounded inline-block transition-colors'
   const { date, time } = formatDate(item.createdAt)
   // local state used to trigger enter animation when the component mounts
   const [entered, setEntered] = useState(false)
@@ -115,7 +120,7 @@ const handleClick = useCallback((e: React.MouseEvent) => {
 >
   {/* NEW badge stays exactly like your original */}
   {isRecent && (
-    <div className="recent-badge recent-badge-float recent-badge-glow">New</div>
+   <div className={`recent-badge recent-badge-float ${isWtb ? 'recent-badge-wtb recent-badge-glow-wtb' : 'recent-badge-glow'}`}>New</div>
   )}
 
   {/* Left: Image */}
@@ -162,7 +167,7 @@ const handleClick = useCallback((e: React.MouseEvent) => {
             e.stopPropagation()
             handleClick(e)
           }}
-          className="btn-blue px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 transition-colors inline-block"
+          className={btnClass}
         >
           Message on WhatsApp
         </a>
@@ -173,7 +178,7 @@ const handleClick = useCallback((e: React.MouseEvent) => {
             e.stopPropagation()
             onRequireAuth?.()
           }}
-          className="btn-blue px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 transition-colors inline-block"
+          className={btnClass}
           title="Login or sign up to contact on WhatsApp"
         >
           Sign up to message

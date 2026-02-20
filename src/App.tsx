@@ -37,6 +37,7 @@ export default function App() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'wts' | 'wtb'>('wts');
   // Auto-refresh is always enabled; UI toggle removed
   
 
@@ -68,6 +69,19 @@ export default function App() {
     }
 
   },[user?.token])
+  useEffect(() => {
+  if (!didInitialFetchRef.current) return;
+  try { fetchAbort.current?.abort(); } catch {}
+  inFlightRef.current = false;
+  setPage(1); pageRef.current = 1;
+  seenIdsRef.current.clear();
+  setHasMore(true);
+  setVisibleCount(PAGE_LIMIT);
+  fetchItems(false, debouncedQuery || undefined, 1, false, mode);
+
+  document.body.classList.remove('mode-wts', 'mode-wtb')
+  document.body.classList.add(mode === 'wts' ? 'mode-wts' : 'mode-wtb')
+}, [mode]);
 
   const [loginOpen, setLoginOpen] = useState(false);
    const [AdminOpen, setadminopen] = useState(false);
@@ -235,7 +249,7 @@ export default function App() {
   const runpodKey = (import.meta.env.VITE_RUNPOD_KEY as string) || '';
 
   // --- Fetch data ---
-  const fetchItems = async (silent = false, search?: string, pageOverride?: number, append = false) => {
+  const fetchItems = async (silent = false, search?: string, pageOverride?: number, append = false, currentMode: 'wts' | 'wtb' = mode) => {
     if (inFlightRef.current) return; // prevent overlapping calls
     inFlightRef.current = true;
     if (!silent) setLoading(true);
@@ -271,6 +285,7 @@ export default function App() {
   const effectivePage = Math.max(1, pageOverride ?? page);
   targetUrl.searchParams.set('page', String(effectivePage));
   targetUrl.searchParams.set('limit', String(PAGE_LIMIT));
+  targetUrl.searchParams.set('wts', currentMode === 'wts' ? 'true' : 'false');
 
    const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
   //  const fetchUrl ="http://localhost:4000/api/product/getlisting"
@@ -432,7 +447,7 @@ export default function App() {
   pageRef.current = 1;
   setHasMore(true);
   // If we had cache, refresh silently in background; otherwise show loader
-  fetchItems(hadCache, undefined, 1, false);
+  fetchItems(hadCache, undefined, 1, false,mode);
     // Do not abort here — StrictMode's immediate cleanup would cancel the first fetch.
     // The in-flight guard protects against overlaps; the browser will cancel on real unmounts.
     return () => { /* no-op cleanup to avoid aborting initial fetch in StrictMode */ };
@@ -455,7 +470,7 @@ export default function App() {
   setPage(1);
   pageRef.current = 1;
   setHasMore(true);
-  fetchItems(false, debouncedQuery, 1, false);
+  fetchItems(false, debouncedQuery, 1, false,mode);
   lastSearchedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery]);
@@ -466,7 +481,7 @@ export default function App() {
       setPage(1);
       pageRef.current = 1;
       setHasMore(true);
-      fetchItems(false, undefined, 1, false);
+      fetchItems(false, undefined, 1, false,mode);
       lastSearchedRef.current = false;
     }
   }, [query]);
@@ -571,7 +586,7 @@ export default function App() {
     pageRef.current = 1;
     seenIdsRef.current.clear();
 
-    fetchItems(false, debouncedQuery || undefined, 1, false);
+    fetchItems(false, debouncedQuery || undefined, 1, false,mode);
   };
 
   // Reset visible items when filters/search change
@@ -596,7 +611,7 @@ export default function App() {
     setLoadingMore(true);
   const nextPage = pageRef.current + 1;
   pageRef.current = nextPage;
-    fetchItems(true, debouncedQuery || undefined, nextPage, true)
+    fetchItems(true, debouncedQuery || undefined, nextPage, true,mode)
       .catch(() => {})
       .finally(() => {
   setPage(nextPage);
@@ -616,7 +631,7 @@ export default function App() {
     if (hidden <= PRELOAD_THRESHOLD) {
       const nextPage = pageRef.current + 1;
       prefetchRef.current = true;
-      fetchItems(true, debouncedQuery || undefined, nextPage, true)
+      fetchItems(true, debouncedQuery || undefined, nextPage, true,mode)
         .catch(() => {})
         .finally(() => {
           // Mark that we’ve advanced the page due to prefetch
@@ -635,6 +650,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-black via-gray-900 to-gray-800 text-gray-100 noise-bg">
+      
       <CookieBanner />
   <nav className="w-full border-b border-white/10 bg-transparent">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
@@ -761,7 +777,7 @@ export default function App() {
       </nav>
 
       {location.pathname === '/' && (
-      <header className="w-full grid-top-bg">
+      <header className="w-full grid-top-bg ">
         <div className="max-w-6xl mx-auto pt-[80px] text-center px-4 relative overflow-hidden">
           <div className="relative z-10 flex flex-col items-center">
             <h1 className="hero-title title-gradient mb-5">AI WhatsApp Sourcing Feed</h1>
@@ -770,14 +786,62 @@ export default function App() {
               last 72 hours from ANY group chat. To contact a buyer or seller, click on the ‘Message on Whatsapp’ button.
             </p>
 
-            <div className="mt-6 w-full flex justify-center">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search names and brands"
-                className="w-full max-w-md px-4 py-2 rounded-xl border border-white/20 bg-gradient-to-b from-white/0 to-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500/10 focus:shadow-[0_0_10px_rgba(14,165,233,0.3)] transition duration-200"
-              />
-            </div>
+         <div className="relative grid grid-cols-2 bg-[#0b0b0b]/80 p-1 rounded-2xl border border-white/10 backdrop-blur-xl w-full max-w-sm">
+
+  {/* sliding background */}
+  <div
+    className={`absolute top-1 bottom-1 left-1 right-1 rounded-xl transition-transform duration-300`}
+    style={{
+      width: 'calc(50% - 4px)',
+      transform: mode === 'wts' ? 'translateX(0%)' : 'translateX(100%)',
+      background:
+        mode === 'wts'
+          ? 'linear-gradient(180deg, rgba(16,90,137,0.6), rgba(16,90,137,0.2))'
+          : 'linear-gradient(180deg, rgba(0,100,70,0.6), rgba(0,100,70,0.2))',
+      boxShadow:
+        mode === 'wts'
+          ? '0 0 12px rgba(105,197,255,0.25)'
+          : '0 0 12px rgba(0,229,160,0.25)',
+    }}
+  />
+
+  <button
+    onClick={() => setMode('wts')}
+    className={`relative z-10 py-2.5 text-sm rounded-xl transition-all duration-200 text-center flex items-center justify-center gap-2 ${
+  mode === 'wts'
+    ? 'text-white font-medium'
+    : 'text-gray-500'
+}`}
+
+  >
+     <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span> Want to Sell
+  </button>
+
+  <button
+    onClick={() => setMode('wtb')}
+    className={`relative z-10 py-2.5 text-sm rounded-xl transition-colors text-center ${
+      mode === 'wtb' ? 'text-white' : 'text-gray-400'
+    }`}>
+    ● Want to Buy
+  </button>
+
+</div>
+
+
+
+<div className="mt-4 w-full flex justify-center">
+  <div className="relative w-full max-w-md">
+    <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Search names and brands"
+      className="w-full pl-9 pr-4 py-2 rounded-xl border border-white/20 bg-gradient-to-b from-white/0 to-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500/10 focus:shadow-[0_0_10px_rgba(14,165,233,0.3)] transition duration-200"
+    />
+  </div>
+</div>
 
             {/* Brand pills removed */}
 
@@ -826,6 +890,7 @@ export default function App() {
 
                             <FeedCard
                               key={item.id}
+                              isWtb={mode === 'wtb'}
                               item={item}
                               loggedIn={loggedIn}
                               onRequireAuth={() => setSignupOpen(true)}

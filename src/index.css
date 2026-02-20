@@ -93,6 +93,15 @@ button { border-radius: 0.5rem; }
   /* blur removed */
   backdrop-filter: none;
 }
+nav {
+  background: rgba(5, 5, 5, 0.72);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
 
 /* Modal card styles: match FeedCard look (dark translucent, rounded, subtle shadow) */
 .modal-card {
@@ -137,7 +146,9 @@ button { border-radius: 0.5rem; }
 button:focus, input:focus, textarea:focus { outline: none; }
 
 
-/* Primary blue CTA button used in the design */
+/* Primary  CTA button used in the design */
+
+/* for wts */
 .btn-blue {
   border-radius: 0.5rem;
   background: #105A89;
@@ -159,6 +170,29 @@ button:focus, input:focus, textarea:focus { outline: none; }
   outline: none;
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35), 0 10px 32px rgba(105, 197, 255, 0.3);
 }
+/* for wtb */
+.btn-green {
+  border-radius: 0.5rem;
+  background: #0a5c4a;
+  box-shadow: 0 8.333px 27.778px 0 rgba(0, 229, 160, 0.25), 0 0 10px 0 #00e5a0 inset;
+  color: white;
+  position: relative;
+  transition: transform 160ms ease, box-shadow 200ms ease, filter 200ms ease;
+}
+.btn-green:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 12px 36px 0 rgba(0, 229, 160, 0.35), 0 0 12px 0 #00e5a0 inset;
+  transform: translateY(-1px);
+}
+.btn-green:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+.btn-green:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 229, 160, 0.35), 0 10px 32px rgba(0, 229, 160, 0.3);
+}
+
 
 /* small UI tweaks */
 .bg-gradient-to-b { background-image: linear-gradient(to bottom, #000000, #0b0b0b); }
@@ -195,6 +229,7 @@ border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* Small NEW badge */
+/* new badge wts */
 .recent-badge {
   display: inline-flex;
   align-items: center;
@@ -218,6 +253,25 @@ border: 1px solid rgba(255, 255, 255, 0.12);
   50% { box-shadow: 0 0 16px rgba(105,197,255,0.32); }
   100% { box-shadow: 0 0 8px rgba(105,197,255,0.20); }
 }
+/* new badge on wtb */
+
+.recent-badge-wtb {
+  color: #00e5a0;
+  border: 1px solid rgba(0, 229, 160, 0.35);
+  background: rgba(10, 92, 74, 0.40);
+}
+
+@keyframes badge-glow-wtb {
+  0% { box-shadow: 0 0 8px rgba(0, 229, 160, 0.20); }
+  50% { box-shadow: 0 0 16px rgba(0, 229, 160, 0.32); }
+  100% { box-shadow: 0 0 8px rgba(0, 229, 160, 0.20); }
+}
+
+.recent-badge-glow-wtb {
+  animation: badge-glow-wtb 2.6s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(0, 229, 160, 0.25);
+}
+
 
 /* Smooth layout transitions for the containing list */
 .space-y-4 > * {
@@ -428,21 +482,35 @@ border: 1px solid rgba(255, 255, 255, 0.12);
 /* Top-left gradient ray layered inside the app (above root background) */
 #root::before {
   content: '';
-  position: fixed; /* keep it anchored to the viewport */
+  position: fixed;
   top: -80px;
   left: calc(50% - 560px);
   width: 900px;
   height: 360px;
   pointer-events: none;
-  z-index: 0; /* behind content but above #root background */
+  z-index: 0;
+  filter: blur(50px);
+  transform: translate3d(0,0,0) scale(1);
+}
+
+/* WTS (blue) */
+body.mode-wts #root::before {
   background: radial-gradient(110% 80% at 0% 0%,
     rgba(105, 197, 255, 0.46) 0%,
     rgba(16, 90, 137, 0.32) 32%,
     rgba(16, 90, 137, 0.14) 58%,
     rgba(0, 0, 0, 0) 78%
   );
-  filter: blur(50px);
-  transform: translate3d(0,0,0) scale(1);
+}
+
+/* WTB (green) */
+body.mode-wtb #root::before {
+  background: radial-gradient(110% 80% at 0% 0%,
+    rgba(0, 229, 160, 0.46) 0%,
+    rgba(10, 92, 74, 0.32) 32%,
+    rgba(10, 92, 74, 0.14) 58%,
+    rgba(0, 0, 0, 0) 78%
+  );
 }
 
 /* Feed card typography overrides to match spec */
