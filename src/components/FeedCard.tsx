@@ -7,12 +7,14 @@ type Item = NormalizedItem
 
 export default function FeedCard({
   item,
+  isWtb = false,
   loggedIn = false,
   onRequireAuth,
   onlogout,
   onWhatsApp
 }: {
   item: Item
+  isWtb?: boolean
   loggedIn?: boolean
   onRequireAuth?: () => void
   onlogout?:()=>void
@@ -27,6 +29,9 @@ export default function FeedCard({
     const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
     return { date, time }
   }
+  const btnClass = isWtb
+  ? 'btn-green px-4 py-2 text-sm rounded inline-block transition-colors'
+  : 'btn-blue px-4 py-2 text-sm rounded inline-block transition-colors'
   const { date, time } = formatDate(item.createdAt)
   // local state used to trigger enter animation when the component mounts
   const [entered, setEntered] = useState(false)
@@ -115,22 +120,27 @@ const handleClick = useCallback((e: React.MouseEvent) => {
 >
   {/* NEW badge stays exactly like your original */}
   {isRecent && (
-    <div className="recent-badge recent-badge-float recent-badge-glow">New</div>
+   <div className={`recent-badge recent-badge-float ${isWtb ? 'recent-badge-wtb recent-badge-glow-wtb' : 'recent-badge-glow'}`}>New</div>
   )}
 
   {/* Left: Image */}
-  <Link to={`/product/${item.id}`} className="flex-none w-24 h-24 rounded overflow-hidden">
-    {item.images?.[0] && (
-      <img
-        src={item.images[0]}
-        alt={item.name || item.description}
-        className="w-full h-full object-cover"
-        loading="lazy"
-        referrerPolicy="no-referrer"
-      />
-    )}
-  </Link>
-
+<Link
+  to={`/product/${item.id}`}
+  className="relative flex-none w-24 h-24 rounded-xl overflow-hidden ios-glass flex items-center justify-center transition-transform active:scale-95"
+>
+  {item.images?.[0] ? (
+    <img
+      src={item.images[0]}
+      className="absolute inset-0 w-full h-full object-cover"
+      alt="Product"
+    />
+  ) : (
+    /* This span now uses tracking and opacity to mimic iOS system labels */
+    <span className="relative z-10 text-[11px] font-semibold tracking-widest text-white/40 uppercase">
+      WTB
+    </span>
+  )}
+</Link>
   {/* Right: Text */}
   <div className="flex-1 flex flex-col justify-between min-w-0">
     <Link to={`/product/${item.id}`} className="no-underline text-white">
@@ -162,7 +172,7 @@ const handleClick = useCallback((e: React.MouseEvent) => {
             e.stopPropagation()
             handleClick(e)
           }}
-          className="btn-blue px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 transition-colors inline-block"
+          className={btnClass}
         >
           Message on WhatsApp
         </a>
@@ -173,7 +183,7 @@ const handleClick = useCallback((e: React.MouseEvent) => {
             e.stopPropagation()
             onRequireAuth?.()
           }}
-          className="btn-blue px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 transition-colors inline-block"
+          className={btnClass}
           title="Login or sign up to contact on WhatsApp"
         >
           Sign up to message
