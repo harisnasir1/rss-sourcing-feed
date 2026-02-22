@@ -821,7 +821,8 @@ export default function App() {
     onClick={() => setMode('wtb')}
     className={`relative z-10 py-2.5 text-sm rounded-xl transition-colors text-center ${
       mode === 'wtb' ? 'text-white' : 'text-gray-400'
-    }`}>
+    }`}
+  >
     ● Want to Buy
   </button>
 

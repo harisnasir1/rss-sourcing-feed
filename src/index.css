@@ -193,6 +193,37 @@ button:focus, input:focus, textarea:focus { outline: none; }
   box-shadow: 0 0 0 3px rgba(0, 229, 160, 0.35), 0 10px 32px rgba(0, 229, 160, 0.3);
 }
 
+/* Image Placeholder */
+.ios-glass {
+  position: relative;
+  /* Darker base with higher blur and saturation */
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  
+  /* Thinner, more vibrant border */
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  
+  /* Outer glow + subtle inner shadow for depth */
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* The Gloss Overlay */
+.ios-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    110deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 25%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
 
 /* small UI tweaks */
 .bg-gradient-to-b { background-image: linear-gradient(to bottom, #000000, #0b0b0b); }

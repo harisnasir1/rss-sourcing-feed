@@ -124,18 +124,23 @@ const handleClick = useCallback((e: React.MouseEvent) => {
   )}
 
   {/* Left: Image */}
-  <Link to={`/product/${item.id}`} className="flex-none w-24 h-24 rounded overflow-hidden">
-    {item.images?.[0] && (
-      <img
-        src={item.images[0]}
-        alt={item.name || item.description}
-        className="w-full h-full object-cover"
-        loading="lazy"
-        referrerPolicy="no-referrer"
-      />
-    )}
-  </Link>
-
+<Link
+  to={`/product/${item.id}`}
+  className="relative flex-none w-24 h-24 rounded-xl overflow-hidden ios-glass flex items-center justify-center transition-transform active:scale-95"
+>
+  {item.images?.[0] ? (
+    <img
+      src={item.images[0]}
+      className="absolute inset-0 w-full h-full object-cover"
+      alt="Product"
+    />
+  ) : (
+    /* This span now uses tracking and opacity to mimic iOS system labels */
+    <span className="relative z-10 text-[11px] font-semibold tracking-widest text-white/40 uppercase">
+      WTB
+    </span>
+  )}
+</Link>
   {/* Right: Text */}
   <div className="flex-1 flex flex-col justify-between min-w-0">
     <Link to={`/product/${item.id}`} className="no-underline text-white">
