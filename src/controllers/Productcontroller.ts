@@ -1,23 +1,23 @@
 import { Request, Response } from "express";
 import { listing_repo } from "../repositories/listing_repo";
 import { uuid } from "aws-sdk/clients/customerprofiles";
-
+import { getListingSchema } from "../data_validation_schemas/Listing_validation";
 const lr=new listing_repo()
 
 export const getqrcode=()=>{
     
 }
 export const getlistings = async(req:Request , res:Response)=>{
-  try{
-    const wts=req.query.wts as string || '';
-    const iswts = (wts === 'false' )?false:true;
-    const brand=req.query.brand as string||'';
-    const searchTerm = req.query.search as string || '';
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string);
+  try {
+    const parsed = getListingSchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
+    }
+    const { wts, brand, search, page, limit } = parsed.data;
+    const iswts = wts !== 'false';
     const offset = (page - 1) * limit;
-    const k=  await  lr.getlisting(searchTerm,page,limit,offset,iswts,brand);
-    res.status(200).json({data:k})
+    const k = await lr.getlisting(search, page, limit, offset, iswts, brand);
+    res.status(200).json({ data: k })
   }
   catch(e)
   {
