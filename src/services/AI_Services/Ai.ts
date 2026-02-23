@@ -85,7 +85,7 @@ export class AI {
              
              **Product Details to Extract:**
              - price: Extract the numeric value only. Detect currency symbols (£, $, €, ₹) or keywords like "price" or "cost". If no price is found, return 0.
-             - brand: Brand name (Nike, Adidas, Dior, Gucci, Supreme, etc.). Return an empty string if not found.
+             - brand: Return the full official brand name in title case. Always expand abbreviations and shorthand (e.g. "LV" → "Louis Vuitton", "YSL" → "Saint Laurent", "CRTZ" → "Corteiz"). If multiple brands mentioned, return the primary one. Return empty string if not found.
              - productType: Product type (e.g., sneakers, hoodie, jeans, bag). Common categories:
                * Footwear: "sneakers", "trainers", "shoes", "boots", "slides"
                * Clothing: "shirt", "t-shirt", "hoodie", "jacket", "jeans", "pants", "shorts"
@@ -134,6 +134,7 @@ export class AI {
                   Messages asking others to "send options" or "share listings" → set both to false` 
                   :'- No image: vague messages ( eg "WTB","looking for","anyone selling?") → set both to false'}
              6. The JSON format must be exact — no markdown, no explanation, no text before or after.
+             7. If the product is a collab between two brands (e.g. "Stone Island x Supreme"), return only the primary/more prominent brand. Ignore collab suffixes, project names, and sub-lines (e.g. "Stone Island Shadow Project" → "Stone Island", "Nike x Off-White" → "Nike").
              ---
              
              **Return JSON format (exactly this structure):**
@@ -184,7 +185,7 @@ export class AI {
                   },
                   brand: {
                     type: "string",
-                    description: "The brand or manufacturer name"
+                    description: "The brand or manufacturer name.The full official brand name in title case (e.g. 'Louis Vuitton' not 'LV', 'Adidas' not 'adidas')"
                   },
                   productType: {
                     type: "string",
@@ -227,35 +228,38 @@ private async getopenaicompletion(img:string){
 
   if(!img) return  { brand: "", product: "" };
  
-const response = await this.openai.chat.completions.create({
+  const response = await this.openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
-        {
-            role: "user",
-            content: [
-                { 
-                    type: "text", 
-                    text: "Analyze this product image and identify the brand, category, and product type." 
-                },
-                {
-                    type: "image_url",
-                    image_url: {
-                        url:  img?.trim().replace(/\.$/, '')
-                    }
-                }
-            ]
-        }
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Analyze this product image and identify the brand and product type. Return the full official brand name in title case. If it is a collab, return only the primary brand."
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: img?.trim().replace(/\.$/, '')
+            }
+          }
+        ]
+      }
     ],
     functions: [
         {
             name: "identify_product",
-            description: "Identify product brand and details from image. if you failed to generate the brand or product just generate empty strings",
+            description: `Identify product brand and details from image. Return the full official brand name in title case, expanding any abbreviations (e.g. LV → Louis Vuitton). Return empty string if brand cannot be identified.
+             If the product is a collab between two brands (e.g. "Stone Island x Supreme"), return only the primary/more prominent brand. Ignore collab suffixes, project names, and sub-lines (e.g. "Stone Island Shadow Project" → "Stone Island", "Nike x Off-White" → "Nike").
+            `,
             parameters: {
                 type: "object",
                 properties: {
                     brand: {
                         type: "string",
-                        description: "The brand name of the product"
+                        description: `The brand name of the product.The full official brand name in title case (e.g. 'Louis Vuitton' not 'LV', 'Adidas' not 'adidas').`
+
                     },
                     product: {
                         type: "string",
