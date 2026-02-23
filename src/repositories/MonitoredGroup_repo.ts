@@ -50,7 +50,7 @@ export class Monitored_Group_Repo {
         try {
             if (!groupid) return null;
             let sql = `Update  "MonitoredGroup" SET groupname=$1 WHERE whatsappgroupid =$2`
-            return await query(sql, [groupid,groupname])
+            return await query(sql, [groupname,groupid])
 
         }
         catch (error) {
