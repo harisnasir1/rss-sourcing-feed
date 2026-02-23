@@ -5,7 +5,7 @@ import { Link, Routes, Route, useLocation } from 'react-router-dom';
 import ForgetPasswordRequest from './components/ForgetPasswordRequest';
 import ResetPassword from './components/ResetPassword';
 import ProductPage from './Pages/ProductPage'
-
+import BrandFilterModal from './components/Brandfiltermodal';
 import gsap from 'gsap';
 import FeedCard from './components/FeedCard';
 import AnimatedList from './components/AnimatedList';
@@ -17,6 +17,7 @@ import { normalizeItem, Item as NormalizedItem } from './utils/normalizeItem';
 import { within72Hours } from './utils/time';
 import AdminPanel from './components/AdminPanel';
 import { useAuth } from './utils/AuthContext';
+
 // favorites/status storage removed
 
 type Item = NormalizedItem;
@@ -39,6 +40,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<'wts' | 'wtb'>('wts');
   // Auto-refresh is always enabled; UI toggle removed
+
+  const [selectedBrand, setSelectedBrand] = useState('');
   
 
   const [loggedIn, setLoggedIn] = useState<boolean>(() => {
@@ -286,8 +289,8 @@ export default function App() {
   targetUrl.searchParams.set('page', String(effectivePage));
   targetUrl.searchParams.set('limit', String(PAGE_LIMIT));
   targetUrl.searchParams.set('wts', currentMode === 'wts' ? 'true' : 'false');
-
-   const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
+  targetUrl.searchParams.set('brand', selectedBrand);
+  const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
   //  const fetchUrl ="http://localhost:4000/api/product/getlisting"
       console.debug('[feed] fetching', fetchUrl, { dev: import.meta.env.DEV });
 
@@ -489,7 +492,14 @@ export default function App() {
   // Polling disabled — updates come in via SSE only (or manual Refetch)
   useEffect(() => { return; }, [pollingMs]);
 
-  
+  useEffect(() => {
+  if (!didInitialFetchRef.current) return;
+  setPage(1); pageRef.current = 1;
+  seenIdsRef.current.clear();
+  setHasMore(true);
+  setVisibleCount(PAGE_LIMIT);
+  fetchItems(false, debouncedQuery || undefined, 1, false, mode);
+}, [selectedBrand]);
 
   useEffect(() => {
     const sseUrl = (import.meta.env.VITE_RUNPOD_SSE as string) || '';
@@ -786,7 +796,7 @@ export default function App() {
               last 72 hours from ANY group chat. To contact a buyer or seller, click on the ‘Message on Whatsapp’ button.
             </p>
 
-         <div className="relative grid grid-cols-2 bg-[#0b0b0b]/80 p-1 rounded-2xl border border-white/10 backdrop-blur-xl w-full max-w-sm">
+ <div className="relative grid grid-cols-2 bg-[#0b0b0b]/80 p-1 rounded-2xl border border-white/10 backdrop-blur-xl w-full max-w-sm mt-6">
 
   {/* sliding background */}
   <div
@@ -830,7 +840,7 @@ export default function App() {
 
 
 
-<div className="mt-4 w-full flex justify-center">
+<div className="mt-4 w-full flex justify-center gap-4">
   <div className="relative w-full max-w-md">
     <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -841,8 +851,13 @@ export default function App() {
       placeholder="Search names and brands"
       className="w-full pl-9 pr-4 py-2 rounded-xl border border-white/20 bg-gradient-to-b from-white/0 to-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500/10 focus:shadow-[0_0_10px_rgba(14,165,233,0.3)] transition duration-200"
     />
+
   </div>
+      <div className=" flex-shrink-0">
+      <BrandFilterModal selected={selectedBrand} onChange={setSelectedBrand} />
+    </div>
 </div>
+
 
             {/* Brand pills removed */}
 
