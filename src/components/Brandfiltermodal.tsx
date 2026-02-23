@@ -90,18 +90,18 @@ export default function BrandFilterModal({ selected, onChange }: Props) {
 
       {/* Modal */}
       {open && createPortal(
-        <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-4">
+        <div className="fixed min-h-[60vh] inset-0 z-[999] flex items-start sm:items-center justify-center p-4">
           {/* Backdrop */}
           <div
             ref={backdropRef}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm "
             onClick={handleClose}
           />
 
           {/* Panel */}
           <div
             ref={panelRef}
-            className="relative z-10 w-full max-w-lg max-h-[80vh] flex flex-col rounded-2xl border border-white/10 bg-gradient-to-b from-gray-900 to-[#0b0b0b] shadow-2xl"
+            className="relative min-h-[60vh] z-10 w-full max-w-lg max-h-[80vh] flex flex-col rounded-2xl border border-white/10 bg-gradient-to-b from-gray-900 to-[#0b0b0b] shadow-2xl"
             style={{ boxShadow: '0 0 40px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.1)' }}
           >
             {/* Header */}

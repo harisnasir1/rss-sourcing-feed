@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState,useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import CookieBanner, { openCookieManager } from './components/CookieBanner';
 import { Link, Routes, Route, useLocation } from 'react-router-dom';
@@ -24,7 +24,7 @@ type Item = NormalizedItem;
 
 export default function App() {
   const location = useLocation();
-  const {setToken,token}=useAuth()
+  const { setToken, token } = useAuth()
   const [query, setQuery] = useState('');
   // N-2 + debounce knobs (client-side only)
   const MIN_CHARS = Number(import.meta.env.VITE_MIN_QUERY_CHARS ?? 2);
@@ -42,7 +42,7 @@ export default function App() {
   // Auto-refresh is always enabled; UI toggle removed
 
   const [selectedBrand, setSelectedBrand] = useState('');
-  
+
 
   const [loggedIn, setLoggedIn] = useState<boolean>(() => {
     try {
@@ -53,41 +53,40 @@ export default function App() {
     }
   });
 
-  const [user, setUser] = useState<{ name: string; email?: string; role:string,token:string } | null>(() => {
+  const [user, setUser] = useState<{ name: string; email?: string; role: string, token: string } | null>(() => {
     try {
       const raw = localStorage.getItem('user');
-     
-      const d= raw ? JSON.parse(raw) : null;
-      
+
+      const d = raw ? JSON.parse(raw) : null;
+
       return d
     } catch {
       return null;
     }
   });
 
-  useEffect(()=>{
-    if(user && user.token)
-    {
+  useEffect(() => {
+    if (user && user.token) {
       setToken(user.token)
     }
 
-  },[user?.token])
+  }, [user?.token])
   useEffect(() => {
-  if (!didInitialFetchRef.current) return;
-  try { fetchAbort.current?.abort(); } catch {}
-  inFlightRef.current = false;
-  setPage(1); pageRef.current = 1;
-  seenIdsRef.current.clear();
-  setHasMore(true);
-  setVisibleCount(PAGE_LIMIT);
-  fetchItems(false, debouncedQuery || undefined, 1, false, mode);
+    if (!didInitialFetchRef.current) return;
+    try { fetchAbort.current?.abort(); } catch { }
+    inFlightRef.current = false;
+    setPage(1); pageRef.current = 1;
+    seenIdsRef.current.clear();
+    setHasMore(true);
+    setVisibleCount(PAGE_LIMIT);
+    fetchItems(false, debouncedQuery || undefined, 1, false, mode);
 
-  document.body.classList.remove('mode-wts', 'mode-wtb')
-  document.body.classList.add(mode === 'wts' ? 'mode-wts' : 'mode-wtb')
-}, [mode]);
+    document.body.classList.remove('mode-wts', 'mode-wtb')
+    document.body.classList.add(mode === 'wts' ? 'mode-wts' : 'mode-wtb')
+  }, [mode]);
 
   const [loginOpen, setLoginOpen] = useState(false);
-   const [AdminOpen, setadminopen] = useState(false);
+  const [AdminOpen, setadminopen] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileBackdropRef = useRef<HTMLDivElement | null>(null);
@@ -179,64 +178,64 @@ export default function App() {
     }
     return null;
   };
-  
+
   const handleWhatsAppClick = useCallback(async (
-  vendorId: string,
-  itemName: string,
-  itemid:string,
-  onLogout: () => void
-) => {
-  if (!token) return;
+    vendorId: string,
+    itemName: string,
+    itemid: string,
+    onLogout: () => void
+  ) => {
+    if (!token) return;
 
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_RUNPOD_URL}/api/vendors/getnumber`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ vendorid: vendorId }),
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_RUNPOD_URL}/api/vendors/getnumber`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ vendorid: vendorId }),
+        }
+      );
+
+      if (response.status === 401 || response.status === 403) {
+        onLogout();
+        return;
       }
-    );
 
-    if (response.status === 401 || response.status === 403) {
-      onLogout();
-      return;
+      const data = await response.json();
+      if (!data?.Number) {
+        alert('Could not fetch WhatsApp number.');
+        return;
+      }
+
+      const safeName = itemName.replace(/"/g, "'");
+      const productUrl = `${window.location.origin}/product/${itemid}`
+      const text = itemName
+        ? `Referred from resellersync.io, have you still got "${safeName}" available?\n\n${productUrl}`
+        : `Referred from resellersync.io, have you still got this available?\n\n${productUrl}`;
+
+      const number = data.Number.replace(/\D/g, '');
+      window.location.href = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+    } catch (err) {
+      console.error('Error fetching WhatsApp number:', err);
+      alert('Something went wrong fetching the WhatsApp number.');
     }
-
-    const data = await response.json();
-    if (!data?.Number) {
-      alert('Could not fetch WhatsApp number.');
-      return;
-    }
-
-    const safeName = itemName.replace(/"/g, "'");
-   const productUrl = `${window.location.origin}/product/${itemid}`
-    const text = itemName
-      ? `Referred from resellersync.io, have you still got "${safeName}" available?\n\n${productUrl}`
-      : `Referred from resellersync.io, have you still got this available?\n\n${productUrl}`;
-
-    const number = data.Number.replace(/\D/g, '');
-    window.location.href = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
-  } catch (err) {
-    console.error('Error fetching WhatsApp number:', err);
-    alert('Something went wrong fetching the WhatsApp number.');
-  }
-}, [token]);
+  }, [token]);
 
   const normalizeAndSet = (payload: any) => {
     if (!payload) return false;
     if (Array.isArray(payload) && payload.length > 0 && payload.every((el) => typeof el === 'object')) {
       setItems(payload);
-      try { localStorage.setItem('feed_cache', JSON.stringify(payload)); } catch {}
+      try { localStorage.setItem('feed_cache', JSON.stringify(payload)); } catch { }
       return true;
     }
     const found = findItemsArray(payload, 4);
     if (found && Array.isArray(found)) {
       setItems(found);
-      try { localStorage.setItem('feed_cache', JSON.stringify(found)); } catch {}
+      try { localStorage.setItem('feed_cache', JSON.stringify(found)); } catch { }
       return true;
     }
     console.debug('[feed] normalizeAndSet could not find items array. payload:', payload);
@@ -247,7 +246,7 @@ export default function App() {
 
   // --- API Configuration ---
   const configuredRunpodUrl =
-    (import.meta.env.VITE_RUNPOD_URL as string)+`/api/product/getlisting` ||
+    (import.meta.env.VITE_RUNPOD_URL as string) + `/api/product/getlisting` ||
     'http://localhost:4000';
   const runpodKey = (import.meta.env.VITE_RUNPOD_KEY as string) || '';
 
@@ -260,7 +259,7 @@ export default function App() {
 
     try {
       // Abort any in-flight request before starting a new one
-      try { fetchAbort.current?.abort(); } catch {}
+      try { fetchAbort.current?.abort(); } catch { }
       fetchAbort.current = new AbortController();
 
       const headers: Record<string, string> = { Accept: 'application/json' };
@@ -269,29 +268,29 @@ export default function App() {
         headers['x-api-key'] = runpodKey;
       }
 
-  // Build the request URL, optionally adding a search param when provided and long enough (N-2)
-  // Preserve any default query from VITE_RUNPOD_URL when no explicit search is passed.
-  let initialSearch = '';
-  try { const u = new URL(configuredRunpodUrl); initialSearch = u.search || ''; } catch {}
-  const devBase = `/api/product/getlisting`;
-  const targetUrl = import.meta.env.DEV ? new URL(devBase, window.location.origin) : new URL(configuredRunpodUrl);
-  // If a search term is supplied, prefer it over any existing query string.
-  if (typeof search === 'string' && search.trim().length >= MIN_CHARS) {
-    targetUrl.search = '';
-    targetUrl.searchParams.set('search', search.trim());
-  } else if (!search && initialSearch) {
-    // keep whatever was configured in env
-    try { const u = new URL(configuredRunpodUrl); targetUrl.search = u.search; } catch {}
-  }
+      // Build the request URL, optionally adding a search param when provided and long enough (N-2)
+      // Preserve any default query from VITE_RUNPOD_URL when no explicit search is passed.
+      let initialSearch = '';
+      try { const u = new URL(configuredRunpodUrl); initialSearch = u.search || ''; } catch { }
+      const devBase = `/api/product/getlisting`;
+      const targetUrl = import.meta.env.DEV ? new URL(devBase, window.location.origin) : new URL(configuredRunpodUrl);
+      // If a search term is supplied, prefer it over any existing query string.
+      if (typeof search === 'string' && search.trim().length >= MIN_CHARS) {
+        targetUrl.search = '';
+        targetUrl.searchParams.set('search', search.trim());
+      } else if (!search && initialSearch) {
+        // keep whatever was configured in env
+        try { const u = new URL(configuredRunpodUrl); targetUrl.search = u.search; } catch { }
+      }
 
-  // Always request page/limit; if upstream ignores, we chunk on the client
-  const effectivePage = Math.max(1, pageOverride ?? page);
-  targetUrl.searchParams.set('page', String(effectivePage));
-  targetUrl.searchParams.set('limit', String(PAGE_LIMIT));
-  targetUrl.searchParams.set('wts', currentMode === 'wts' ? 'true' : 'false');
-  targetUrl.searchParams.set('brand', selectedBrand);
-  const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
-  //  const fetchUrl ="http://localhost:4000/api/product/getlisting"
+      // Always request page/limit; if upstream ignores, we chunk on the client
+      const effectivePage = Math.max(1, pageOverride ?? page);
+      targetUrl.searchParams.set('page', String(effectivePage));
+      targetUrl.searchParams.set('limit', String(PAGE_LIMIT));
+      targetUrl.searchParams.set('wts', currentMode === 'wts' ? 'true' : 'false');
+      targetUrl.searchParams.set('brand', selectedBrand);
+      const fetchUrl = import.meta.env.DEV ? `${targetUrl.pathname}${targetUrl.search}` : targetUrl.toString();
+      //  const fetchUrl ="http://localhost:4000/api/product/getlisting"
       console.debug('[feed] fetching', fetchUrl, { dev: import.meta.env.DEV });
 
       const res = await fetch(fetchUrl, { headers, signal: fetchAbort.current.signal });
@@ -315,7 +314,7 @@ export default function App() {
       }
 
       if (payload) {
-       
+
         // Try to resolve an array of items from common API shapes
         let arr: any[] = [];
         if (Array.isArray(payload)) arr = payload;
@@ -326,7 +325,7 @@ export default function App() {
           const found = findItemsArray(payload, 4);
           if (Array.isArray(found)) arr = found;
         }
-       
+
         if (Array.isArray(arr)) {
           const start = (effectivePage - 1) * PAGE_LIMIT;
           const endExclusive = start + PAGE_LIMIT;
@@ -337,7 +336,7 @@ export default function App() {
           if (singlePageFromServer) {
             // Normalize only what we received and filter by recency
             const pageItems = arr.map((raw) => normalizeItem(raw)).filter((it) => within72Hours(it.createdAt));
-            
+
             if (append) {
               const toAdd: Item[] = [];
               for (const it of pageItems) {
@@ -350,7 +349,7 @@ export default function App() {
               if (toAdd.length) {
                 setItems((prev) => {
                   const next = [...prev, ...toAdd];
-                  try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch {}
+                  try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch { }
                   return next;
                 });
               }
@@ -360,7 +359,7 @@ export default function App() {
               seenIdsRef.current.clear();
               for (const it of pageItems) seenIdsRef.current.add(String((it as any).id));
               setItems(pageItems);
-              try { localStorage.setItem('feed_cache', JSON.stringify(pageItems)); } catch {}
+              try { localStorage.setItem('feed_cache', JSON.stringify(pageItems)); } catch { }
               setHasMore(arr.length >= PAGE_LIMIT);
             }
           } else {
@@ -401,7 +400,7 @@ export default function App() {
               if (toAdd.length) {
                 setItems((prev) => {
                   const next = [...prev, ...toAdd];
-                  try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch {}
+                  try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch { }
                   return next;
                 });
               }
@@ -410,7 +409,7 @@ export default function App() {
               seenIdsRef.current.clear();
               for (const it of chunk) seenIdsRef.current.add(String((it as any).id));
               setItems(chunk);
-              try { localStorage.setItem('feed_cache', JSON.stringify(chunk)); } catch {}
+              try { localStorage.setItem('feed_cache', JSON.stringify(chunk)); } catch { }
               setHasMore(chunk.length >= PAGE_LIMIT);
             }
           }
@@ -441,16 +440,16 @@ export default function App() {
         const filtered = Array.isArray(cached) ? cached.filter((it: any) => within72Hours(it.createdAt)) : [];
         if (filtered.length) { setItems(filtered); hadCache = true; }
       }
-    } catch {}
-    
+    } catch { }
+
     // React 18 StrictMode double-invokes effects in dev; guard to run only once per mount
     if (didInitialFetchRef.current) return;
     didInitialFetchRef.current = true;
-  setPage(1);
-  pageRef.current = 1;
-  setHasMore(true);
-  // If we had cache, refresh silently in background; otherwise show loader
-  fetchItems(hadCache, undefined, 1, false,mode);
+    setPage(1);
+    pageRef.current = 1;
+    setHasMore(true);
+    // If we had cache, refresh silently in background; otherwise show loader
+    fetchItems(hadCache, undefined, 1, false, mode);
     // Do not abort here — StrictMode's immediate cleanup would cancel the first fetch.
     // The in-flight guard protects against overlaps; the browser will cancel on real unmounts.
     return () => { /* no-op cleanup to avoid aborting initial fetch in StrictMode */ };
@@ -470,11 +469,11 @@ export default function App() {
   useEffect(() => {
     // When a debounced search term is available, reset paging and fetch first page
     if (!debouncedQuery) return; // rely on initial fetch for empty/short search
-  setPage(1);
-  pageRef.current = 1;
-  setHasMore(true);
-  fetchItems(false, debouncedQuery, 1, false,mode);
-  lastSearchedRef.current = true;
+    setPage(1);
+    pageRef.current = 1;
+    setHasMore(true);
+    fetchItems(false, debouncedQuery, 1, false, mode);
+    lastSearchedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery]);
 
@@ -484,7 +483,7 @@ export default function App() {
       setPage(1);
       pageRef.current = 1;
       setHasMore(true);
-      fetchItems(false, undefined, 1, false,mode);
+      fetchItems(false, undefined, 1, false, mode);
       lastSearchedRef.current = false;
     }
   }, [query]);
@@ -493,13 +492,13 @@ export default function App() {
   useEffect(() => { return; }, [pollingMs]);
 
   useEffect(() => {
-  if (!didInitialFetchRef.current) return;
-  setPage(1); pageRef.current = 1;
-  seenIdsRef.current.clear();
-  setHasMore(true);
-  setVisibleCount(PAGE_LIMIT);
-  fetchItems(false, debouncedQuery || undefined, 1, false, mode);
-}, [selectedBrand]);
+    if (!didInitialFetchRef.current) return;
+    setPage(1); pageRef.current = 1;
+    seenIdsRef.current.clear();
+    setHasMore(true);
+    setVisibleCount(PAGE_LIMIT);
+    fetchItems(false, debouncedQuery || undefined, 1, false, mode);
+  }, [selectedBrand]);
 
   useEffect(() => {
     const sseUrl = (import.meta.env.VITE_RUNPOD_SSE as string) || '';
@@ -521,7 +520,7 @@ export default function App() {
         setItems((prev) => {
           if (prev.some((p) => p.id === candidate.id)) return prev;
           const next = [candidate, ...prev];
-          try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch {}
+          try { localStorage.setItem('feed_cache', JSON.stringify(next)); } catch { }
           return next;
         });
       } catch (e) {
@@ -584,7 +583,7 @@ export default function App() {
 
   // Force refresh from page 1 and reset visible window/counters
   const refetchFirstPage = () => {
-    try { fetchAbort.current?.abort(); } catch {}
+    try { fetchAbort.current?.abort(); } catch { }
     inFlightRef.current = false;
     prefetchRef.current = false;
     loadingMoreRef.current = false;
@@ -596,7 +595,7 @@ export default function App() {
     pageRef.current = 1;
     seenIdsRef.current.clear();
 
-    fetchItems(false, debouncedQuery || undefined, 1, false,mode);
+    fetchItems(false, debouncedQuery || undefined, 1, false, mode);
   };
 
   // Reset visible items when filters/search change
@@ -607,7 +606,7 @@ export default function App() {
 
   const pagedItems = useMemo(() => brandFiltered.slice(0, visibleCount), [brandFiltered, visibleCount]);
 
-  
+
   const tryLoadMore = () => {
     if (loadingMoreRef.current) return false;
     const hidden = Math.max(0, brandFiltered.length - visibleCount);
@@ -619,12 +618,12 @@ export default function App() {
     if (!hasMore) return false;
     loadingMoreRef.current = true;
     setLoadingMore(true);
-  const nextPage = pageRef.current + 1;
-  pageRef.current = nextPage;
-    fetchItems(true, debouncedQuery || undefined, nextPage, true,mode)
-      .catch(() => {})
+    const nextPage = pageRef.current + 1;
+    pageRef.current = nextPage;
+    fetchItems(true, debouncedQuery || undefined, nextPage, true, mode)
+      .catch(() => { })
       .finally(() => {
-  setPage(nextPage);
+        setPage(nextPage);
         setLoadingMore(false);
         loadingMoreRef.current = false;
         // Reveal more rows in the list immediately
@@ -641,8 +640,8 @@ export default function App() {
     if (hidden <= PRELOAD_THRESHOLD) {
       const nextPage = pageRef.current + 1;
       prefetchRef.current = true;
-      fetchItems(true, debouncedQuery || undefined, nextPage, true,mode)
-        .catch(() => {})
+      fetchItems(true, debouncedQuery || undefined, nextPage, true, mode)
+        .catch(() => { })
         .finally(() => {
           // Mark that we’ve advanced the page due to prefetch
           pageRef.current = nextPage;
@@ -660,9 +659,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-black via-gray-900 to-gray-800 text-gray-100 noise-bg">
-      
+
       <CookieBanner />
-  <nav className="w-full border-b border-white/10 bg-transparent">
+      <nav className="w-full border-b border-white/10 bg-transparent">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center">
             <Link to="/" aria-label="Home">
@@ -686,7 +685,7 @@ export default function App() {
                 >
                   Sign up
                 </button>
-             
+
               </div>
             ) : (
               <div className="flex items-center gap-3">
@@ -698,16 +697,16 @@ export default function App() {
                     setUser(null);
                     try {
                       localStorage.removeItem('user');
-                    } catch {}
+                    } catch { }
                   }}
                 >
                   Logout
                 </button>
-                 {user&&user.role==="admin"&&   <button
+                {user && user.role === "admin" && <button
                   className="px-3 py-2 btn-blue"
-                  onClick={() => { setLoginOpen(false); setSignupOpen(false);setadminopen(true) }}
+                  onClick={() => { setLoginOpen(false); setSignupOpen(false); setadminopen(true) }}
                 >
-                 Admin panel
+                  Admin panel
                 </button>}
               </div>
             )}
@@ -715,7 +714,7 @@ export default function App() {
 
           {/* Mobile menu toggle */}
           <button className="md:hidden inline-flex items-center justify-center w-10 h-10 border border-white/10" onClick={() => setMobileMenuOpen(true)} aria-label="Menu">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
         </div>
 
@@ -732,7 +731,7 @@ export default function App() {
                   <img src="/assets/rrs_logo_light.svg" alt="RRS" className="w-[70px] h-auto object-contain" />
                 </Link>
                 <button className="inline-flex items-center justify-center w-10 h-10 border border-white/10" onClick={() => closeMobileMenu()} aria-label="Close menu">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" d="M6 6l12 12M18 6L6 18" /></svg>
                 </button>
               </div>
               <div className="px-4 py-6 flex flex-col gap-3">
@@ -765,18 +764,18 @@ export default function App() {
                       onClick={() => {
                         setLoggedIn(false);
                         setUser(null);
-                        try { localStorage.removeItem('user'); } catch {}
+                        try { localStorage.removeItem('user'); } catch { }
                         closeMobileMenu();
                       }}
                     >
                       Logout
                     </button>
-                     {user&&user.role==="admin"&&   <button
-                  className="px-3 py-2 btn-blue"
-                  onClick={() => { setLoginOpen(false); setSignupOpen(false);setadminopen(true); closeMobileMenu(); }}
-                >
-                 Admin panel
-                </button>}
+                    {user && user.role === "admin" && <button
+                      className="px-3 py-2 btn-blue"
+                      onClick={() => { setLoginOpen(false); setSignupOpen(false); setadminopen(true); closeMobileMenu(); }}
+                    >
+                      Admin panel
+                    </button>}
                   </>
                 )}
               </div>
@@ -787,95 +786,93 @@ export default function App() {
       </nav>
 
       {location.pathname === '/' && (
-      <header className="w-full grid-top-bg ">
-        <div className="max-w-6xl mx-auto pt-[80px] text-center px-4 relative overflow-hidden">
-          <div className="relative z-10 flex flex-col items-center">
-            <h1 className="hero-title title-gradient mb-5">AI WhatsApp Sourcing Feed</h1>
-            <p className=" max-w-xl mt-2 text-gray-400">
-              Our AI removes the need of searching through whatsapp trade groups. Search any item that’s been listed in the
-              last 72 hours from ANY group chat. To contact a buyer or seller, click on the ‘Message on Whatsapp’ button.
-            </p>
+        <header className="w-full grid-top-bg ">
+          <div className="max-w-6xl mx-auto pt-[80px] text-center px-4 relative overflow-hidden">
+            <div className="relative z-10 flex flex-col items-center">
+              <h1 className="hero-title title-gradient mb-5">AI WhatsApp Sourcing Feed</h1>
+              <p className=" max-w-xl mt-2 text-gray-400">
+                Our AI removes the need of searching through whatsapp trade groups. Search any item that’s been listed in the
+                last 72 hours from ANY group chat. To contact a buyer or seller, click on the ‘Message on Whatsapp’ button.
+              </p>
 
- <div className="relative grid grid-cols-2 bg-[#0b0b0b]/80 p-1 rounded-2xl border border-white/10 backdrop-blur-xl w-full max-w-sm mt-6">
+              <div className="relative grid grid-cols-2 bg-[#0b0b0b]/80 p-1 rounded-2xl border border-white/10 backdrop-blur-xl w-full max-w-sm mt-6">
 
-  {/* sliding background */}
-  <div
-    className={`absolute top-1 bottom-1 left-1 right-1 rounded-xl transition-transform duration-300`}
-    style={{
-      width: 'calc(50% - 4px)',
-      transform: mode === 'wts' ? 'translateX(0%)' : 'translateX(100%)',
-      background:
-        mode === 'wts'
-          ? 'linear-gradient(180deg, rgba(16,90,137,0.6), rgba(16,90,137,0.2))'
-          : 'linear-gradient(180deg, rgba(0,100,70,0.6), rgba(0,100,70,0.2))',
-      boxShadow:
-        mode === 'wts'
-          ? '0 0 12px rgba(105,197,255,0.25)'
-          : '0 0 12px rgba(0,229,160,0.25)',
-    }}
-  />
+                {/* sliding background */}
+                <div
+                  className={`absolute top-1 bottom-1 left-1 right-1 rounded-xl transition-transform duration-300`}
+                  style={{
+                    width: 'calc(50% - 4px)',
+                    transform: mode === 'wts' ? 'translateX(0%)' : 'translateX(100%)',
+                    background:
+                      mode === 'wts'
+                        ? 'linear-gradient(180deg, rgba(16,90,137,0.6), rgba(16,90,137,0.2))'
+                        : 'linear-gradient(180deg, rgba(0,100,70,0.6), rgba(0,100,70,0.2))',
+                    boxShadow:
+                      mode === 'wts'
+                        ? '0 0 12px rgba(105,197,255,0.25)'
+                        : '0 0 12px rgba(0,229,160,0.25)',
+                  }}
+                />
 
-  <button
-    onClick={() => setMode('wts')}
-    className={`relative z-10 py-2.5 text-sm rounded-xl transition-all duration-200 text-center flex items-center justify-center gap-2 ${
-  mode === 'wts'
-    ? 'text-white font-medium'
-    : 'text-gray-500'
-}`}
+                <button
+                  onClick={() => setMode('wts')}
+                  className={`relative z-10 py-2.5 text-sm rounded-xl transition-all duration-200 text-center flex items-center justify-center gap-2 ${mode === 'wts'
+                      ? 'text-white font-medium'
+                      : 'text-gray-500'
+                    }`}
 
-  >
-     <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span> Want to Sell
-  </button>
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span> Want to Sell
+                </button>
 
-  <button
-    onClick={() => setMode('wtb')}
-    className={`relative z-10 py-2.5 text-sm rounded-xl transition-colors text-center ${
-      mode === 'wtb' ? 'text-white' : 'text-gray-400'
-    }`}
-  >
-    ● Want to Buy
-  </button>
+                <button
+                  onClick={() => setMode('wtb')}
+                  className={`relative z-10 py-2.5 text-sm rounded-xl transition-colors text-center ${mode === 'wtb' ? 'text-white' : 'text-gray-400'
+                    }`}
+                >
+                  ● Want to Buy
+                </button>
 
-</div>
+              </div>
 
 
 
-<div className="mt-4 w-full flex justify-center gap-4">
-  <div className="relative w-full max-w-md">
-    <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-    </svg>
-    <input
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-      placeholder="Search names and brands"
-      className="w-full pl-9 pr-4 py-2 rounded-xl border border-white/20 bg-gradient-to-b from-white/0 to-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500/10 focus:shadow-[0_0_10px_rgba(14,165,233,0.3)] transition duration-200"
-    />
+              <div className="mt-4 w-full flex justify-center gap-4">
+                <div className="relative w-full max-w-md">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                  </svg>
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search names and brands"
+                    className="w-full pl-9 pr-4 py-2 rounded-xl border border-white/20 bg-gradient-to-b from-white/0 to-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/10 focus:border-sky-500/10 focus:shadow-[0_0_10px_rgba(14,165,233,0.3)] transition duration-200"
+                  />
 
-  </div>
-      <div className=" flex-shrink-0">
-      <BrandFilterModal selected={selectedBrand} onChange={setSelectedBrand} />
-    </div>
-</div>
+                </div>
+                <div className=" flex-shrink-0 flex items-stretch">
+                  <BrandFilterModal selected={selectedBrand} onChange={setSelectedBrand} />
+                </div>
+              </div>
 
 
-            {/* Brand pills removed */}
+              {/* Brand pills removed */}
 
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-300">
-              <button
-                className="px-3 py-1 border border-gray-700 text-xs hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={refetchFirstPage}
-                disabled={loading}
-              >
-                {loading ? 'Refreshing…' : 'Refetch'}
-              </button>
-              {/* favorites filter removed */}
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-300">
+                <button
+                  className="px-3 py-1 border border-gray-700 text-xs hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={refetchFirstPage}
+                  disabled={loading}
+                >
+                  {loading ? 'Refreshing…' : 'Refetch'}
+                </button>
+                {/* favorites filter removed */}
+              </div>
+
+              {/* Quick filter pills removed; search bar now filters locally as you type */}
             </div>
-
-            {/* Quick filter pills removed; search bar now filters locally as you type */}
           </div>
-        </div>
-      </header>
+        </header>
       )}
 
       <main>
@@ -911,13 +908,14 @@ export default function App() {
                               loggedIn={loggedIn}
                               onRequireAuth={() => setSignupOpen(true)}
                               onWhatsApp={handleWhatsAppClick}
-                              onlogout={()=>{
-                              setLoggedIn(false);
-                              setUser(null);
-                              setLoginOpen(true)
-                              try {
-                                localStorage.removeItem('user');
-                              } catch {}}}
+                              onlogout={() => {
+                                setLoggedIn(false);
+                                setUser(null);
+                                setLoginOpen(true)
+                                try {
+                                  localStorage.removeItem('user');
+                                } catch { }
+                              }}
                             />
                           )}
                         />
@@ -951,14 +949,15 @@ export default function App() {
               <Route path="/privacy" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Privacy Policy</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><p>This Privacy Policy explains how ResellerSync ("we", "us") collects and uses your information when you use our website and services.</p><h2>Who we are</h2><p>Data Controller: ResellerSync. Contact: <a href="mailto:support@resellersync.io">support@resellersync.io</a>. We are UK based. You may contact the ICO if you have concerns.</p><h2>What we collect</h2><ul><li>Account details (email, name you provide).</li><li>Usage data (IP address, device, and interaction data).</li><li>Cookies and similar technologies (see Cookie Policy).</li></ul><h2>Why we use your data (lawful bases)</h2><ul><li>Provide and maintain the service (Contract/Legitimate Interests).</li><li>Improve the service (Consent for analytics where required).</li><li>Communicate incl. support (Contract/Legitimate Interests; Consent for marketing).</li><li>Security and abuse prevention (Legitimate Interests).</li></ul><h2>Retention</h2><p>We retain data only as long as necessary and as required by law.</p><h2>Sharing and processors</h2><p>We use trusted vendors: Vercel (hosting/CDN), Runpod (infrastructure), Email provider (support/transactional), Analytics provider (if enabled by your cookie choices). We do not sell personal data.</p><h2>International transfers</h2><p>Data may be processed outside the UK with appropriate safeguards (SCCs).</p><h2>Your rights</h2><ul><li>Access, rectification, erasure, restriction, portability, objection.</li><li>Withdraw consent at any time for consent-based activities.</li></ul><p>To exercise rights, contact <a href="mailto:support@resellersync.io">support@resellersync.io</a>.</p><h2>Complaints</h2><p>Complain to the ICO: <a href="https://ico.org.uk/" target="_blank" rel="noreferrer">ico.org.uk</a>.</p><h2>Changes</h2><p>We may update this Policy and post the new date here.</p></div></div>} />
               <Route path="/terms" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Terms of Service</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><h2>Agreement</h2><p>By using ResellerSync, you agree to these terms.</p><h2>Use of Service</h2><ul><li>No abuse, scraping, or interference; no unauthorized access.</li><li>We may update or discontinue features at any time.</li><li>You are responsible for your account and compliance with laws.</li></ul><h2>Content</h2><p>We aggregate or normalize content. No guarantees of accuracy; not affiliated with brands mentioned.</p><h2>Availability</h2><p>Service is provided “as is”, without warranty; no guarantee of uninterrupted operation.</p><h2>Liability</h2><p>Liability is limited to amounts paid in the last 12 months, to the extent permitted by law.</p><h2>Governing Law</h2><p>Laws of England and Wales. Exclusive jurisdiction of its courts.</p><h2>Contact</h2><p><a href="mailto:support@resellersync.io">support@resellersync.io</a></p></div></div>} />
               <Route path="/cookies" element={<div className="mx-auto max-w-4xl md:px-10 md:py-[75px] px-5 py-5"><h1 className="hero-title title-gradient mb-4">Cookie Policy</h1><div className="prose prose-invert max-w-none"><p>Last updated: <strong>17 October 2025</strong></p><p>This Cookie Policy explains how ResellerSync uses cookies and similar technologies.</p><h2>Categories</h2><ul><li><strong>Necessary</strong>: Required for core functionality. Always on.</li><li><strong>Analytics</strong>: Understand usage and improve the product. Only set with your consent.</li><li><strong>Marketing</strong>: Personalization and measuring campaigns. Only set with your consent.</li></ul><h2>Managing cookies</h2><p>You can change your choices at any time via <button className="underline" onClick={() => window.dispatchEvent(new CustomEvent('open-cookie-manager'))}>Manage cookies</button>.</p><h2>Third parties</h2><ul><li>Vercel (hosting/CDN)</li><li>Runpod (infrastructure)</li><li>Analytics provider (only if you opt in)</li><li>Email provider (support/transactional)</li></ul><h2>More info</h2><p>See our <a href="/privacy">Privacy Policy</a> for data handling info.</p></div></div>} />
-              <Route path="/product/:id" element={<ProductPage loggedIn={loggedIn} onRequireAuth={() => setSignupOpen(true)}   onWhatsApp={handleWhatsAppClick}
-                              onlogout={()=>{
-                              setLoggedIn(false);
-                              setUser(null);
-                              setLoginOpen(true)
-                              try {
-                                localStorage.removeItem('user');
-                              } catch {}}} />} />
+              <Route path="/product/:id" element={<ProductPage loggedIn={loggedIn} onRequireAuth={() => setSignupOpen(true)} onWhatsApp={handleWhatsAppClick}
+                onlogout={() => {
+                  setLoggedIn(false);
+                  setUser(null);
+                  setLoginOpen(true)
+                  try {
+                    localStorage.removeItem('user');
+                  } catch { }
+                }} />} />
             </Routes>
           </section>
 
@@ -990,8 +989,8 @@ export default function App() {
           setUser(u);
           try {
             localStorage.setItem('user', JSON.stringify(u));
-          } 
-          catch {}
+          }
+          catch { }
           setLoginOpen(false);
         }}
         onSwitch={() => {
@@ -1010,7 +1009,7 @@ export default function App() {
           try {
             localStorage.setItem('user', JSON.stringify(u));
             setToken(u.token)
-          } catch {}
+          } catch { }
           setSignupOpen(false);
         }}
         onSwitch={() => {
@@ -1019,12 +1018,12 @@ export default function App() {
         }}
       />
       <AdminPanel
-  open={AdminOpen}
-  onClose={() => setadminopen(false)}
-  user={user}
+        open={AdminOpen}
+        onClose={() => setadminopen(false)}
+        user={user}
 
-/>
-     
+      />
+
 
       <footer className="mt-20 py-12 text-center text-gray-400">
         <div className="max-w-6xl mx-auto">
