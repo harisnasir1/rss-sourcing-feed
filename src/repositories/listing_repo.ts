@@ -2,6 +2,7 @@ import { query } from '../utils/db_connection';
 import { Listing } from '../types/Data_types';
 import { b2bquery } from '../utils/db_b2b_connection'
 import { uuid } from 'aws-sdk/clients/customerprofiles';
+import {resolveAliases} from '../utils/Brands'
 export class listing_repo {
 
     public async create_listing(listing: Listing): Promise<Listing[]> {
@@ -127,7 +128,7 @@ export class listing_repo {
             return false;
         }
     }
-    public async getlisting(searchTerm: string, page: number, limit: number, offset: number,iswts:boolean=true) {
+    public async getlisting(searchTerm: string, page: number, limit: number, offset: number,iswts:boolean=true,brand:string="") {
 
        
        
@@ -167,6 +168,15 @@ export class listing_repo {
                 v.displayname ILIKE $1
             )`;
                 params.push(`%${searchTerm.trim()}%`);
+            }
+            if(brand.trim())
+            {
+              const aliases=resolveAliases(brand);
+              sql+=`AND EXISTS(
+              SELECT 1 FROM unnest($${params.length+1}::text[]) AS alias
+              Where similarity(l.brand,alias)>0.3
+              )`
+              params.push(aliases)
             }
 
 
