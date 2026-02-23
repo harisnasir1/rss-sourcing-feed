@@ -31,6 +31,10 @@ export class Monitored_Group_Repo {
     }
     public async UpsertGroup(groupid: string, groupname: string) {
         try {
+            if (!groupid || !groupname) {
+    console.error('❌ UpsertGroup: missing groupid or groupname');
+    return null;
+  }
             let sql = `INSERT INTO "MonitoredGroup" (whatsappgroupid, groupname, isactive, totallistings, lastmessageat, createdat, updatedat)
                VALUES ($1, $2, true, 1, now(), now(), now())
                ON CONFLICT (whatsappgroupid) 
@@ -45,8 +49,8 @@ export class Monitored_Group_Repo {
     public async UpdateGroupName(groupid: string, groupname: string) {
         try {
             if (!groupid) return null;
-            let sql = `Update  "MonitoredGroup" SET groupname=$1 WHERE whatsappgroupid =$1`
-            return await query(sql, [groupid])
+            let sql = `Update  "MonitoredGroup" SET groupname=$1 WHERE whatsappgroupid =$2`
+            return await query(sql, [groupid,groupname])
 
         }
         catch (error) {

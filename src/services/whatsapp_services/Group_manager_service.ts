@@ -243,6 +243,7 @@ export class GroupManager {
       await this.monitor_group.CreateGroup(mg);
     } catch(e) {
       console.error('Failed to store group:', e);
+      continue;
     }
   }
 }
