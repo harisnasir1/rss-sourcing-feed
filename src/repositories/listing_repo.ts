@@ -2,7 +2,7 @@ import { query } from '../utils/db_connection';
 import { Listing } from '../types/Data_types';
 import { b2bquery } from '../utils/db_b2b_connection'
 import { uuid } from 'aws-sdk/clients/customerprofiles';
-import {resolveAliases} from '../utils/Brands'
+import { resolveAliases } from '../utils/Brands'
 export class listing_repo {
 
     public async create_listing(listing: Listing): Promise<Listing[]> {
@@ -128,10 +128,9 @@ export class listing_repo {
             return false;
         }
     }
-    public async getlisting(searchTerm: string, page: number, limit: number, offset: number,iswts:boolean=true,brand:string="") {
+    public async getlisting(searchTerm: string, page: number, limit: number, offset: number, iswts: boolean = true, brand: string = "") {
 
-       
-       
+
         try {
             let sql = `
             SELECT 
@@ -169,14 +168,13 @@ export class listing_repo {
             )`;
                 params.push(`%${searchTerm.trim()}%`);
             }
-            if(brand.trim())
-            {
-              const aliases=resolveAliases(brand);
-              sql+=`AND EXISTS(
-              SELECT 1 FROM unnest($${params.length+1}::text[]) AS alias
+            if (brand.trim()) {
+                const aliases = resolveAliases(brand);
+                sql += `AND EXISTS(
+              SELECT 1 FROM unnest($${params.length + 1}::text[]) AS alias
               Where similarity(l.brand,alias)>0.3
               )`
-              params.push(aliases)
+                params.push(aliases)
             }
 
 
@@ -189,7 +187,7 @@ export class listing_repo {
                 sql += `ORDER BY l.createdat DESC`;
             }
 
-          
+
             const result = await query(sql, params);
 
             return ({
@@ -221,9 +219,9 @@ export class listing_repo {
             const params: any[] = [];
             params.push(des);
             params.push(vid)
-           // console.log("params =>", params)
+            // console.log("params =>", params)
             const k = await query(sql, params);
-           // console.log("dublicate query result", k)
+            // console.log("dublicate query result", k)
             const count = parseInt(k[0].count, 10);
             return count > 0;
         }
@@ -234,7 +232,7 @@ export class listing_repo {
     }
     public async getListingById(id: uuid) {
         try {
-          
+
             const sql = `
             SELECT 
                 l.id,
@@ -269,6 +267,19 @@ export class listing_repo {
             };
 
         } catch (error) {
+            console.error('Error fetching listing by ID:', error);
+            throw error;
+        }
+    }
+    public async Totallisting_per_group(groupid:string)
+    {
+        try{
+            if(!groupid) return null
+            let sql=`Select Count(*) FROM "Listing" WHERE groupid = $1`
+            const re=await query(sql,[groupid]) 
+            return re
+        }
+       catch (error) {
             console.error('Error fetching listing by ID:', error);
             throw error;
         }
