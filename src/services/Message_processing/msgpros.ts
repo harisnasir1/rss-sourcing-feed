@@ -154,8 +154,8 @@ export class Message_processing {
 
                 await this._notiman.SendWtsnotifications(venderget[0], list);
             }
-            // const ug=await this._group_repo.UpsertGroup(gid,gname);
-            // console.log("group updated",ug)
+             const ug=await this._group_repo.UpsertGroup(gid,gname);
+             console.log("group updated",ug)
             return re;
         }
         catch (e)
