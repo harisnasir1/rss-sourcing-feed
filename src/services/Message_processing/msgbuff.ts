@@ -1,7 +1,7 @@
 
 import {
     WAMessage
-} from '@whiskeysockets/baileys';;
+} from 'baileys';;
 import { MessageBuffer,msgtype,Vendor } from "../../types/Data_types";
 import { MessageBufferRepo } from '../../repositories/msgbuff_repo';
 export class Message_Buffer{

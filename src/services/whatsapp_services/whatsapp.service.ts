@@ -5,8 +5,9 @@ import makeWASocket, {
   DisconnectReason,
   BaileysEventMap,
   proto,
-  GroupMetadata
-} from '@whiskeysockets/baileys';
+  GroupMetadata,
+  fetchLatestBaileysVersion
+} from 'baileys'
 import P from 'pino';
 import QRCode from 'qrcode';
 import { Boom } from '@hapi/boom';
@@ -38,11 +39,15 @@ export class WhatsAppClient {
     this.reconnectries=this.reconnectries+1;
     const { state, saveCreds } = await useMultiFileAuthState(this.authFolder);
     this.saveCreds = saveCreds;
+
+    const { version } = await fetchLatestBaileysVersion();
+   
     this.sock =  makeWASocket({
+      version:version,
       auth: state,
-      
-      logger: P({ level: 'silent' }),
-      browser: Browsers.ubuntu('ack'),
+     
+      logger: P({ level: 'silent' })as any,
+      browser: Browsers.macOS('Chrome'),
       generateHighQualityLinkPreview: true,
     // ✅ These options prevent history sync
     syncFullHistory: false,           // Don't sync full message history

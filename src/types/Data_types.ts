@@ -1,4 +1,4 @@
-import {WAMessage} from '@whiskeysockets/baileys';
+import {WAMessage} from 'baileys';
 export interface Vendor {
   id?: string;                 // UUID
   whatsappId: string;         // varchar(50)
@@ -78,3 +78,15 @@ export type ListingStatus =
         iswtb:boolean,
         iswts:boolean
       }
+
+
+  export interface MonitoredGroup {
+  id?: string;
+  whatsappgroupid: string;
+  groupname: string;
+  isactive: boolean;
+  totallistings: number;
+  lastmessageat?: Date | null;
+  createdat?: Date;
+  updatedat?: Date;
+}
