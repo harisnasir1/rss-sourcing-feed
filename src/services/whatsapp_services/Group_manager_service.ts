@@ -1,4 +1,4 @@
-import { WASocket, GroupMetadata } from '@whiskeysockets/baileys'
+import { WASocket, GroupMetadata } from 'baileys'
 import { Monitored_Group_Repo } from '../../repositories/MonitoredGroup_repo'
 import {listing_repo} from '../../repositories/listing_repo'
 import { MonitoredGroup } from '../../types/Data_types';

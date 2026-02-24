@@ -2,7 +2,7 @@ import {
     WASocket,
     downloadMediaMessage,
     WAMessage
-} from '@whiskeysockets/baileys';
+} from 'baileys';
 import P from 'pino'
 import { vendorRepo } from '../../repositories/vendors_repo';
 import { MessageBuffer, Listing, Vendor, msgtype, AI_Response } from '../../types/Data_types';

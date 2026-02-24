@@ -1,4 +1,4 @@
-import {WAMessage} from '@whiskeysockets/baileys';
+import {WAMessage} from 'baileys';
 export interface Vendor {
   id?: string;                 // UUID
   whatsappId: string;         // varchar(50)
