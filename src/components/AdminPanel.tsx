@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../utils/AuthContext';
 import UsersTab from './UserTab';
 import VendorsTab from './Vendorstab';
-
+import GroupTab from './Groupstab';
 
 interface AdminPanelProps {
   open: boolean;
@@ -11,11 +11,12 @@ interface AdminPanelProps {
   user: { name: string; email?: string; role: string } | null;
 }
 
-type Tab = 'users' | 'vendors' ;
+type Tab = 'users' | 'vendors'| 'groups' ;
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'users', label: 'Users' },
-  { key: 'vendors', label: 'Vendors' }
+  { key: 'vendors', label: 'Vendors' },
+  { key: 'groups', label: 'Groups' }
 ];
 
 export default function AdminPanel({ open, onClose, user }: AdminPanelProps) {
@@ -61,7 +62,7 @@ export default function AdminPanel({ open, onClose, user }: AdminPanelProps) {
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           {activeTab === 'users' && <UsersTab token={token} />}
           {activeTab === 'vendors' && <VendorsTab token={token} />}
-        
+         {activeTab === 'groups' && <GroupTab token={token} />}
         </div>
       </div>
     </div>,
