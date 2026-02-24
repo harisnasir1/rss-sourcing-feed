@@ -49,7 +49,7 @@ private sleep(ms: number) {
       if (this._isFetching) return this._groupCache;
        this._isFetching = true;
       const groups = await this._sock.groupFetchAllParticipating();
-      //await this.storeGroups(groups);
+      await this.storeGroups(groups);
       const newGroupCache = new Map<string, CachedGroups>();
 
       for (const [jid, metadata] of Object.entries(groups)) {
@@ -254,21 +254,28 @@ private sleep(ms: number) {
  async storeGroups(groups: Record<string, GroupMetadata>) {
   for (const [jid, metadata] of Object.entries(groups)) {
     try {
-      const groupid = jid.split("@")[0];
-      const exists = await this.monitor_group.GetGroup(groupid);
+      if(metadata&&metadata.subject && metadata.subject!='' && metadata.subject!=null)
+      {
+        console.log("group name",metadata.subject)
+      }
+      else{
+        console.log("somehting wrong with group name", metadata)
+      }
+      // const groupid = jid.split("@")[0];
+      // const exists = await this.monitor_group.GetGroup(groupid);
       
-      if (exists) {
-        await this.monitor_group.UpdateGroupName(groupid, metadata.subject);
-        continue;
-      }
+      // if (exists) {
+      //   await this.monitor_group.UpdateGroupName(groupid, metadata.subject);
+      //   continue;
+      // }
 
-      const mg: MonitoredGroup = {
-        whatsappgroupid: groupid,
-        groupname: metadata.subject,
-        isactive: true,
-        totallistings: 0
-      }
-      await this.monitor_group.CreateGroup(mg);
+      // const mg: MonitoredGroup = {
+      //   whatsappgroupid: groupid,
+      //   groupname: metadata.subject,
+      //   isactive: true,
+      //   totallistings: 0
+      // }
+      // await this.monitor_group.CreateGroup(mg);
     } catch(e) {
       console.error('Failed to store group:', e);
       continue;
