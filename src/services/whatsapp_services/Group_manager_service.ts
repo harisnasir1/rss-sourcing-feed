@@ -24,7 +24,7 @@ export class GroupManager {
 
     try {
       const groups = await this._sock.groupFetchAllParticipating();
-      await this.storeGroups(groups);
+      //await this.storeGroups(groups);
       const newGroupCache = new Map<string, CachedGroups>();
 
       for (const [jid, metadata] of Object.entries(groups)) {
