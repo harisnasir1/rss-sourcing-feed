@@ -1,5 +1,11 @@
 import { query } from '../utils/db_connection';
-import { MonitoredGroup } from '../types/Data_types';
+import { MonitoredGroup  } from '../types/Data_types';
+export interface GroupsResponse {
+    data: MonitoredGroup[];
+    total: number;
+    active: number;
+    inactive: number;
+}
 export class Monitored_Group_Repo {
 
 
@@ -78,8 +84,78 @@ export class Monitored_Group_Repo {
             let sql = `Select * From  "MonitoredGroup" WHERE whatsappgroupid =$1`
             const re = await query(sql, [groupid])
 
-            if (!re || re.length == 0) return false;
+            if (!re || re.length === 0) return false;
             return true
+        }
+        catch (error) {
+            console.error('❌ Failed to Get Group:', error);
+            return false;
+        }
+    }
+
+public async GetAllGroups(limit: number, offset: number, searchTerm: string): Promise<GroupsResponse | null> {
+    try {
+        let sql = `SELECT * FROM "MonitoredGroup"`;
+        const params: any[] = [];
+
+        // 1. Build Data Query
+        if (searchTerm && searchTerm.trim()) {
+            sql += ` WHERE groupname ILIKE $1`;
+            params.push(`%${searchTerm.trim()}%`);
+        }
+
+        sql += ` ORDER BY totallistings DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(limit, offset);
+
+        const re = await query(sql, params);
+        if (!re) throw new Error("Query failed");
+
+        // 2. Build Count Query
+        // Using WHERE 1=1 makes appending AND conditions much easier
+        let countSql = `
+            SELECT 
+                COUNT(*)::INT as total,
+                COUNT(*) FILTER (WHERE isactive = true)::INT as active,
+                COUNT(*) FILTER (WHERE isactive = false)::INT as inactive
+            FROM "MonitoredGroup"
+            WHERE 1=1`;
+            
+        const countParams: any[] = [];
+        if (searchTerm && searchTerm.trim()) {
+            countSql += ` AND groupname ILIKE $1`;
+            countParams.push(`%${searchTerm.trim()}%`);
+        }
+
+        const countResult = await query(countSql, countParams);
+        
+        // Postgres returns counts as strings/bigint, cast them or use ::INT in SQL
+        const { total, active, inactive } = countResult[0];
+
+        return { 
+            data: re, 
+            total: total || 0, 
+            active: active || 0, 
+            inactive: inactive || 0 
+        };
+    } catch (error) {
+        console.error('❌ Failed to Get Groups:', error);
+        return null;
+    }
+}
+
+    public async ChangeStatus(mgroudid: string, status: boolean) {
+        try {
+            let sql = `
+            UPDATE "MonitoredGroup" mg
+            SET isactive = $1
+            WHERE mg.id = $2
+            Returning *
+            `
+           let k= await query(sql,[status,mgroudid])
+           if(!k || k.length===0){
+            return false;}
+        
+           return true
         }
         catch (error) {
             console.error('❌ Failed to Get Group:', error);
