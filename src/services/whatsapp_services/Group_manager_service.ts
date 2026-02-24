@@ -15,16 +15,41 @@ export class GroupManager {
   private COMMUNITY_JID: string = '120363295018117451@g.us'
   private monitor_group: Monitored_Group_Repo = new Monitored_Group_Repo()
   private _listing_repo:listing_repo=new listing_repo()
+  private _isFetching = false;
   constructor(sock: WASocket) {
     this._sock = sock
     this._groupCache = new Map()
   }
+  abort() {
+  this._isFetching = false;
+}
+  private async fetchWithRetry(jid: string, attempts = 3, delay = 5000): Promise<GroupMetadata | null> {
+  for (let i = 0; i < attempts; i++) {
+      if (!this._isFetching) return null; // aborted
+    try {
+      return await this._sock.groupMetadata(jid);
+    } catch (e: any) {
+      if (e?.output?.statusCode === 428 && i < attempts - 1) {
+        await this.sleep(delay);
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
+private sleep(ms: number) {
+  return new Promise(r => setTimeout(r, ms));
+}
 
   async fetchAllGroups(): Promise<Map<string, CachedGroups>> {
 
     try {
+      if (this._isFetching) return this._groupCache;
+       this._isFetching = true;
       const groups = await this._sock.groupFetchAllParticipating();
-      //await this.storeGroups(groups);
+      await this.storeGroups(groups);
       const newGroupCache = new Map<string, CachedGroups>();
 
       for (const [jid, metadata] of Object.entries(groups)) {
@@ -59,8 +84,8 @@ export class GroupManager {
           }
 
           try {
-            const meta = await this._sock.groupMetadata(jid);
-
+            const meta = await this.fetchWithRetry(jid);
+           if (!meta) continue;
             newGroupCache.set(jid, {
               metadata: meta,
               type: 'group',
@@ -81,6 +106,7 @@ export class GroupManager {
 
       this._groupCache = newGroupCache;
       this._cacheReady = true;
+      this._isFetching = false;
       console.log(`Cached ${this._groupCache.size} groups`);
       return this._groupCache;
     }
@@ -126,7 +152,8 @@ export class GroupManager {
       if (!this._groupCache.has(jid)) {
 
         try {
-          const meta = await this._sock.groupMetadata(jid)
+          const meta = await this.fetchWithRetry(jid)
+          if (!meta) continue;
           this._groupCache.set(jid, { metadata: meta, type: 'group', subGroups: [] })
         }
         catch (e) {
@@ -214,7 +241,8 @@ export class GroupManager {
     }
     // Cache not ready - check directly
     try {
-      const community = await this._sock?.groupMetadata(this.COMMUNITY_JID);
+      const community = await this.fetchWithRetry(this.COMMUNITY_JID);
+      if (!community) return false;
       return community?.participants.some(p => p.id === lid) || false;
     }
     catch (e) {
