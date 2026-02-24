@@ -1,5 +1,5 @@
 import { query } from '../utils/db_connection';
-import { MonitoredGroup } from '../types/Data_types';
+import { MonitoredGroup  } from '../types/Data_types';
 export class Monitored_Group_Repo {
 
 
@@ -78,8 +78,62 @@ export class Monitored_Group_Repo {
             let sql = `Select * From  "MonitoredGroup" WHERE whatsappgroupid =$1`
             const re = await query(sql, [groupid])
 
-            if (!re || re.length == 0) return false;
+            if (!re || re.length === 0) return false;
             return true
+        }
+        catch (error) {
+            console.error('❌ Failed to Get Group:', error);
+            return false;
+        }
+    }
+
+    public async GetAllGroups(limit:number, offset:number,searchTerm:string):Promise<MonitoredGroup[]|null>{
+
+        try{
+
+             let sql = `Select * From  "MonitoredGroup" `
+             const params=[] as any;
+          
+             if(searchTerm.trim())
+             {
+                sql+=` Where groupname ILIKE $${params.length+1} `
+                params.push(`%${searchTerm.trim()}%`);
+             }
+
+             if(limit)
+             {
+                sql+=`ORDER BY totallistings DESC Limit $${params.length+1} Offset $${params.length+2} `
+                params.push(limit,offset);
+             }
+             else{
+                 sql+='ORDER BY totallistings DESC '
+             }
+             let re= await query(sql,params)
+              if(!re) throw re;
+
+              return re;
+ 
+        }
+        catch (error) {
+            console.error('❌ Failed to Get Group:', error);
+            return null;
+        }
+
+    }
+
+    public async ChangeStatus(mgroudid: string, status: boolean) {
+        try {
+            let sql = `
+            UPDATE "MonitoredGroup" mg
+            SET isactive = $1
+            WHERE mg.id = $2
+            Returning *
+            `
+           let k= await query(sql,[status,mgroudid])
+           if(!k || k.length===0){
+            return false;}
+        
+           return true
         }
         catch (error) {
             console.error('❌ Failed to Get Group:', error);

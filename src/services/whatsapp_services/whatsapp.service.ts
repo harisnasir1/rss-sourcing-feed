@@ -8,6 +8,9 @@ import makeWASocket, {
   GroupMetadata,
   fetchLatestBaileysVersion
 } from 'baileys'
+
+
+
 import P from 'pino';
 import QRCode from 'qrcode';
 import { Boom } from '@hapi/boom';
@@ -17,7 +20,7 @@ import {wscontainer} from '../Container/ws_container'
 
 
 export class WhatsAppClient {
-  private sock: WASocket| null = null;;
+  private sock!: WASocket;
   private saveCreds!: () => Promise<void>;
   private readonly authFolder: string;
   public msg_p:Message_processing|null=null;
@@ -34,20 +37,17 @@ export class WhatsAppClient {
   public async initialize(): Promise<WASocket> {
     if(this.reconnectries===this.maxretryallowed){
       console.warn("-------------Reach Max retries--------")
-      return this.sock!
+      return this.sock
     }
-   
+    this.reconnectries=this.reconnectries+1;
     const { state, saveCreds } = await useMultiFileAuthState(this.authFolder);
     this.saveCreds = saveCreds;
-
-    const { version } = await fetchLatestBaileysVersion();
-   
+    const {version}=await fetchLatestBaileysVersion();
     this.sock =  makeWASocket({
-      version:version,
       auth: state,
-     
-      logger: P({ level: 'silent' })as any,
-      browser: Browsers.macOS('Chrome'),
+      version,
+      logger: P({ level: 'silent' }),
+      browser: Browsers.ubuntu('ack'),
       generateHighQualityLinkPreview: true,
     // ✅ These options prevent history sync
     syncFullHistory: false,           // Don't sync full message history
@@ -66,12 +66,7 @@ export class WhatsAppClient {
   }
 
   private bindEvents(): void {
-    if (!this.sock) return;
-    this.sock.ev.removeAllListeners('creds.update');
-    this.sock.ev.removeAllListeners('connection.update');
-    this.sock.ev.removeAllListeners('messages.upsert');
-
-    this.sock.ev.on('creds.update', this.saveCreds);
+      this.sock.ev.on('creds.update', this.saveCreds);
     this.sock.ev.on("connection.update",this.handleConnectionUpdate.bind(this))
   }
 
@@ -86,25 +81,27 @@ export class WhatsAppClient {
      if (connection === 'open') {
         console.log('✅ Connected to WhatsApp Web');
         this.reconnectries=0;
-       
+        
 
        if (this.groupmanager)
        {
          wscontainer.groupManager = this.groupmanager;
          setTimeout(() => {
-         this.groupmanager?.fetchAllGroups().catch(e => {
+        this.groupmanager?.fetchAllGroups().catch(e => {
           console.error('Background fetch failed:', e?.message);
         });
-      }, 30000);
+      }, 3000);
 
        }
        else {
       console.log("groupmanager dismounted");
        }
-        wscontainer.sock=this.sock!;
+
+       
+        wscontainer.sock=this.sock;
         if(this.groupmanager){
         wscontainer.groupManager=this.groupmanager;
-       this.sock!.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+      this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
       }
       else{
         console.log("groupmanager dismounted")
@@ -128,12 +125,12 @@ export class WhatsAppClient {
            console.log('⏭️ Reconnection already in progress, skipping...');
            return;
        }
-      
+       
 
         // ✅ Handle different disconnect reasons
             if (reason === DisconnectReason.loggedOut) {
                 console.warn('🚪 Logged out - delete auth_info folder and restart server');
-               
+                this.isReconnecting = false;
                 return;
             }
 
@@ -198,26 +195,23 @@ export class WhatsAppClient {
 
 
   private async reconnect(): Promise<void> {
-  
-     if (this.isReconnecting) return;
-    this.isReconnecting = true;
-    this.reconnectries++;
-    console.log(`🔄 Reconnecting attempt ${this.reconnectries}...`);
-     if (this.sock) {
-        try {
-            this.sock.ws.close(); 
-            this.sock.ev.removeAllListeners('connection.update');
-        } catch (e) {}
-        this.sock=null
-    }
-     this.groupmanager?.abort();
-      setTimeout(async () => {
-      this.isReconnecting = false;
-     
-      await this.initialize();
-    }, 5000);
-  
-     
+    if (this.isReconnecting) return;
+  this.isReconnecting = true;
+
+  console.log('🔄 Cleaning up old connection...');
+  try {
+    // Tell the current socket to stop completely
+    this.sock?.ev.removeAllListeners('connection.update');
+    this.sock?.ev.removeAllListeners('creds.update');
+    this.sock?.ws.close(); 
+  } catch (e) {
+    // Ignore errors if it's already dead
+  }
+  this.groupmanager?.abort();
+   setTimeout(async () => {
+    this.isReconnecting = false;
+    await this.initialize();
+  }, 5000);
   }
   
   private sleep(ms: number): Promise<void> {
@@ -225,4 +219,3 @@ export class WhatsAppClient {
   }
 
 }
-

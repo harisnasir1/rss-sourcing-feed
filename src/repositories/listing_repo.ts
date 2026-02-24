@@ -151,7 +151,8 @@ export class listing_repo {
                 v.displayname AS "vendorName"
             FROM "Listing" l
             INNER JOIN "Vendor" v ON l.vendorid = v.id
-            WHERE l.status = 'active'  AND l.${iswts ? 'iswts' : 'iswtb'}=true AND v.isblocked=false
+            INNER JOIN "MonitoredGroup" m ON l.groupid=m.whatsappgroupid	
+            WHERE l.status = 'active'  AND l.${iswts ? 'iswts' : 'iswtb'}=true AND v.isblocked=false AND m.isactive=True
             AND l.createdat > NOW() - INTERVAL '72 hours'
         `;
 
