@@ -16,7 +16,13 @@ export const getallgroups = async (req: Request, res: Response) => {
         if(!re) 
          return res.status(500).json({ error: 'Failed to fetch groups' });
 
-        return res.status(200).json({data:re})
+        return res.status(200).json({ success: true,
+      data: re.data,
+      total: re.total,
+      active:re.active,
+      blocked:re.inactive,
+      page,
+      limit,})
 
     }
     catch (error) {
@@ -35,12 +41,12 @@ export const ToogleGroupStatus=async(req:Request,res:Response)=>{
 
         const re=await moint_group.ChangeStatus(id,status);
        
-        if(re==false) return  res.status(500).json(`❌ Failed to Get Group ${re}`)
+        if(re==false) return  res.status(500).json({success:false,message:`❌ Failed to Get Group ${re}`})
           
-      return  res.status(200).json("toogle sucessfull")
+      return  res.status(200).json( {success:true , message:"toogle sucessfull"} )
     }
      catch (error) {
       
-          res.status(500).json(`❌ Failed to Get Group ${error}`)
+          res.status(500).json({success:false,message:`❌ Failed to Get Group ${error}`})
     }
 }

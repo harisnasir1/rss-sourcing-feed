@@ -1,5 +1,11 @@
 import { query } from '../utils/db_connection';
 import { MonitoredGroup  } from '../types/Data_types';
+export interface GroupsResponse {
+    data: MonitoredGroup[];
+    total: number;
+    active: number;
+    inactive: number;
+}
 export class Monitored_Group_Repo {
 
 
@@ -87,39 +93,55 @@ export class Monitored_Group_Repo {
         }
     }
 
-    public async GetAllGroups(limit:number, offset:number,searchTerm:string):Promise<MonitoredGroup[]|null>{
+public async GetAllGroups(limit: number, offset: number, searchTerm: string): Promise<GroupsResponse | null> {
+    try {
+        let sql = `SELECT * FROM "MonitoredGroup"`;
+        const params: any[] = [];
 
-        try{
-
-             let sql = `Select * From  "MonitoredGroup" `
-             const params=[] as any;
-          
-             if(searchTerm.trim())
-             {
-                sql+=` Where groupname ILIKE $${params.length+1} `
-                params.push(`%${searchTerm.trim()}%`);
-             }
-
-             if(limit)
-             {
-                sql+=`ORDER BY totallistings DESC Limit $${params.length+1} Offset $${params.length+2} `
-                params.push(limit,offset);
-             }
-             else{
-                 sql+='ORDER BY totallistings DESC '
-             }
-             let re= await query(sql,params)
-              if(!re) throw re;
-
-              return re;
- 
-        }
-        catch (error) {
-            console.error('❌ Failed to Get Group:', error);
-            return null;
+        // 1. Build Data Query
+        if (searchTerm && searchTerm.trim()) {
+            sql += ` WHERE groupname ILIKE $1`;
+            params.push(`%${searchTerm.trim()}%`);
         }
 
+        sql += ` ORDER BY totallistings DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(limit, offset);
+
+        const re = await query(sql, params);
+        if (!re) throw new Error("Query failed");
+
+        // 2. Build Count Query
+        // Using WHERE 1=1 makes appending AND conditions much easier
+        let countSql = `
+            SELECT 
+                COUNT(*)::INT as total,
+                COUNT(*) FILTER (WHERE isactive = true)::INT as active,
+                COUNT(*) FILTER (WHERE isactive = false)::INT as inactive
+            FROM "MonitoredGroup"
+            WHERE 1=1`;
+            
+        const countParams: any[] = [];
+        if (searchTerm && searchTerm.trim()) {
+            countSql += ` AND groupname ILIKE $1`;
+            countParams.push(`%${searchTerm.trim()}%`);
+        }
+
+        const countResult = await query(countSql, countParams);
+        
+        // Postgres returns counts as strings/bigint, cast them or use ::INT in SQL
+        const { total, active, inactive } = countResult[0];
+
+        return { 
+            data: re, 
+            total: total || 0, 
+            active: active || 0, 
+            inactive: inactive || 0 
+        };
+    } catch (error) {
+        console.error('❌ Failed to Get Groups:', error);
+        return null;
     }
+}
 
     public async ChangeStatus(mgroudid: string, status: boolean) {
         try {
