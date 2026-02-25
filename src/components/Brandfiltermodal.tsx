@@ -6,9 +6,12 @@ import { useAuth } from '../utils/AuthContext';
 interface Props {
   selected: string;
   onChange: (brand: string) => void;
+    loggedIn?: boolean
+  onRequireAuth?: () => void
+  onlogout?:()=>void
 }
 
-export default function BrandFilterModal({ selected, onChange }: Props) {
+export default function BrandFilterModal({ selected, onChange, loggedIn = false,onRequireAuth,onlogout, }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [BRAND_NAMES,SetBRAND_NAMES]=useState([''])
@@ -16,8 +19,12 @@ export default function BrandFilterModal({ selected, onChange }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
  const {  token } = useAuth()
+
+
+
   useEffect(()=>{
    const getbrands=async()=>{
+    if (!open || !token) return;
      const response = await fetch(
         `${import.meta.env.VITE_RUNPOD_URL}/api/fillters/brands`,
         {
@@ -29,18 +36,26 @@ export default function BrandFilterModal({ selected, onChange }: Props) {
 
         }
       );
+          
+        if(response.status==403 ||response.status==401 )
+          {
+              
+               onlogout();
+          }
         const data = await response.json();
-     
+ 
+       if(data.success){   
       SetBRAND_NAMES(data.data)
+    }
      
    }
    getbrands()
-  },[token])
+  },[token,open])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return BRAND_NAMES;
-    return BRAND_NAMES.filter(b => b.toLowerCase()==q.toLowerCase());
+    return BRAND_NAMES.filter(b => b.toLowerCase().includes(q));
   }, [search,BRAND_NAMES]);
 
 
@@ -87,7 +102,17 @@ export default function BrandFilterModal({ selected, onChange }: Props) {
     <>
       {/* Trigger button */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (!loggedIn) {
+             onRequireAuth();
+          }
+          else {
+            setOpen(true)
+          }
+        }
+
+
+        }
         className={`
           inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm transition-all duration-200
           ${isActive

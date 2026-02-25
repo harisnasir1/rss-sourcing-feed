@@ -178,6 +178,7 @@ export default function App() {
     }
     return null;
   };
+  
 
   const handleWhatsAppClick = useCallback(async (
     vendorId: string,
@@ -851,7 +852,23 @@ export default function App() {
 
                 </div>
                 <div className=" flex-shrink-0 flex items-stretch">
-                  <BrandFilterModal selected={selectedBrand} onChange={setSelectedBrand} />
+                  <BrandFilterModal 
+                  selected={selectedBrand}
+                  onChange={setSelectedBrand}
+                   loggedIn={loggedIn}
+                  onRequireAuth={() => setSignupOpen(true)}
+                 
+                   onlogout={() => {
+                     setLoggedIn(false);
+                                setUser(null);
+                                setLoginOpen(true)
+                   
+                    
+                    try {
+                      localStorage.removeItem('user');
+                    } catch { }
+                  }}
+                  />
                 </div>
               </div>
 
