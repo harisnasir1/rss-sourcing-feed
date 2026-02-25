@@ -7,8 +7,9 @@ export const getAllBrands = async(req:Request , res:Response)=>{
   try {
 
      const brands=await lr.GetDistinctBrands();
-     
-     const ubrands=GetTrueBrands(brands);
+     const brandStrings = (brands || []).map((item: { brand: string }) => item.brand);
+    
+     const ubrands=GetTrueBrands(brandStrings);
     
      if(! ubrands) return res.status(500).json("somehitng is wrong")
 

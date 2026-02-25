@@ -275,11 +275,10 @@ export const GetTrueBrands = (brands: string[]): string[] => {
 
   const uniqueBrands = new Set<string>();
 
-  for (const br of brands) {
-    console.log(br?.brand)
-    if (!br?.brand) continue;
+  for (const br of brands) {  
+    if (!br) continue;
 
-    const normalizedInput = br?.brand.toLowerCase().trim();
+    const normalizedInput = br.toLowerCase().trim();
 
     if (BRAND_ALIASES[normalizedInput]) {
       uniqueBrands.add(normalizedInput);
