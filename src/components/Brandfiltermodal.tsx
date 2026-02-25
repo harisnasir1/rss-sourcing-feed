@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { BRAND_NAMES } from '../utils/Brands';
+import { useAuth } from '../utils/AuthContext';
+// import { BRAND_NAMES } from '../utils/Brands';
 
 interface Props {
   selected: string;
@@ -10,15 +11,38 @@ interface Props {
 export default function BrandFilterModal({ selected, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [BRAND_NAMES,SetBRAND_NAMES]=useState([''])
   const backdropRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+ const {  token } = useAuth()
+  useEffect(()=>{
+   const getbrands=async()=>{
+     const response = await fetch(
+        `${import.meta.env.VITE_RUNPOD_URL}/api/fillters/brands`,
+        {
+          method: 'Get',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+
+        }
+      );
+        const data = await response.json();
+     
+      SetBRAND_NAMES(data.data)
+     
+   }
+   getbrands()
+  },[token])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return BRAND_NAMES;
-    return BRAND_NAMES.filter(b => b.toLowerCase().includes(q));
-  }, [search]);
+    return BRAND_NAMES.filter(b => b.toLowerCase()==q.toLowerCase());
+  }, [search,BRAND_NAMES]);
+
 
   // Focus search input when modal opens
   useEffect(() => {
@@ -144,7 +168,7 @@ export default function BrandFilterModal({ selected, onChange }: Props) {
                         key={brand}
                         onClick={() => handleSelect(brand)}
                         className={`
-                          px-2 py-2 rounded-lg border text-xs text-left truncate transition-all duration-150
+                          px-2 py-2 rounded-lg border text-xs text-left truncate transition-all duration-150 capitalize
                           ${isSelected
                             ? 'border-sky-500/60 bg-sky-500/15 text-sky-300'
                             : 'border-white/8 bg-white/4 text-gray-400 hover:border-white/20 hover:text-white hover:bg-white/8'
