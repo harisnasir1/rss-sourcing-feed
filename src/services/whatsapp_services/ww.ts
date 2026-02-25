@@ -1,5 +1,5 @@
 
-import makeWASocket, { useMultiFileAuthState,Browsers,DisconnectReason } from '@whiskeysockets/baileys'
+import makeWASocket, { useMultiFileAuthState,Browsers,DisconnectReason } from 'baileys'
 import P from 'pino'
 import QRCode from 'qrcode'
 import { Boom } from '@hapi/boom'

@@ -27,7 +27,7 @@ export const getlistings = async(req:Request , res:Response)=>{
 
 export const getproduct = async(req:Request , res:Response)=>{
   try{
-     const { id } = req.params;
+     const id = req.params.id as string;
       if(!id )
       {   res.status(500).json("somehitng is wrong")
         return

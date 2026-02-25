@@ -1,5 +1,5 @@
 // container.ts
-import { WASocket } from '@whiskeysockets/baileys'
+import { WASocket } from 'baileys'
 import { GroupManager } from '../whatsapp_services/Group_manager_service'
 
 class WSContainer {

@@ -2,11 +2,12 @@ import {
     WASocket,
     downloadMediaMessage,
     WAMessage
-} from '@whiskeysockets/baileys';
+} from 'baileys';
 import P from 'pino'
 import { vendorRepo } from '../../repositories/vendors_repo';
 import { MessageBuffer, Listing, Vendor, msgtype, AI_Response } from '../../types/Data_types';
 import { listing_repo } from '../../repositories/listing_repo';
+import { Monitored_Group_Repo } from '../../repositories/MonitoredGroup_repo';
 import { ImgProcessing } from './imgpros';
 import { AI } from '../AI_Services/Ai'
 import { Message_Buffer } from './msgbuff';
@@ -21,7 +22,7 @@ export class Message_processing {
     private _ai: AI;
     private _msgbuff: Message_Buffer;
     private _notiman: NotificationManager;
-
+    private _group_repo:Monitored_Group_Repo;
     constructor(sock: WASocket) {
         this._sock = sock
         this.groupMetadataCache = new Map()
@@ -31,6 +32,7 @@ export class Message_processing {
         this._ai = new AI()
         this._msgbuff = new Message_Buffer()
         this._notiman = new NotificationManager();
+        this._group_repo=new Monitored_Group_Repo();
     }
 
     public async messageparser(msg: WAMessage) {
@@ -137,7 +139,7 @@ export class Message_processing {
 
             console.log("Listing trying to be created with ->", list)
             const re = await this._rlist.create_listing(list)
-           // const k = await this._rlist.create_listing_b2b(list, vinfo)
+            const k = await this._rlist.create_listing_b2b(list, vinfo)
             //now update the vendor
             const d = {
                 totallistings: (vinfo.totallistings || 0) + 1,
@@ -152,7 +154,8 @@ export class Message_processing {
 
                 await this._notiman.SendWtsnotifications(venderget[0], list);
             }
-
+             const ug=await this._group_repo.UpsertGroup(gid,gname);
+             console.log("group updated",ug)
             return re;
         }
         catch (e)
