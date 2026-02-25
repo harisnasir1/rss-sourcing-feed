@@ -2,7 +2,7 @@ import { query } from '../utils/db_connection';
 import { Listing } from '../types/Data_types';
 import { b2bquery } from '../utils/db_b2b_connection'
 import { uuid } from 'aws-sdk/clients/customerprofiles';
-import { resolveAliases } from '../utils/Brands'
+import { resolveAliases ,brand_to_aliases} from '../utils/Brands'
 export class listing_repo {
 
     public async create_listing(listing: Listing): Promise<Listing[]> {
@@ -170,12 +170,17 @@ export class listing_repo {
                 params.push(`%${searchTerm.trim()}%`);
             }
             if (brand.trim()) {
-                const aliases = resolveAliases(brand);
+                const aliases = brand_to_aliases(brand);
+                if(aliases&&aliases.length>0){
                 sql += `AND EXISTS(
               SELECT 1 FROM unnest($${params.length + 1}::text[]) AS alias
-              Where similarity(l.brand,alias)>0.3
+             WHERE similarity(lower(trim(l.brand)), alias) > 0.3
               )`
-                params.push(aliases)
+                params.push(aliases)}
+                else{
+                    sql += ` AND lower(trim(l.brand)) = $${params.length + 1}`;
+                params.push(brand.toLowerCase().trim());
+                }
             }
 
 
@@ -188,7 +193,7 @@ export class listing_repo {
                 sql += `ORDER BY l.createdat DESC`;
             }
 
-
+         
             const result = await query(sql, params);
 
             return ({
@@ -281,6 +286,30 @@ export class listing_repo {
             return re
         }
        catch (error) {
+            console.error('Error fetching listing by ID:', error);
+            throw error;
+        }
+    }
+    public async GetDistinctBrands(){
+        try{
+            let sql=`
+            SELECT DISTINCT(lower(trim(brand))) as brand
+            FROM "Listing" l
+            INNER JOIN "Vendor" v ON l.vendorid = v.id
+            INNER JOIN "MonitoredGroup" m ON l.groupid = m.whatsappgroupid
+            WHERE l.status = 'active' 
+            AND v.isblocked = false
+            AND m.isactive = true
+            AND l.brand IS NOT NULL
+            AND l.brand != ''
+            AND l.createdat>NOW() - INTERVAL '72 hours'
+            ORDER BY brand ASC
+            `
+             let re= await query(sql);
+             
+             return re
+        }
+           catch (error) {
             console.error('Error fetching listing by ID:', error);
             throw error;
         }
