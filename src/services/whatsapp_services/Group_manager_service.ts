@@ -49,7 +49,7 @@ private sleep(ms: number) {
       if (this._isFetching) return this._groupCache;
        this._isFetching = true;
       const groups = await this._sock.groupFetchAllParticipating();
-      await this.storeGroups(groups);
+      //await this.storeGroups(groups);
       const newGroupCache = new Map<string, CachedGroups>();
 
       for (const [jid, metadata] of Object.entries(groups)) {
