@@ -165,6 +165,8 @@ export class WhatsAppClient {
 
   private async handleMessagesUpsert({ messages }: BaileysEventMap['messages.upsert']): Promise<void> {
     const msg = messages[0];
+     console.log(`[UPSERT] ${msg}`);
+ 
     if (!msg.key.fromMe && this.msg_p) {
       this.messageQueue.push(msg)
       this.processQueue()
