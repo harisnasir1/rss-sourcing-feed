@@ -46,7 +46,7 @@ export class WhatsAppClient {
     this.sock =  makeWASocket({
       auth: state,
       version,
-      logger: P({ level: 'debug' }),
+      logger: P({ level: 'silent' }),
       browser: Browsers.ubuntu('ack'),
       generateHighQualityLinkPreview: true,
     // ✅ These options prevent history sync
@@ -61,8 +61,7 @@ export class WhatsAppClient {
   this.bindEvents();
   this.msg_p=new Message_processing(this.sock)
   this.groupmanager=new GroupManager(this.sock);
-         this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
-
+   
     return this.sock;
   }
 
@@ -102,6 +101,7 @@ export class WhatsAppClient {
         wscontainer.sock=this.sock;
         if(this.groupmanager){
         wscontainer.groupManager=this.groupmanager;
+        this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
       }
       else{
         console.log("groupmanager dismounted")
@@ -164,10 +164,11 @@ export class WhatsAppClient {
   }
 
   private async handleMessagesUpsert({ messages }: BaileysEventMap['messages.upsert']): Promise<void> {
+    
     const msg = messages[0];
-     console.log(`[UPSERT] ${msg}`);
- 
+    console.log(msg.key)
     if (!msg.key.fromMe && this.msg_p) {
+      
       this.messageQueue.push(msg)
       this.processQueue()
     }
