@@ -61,7 +61,8 @@ export class WhatsAppClient {
   this.bindEvents();
   this.msg_p=new Message_processing(this.sock)
   this.groupmanager=new GroupManager(this.sock);
-   
+         this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+
     return this.sock;
   }
 
@@ -101,7 +102,6 @@ export class WhatsAppClient {
         wscontainer.sock=this.sock;
         if(this.groupmanager){
         wscontainer.groupManager=this.groupmanager;
-      this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
       }
       else{
         console.log("groupmanager dismounted")
