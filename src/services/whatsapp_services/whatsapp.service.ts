@@ -46,7 +46,7 @@ export class WhatsAppClient {
     this.sock =  makeWASocket({
       auth: state,
       version,
-      logger: P({ level: 'silent' }),
+      logger: P({ level: 'debug' }),
       browser: Browsers.ubuntu('ack'),
       generateHighQualityLinkPreview: true,
     // ✅ These options prevent history sync
