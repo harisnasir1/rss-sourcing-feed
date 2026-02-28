@@ -101,9 +101,7 @@ export class WhatsAppClient {
         wscontainer.sock=this.sock;
         if(this.groupmanager){
         wscontainer.groupManager=this.groupmanager;
-        if (this.sock.ev.flush) {
-    this.sock.ev.flush();
-}
+        
         this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
       }
       else{
