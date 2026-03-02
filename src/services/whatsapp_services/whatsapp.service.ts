@@ -64,6 +64,25 @@ export class WhatsAppClient {
    
     return this.sock;
   }
+  
+  public async GracefulDisconnect()
+  {
+    
+    if(!this.sock ) 
+    {
+      console.log("socket tries to disconnect when there was no socket ")
+      return
+    }
+   
+    try {
+    // Tell the current socket to stop completely
+    this.sock?.ev.removeAllListeners('connection.update');
+    this.sock?.ev.removeAllListeners('creds.update');
+    this.sock?.ws.close(); 
+  } catch (e) {
+    // Ignore errors if it's already dead
+  }
+  }
 
   private bindEvents(): void {
       this.sock.ev.on('creds.update', this.saveCreds);
