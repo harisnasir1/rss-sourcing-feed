@@ -18,6 +18,13 @@ export const getAllBrands = async(req:Request , res:Response)=>{
       return res.status(200).json({ success: true, data: currentCache.brands });
     }
 
+    if(brand_promise)
+    {
+      const brand=await brand_promise;
+      return res.status(200).json({ success: true, data: brand });
+    }
+
+
     brand_promise = new Promise(async(resolve,reject)=>{
     const brands = await lr.GetDistinctBrands();
     const brandStrings = (brands || []).map((item: { brand: string }) => item.brand);
@@ -30,18 +37,25 @@ export const getAllBrands = async(req:Request , res:Response)=>{
     }
     resolve( ubrands);
     })
+    try{
     const ubrands=await brand_promise;
 
 
 
      if (!ubrands) return res.status(500).json("somehitng is wrong")
    
-
+ brand_promise=null
     res.status(200).json({ success: true, data: ubrands })
-
+}
+   catch(e)
+  {
+     brand_promise=null
+      res.status(500).json("somehitng is wrong")
+  }
   }
    catch(e)
   {
+    brand_promise=null
       res.status(500).json("somehitng is wrong")
   }
 }
