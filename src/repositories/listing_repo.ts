@@ -172,10 +172,15 @@ export class listing_repo {
             if (brand.trim()) {
                 const aliases = brand_to_aliases(brand);
                 if(aliases&&aliases.length>0){
-                sql += `AND EXISTS(
-              SELECT 1 FROM unnest($${params.length + 1}::text[]) AS alias
-             WHERE similarity(lower(trim(l.brand)), alias) > 0.3
-              )`
+                    sql += `
+                    AND (
+                      lower(trim(l.brand)) = ANY($${params.length + 1})
+                      OR EXISTS (
+                        SELECT 1 FROM unnest($${params.length + 1}::text[]) AS alias
+                        WHERE similarity(lower(trim(l.brand)), alias) > 0.8
+                      )
+                    )
+                    `;
                 params.push(aliases)}
                 else{
                     sql += ` AND lower(trim(l.brand)) = $${params.length + 1}`;

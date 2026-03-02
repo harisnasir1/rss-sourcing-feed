@@ -64,6 +64,25 @@ export class WhatsAppClient {
    
     return this.sock;
   }
+  
+  public async GracefulDisconnect()
+  {
+    
+    if(!this.sock ) 
+    {
+      console.log("socket tries to disconnect when there was no socket ")
+      return
+    }
+   
+    try {
+    // Tell the current socket to stop completely
+    this.sock?.ev.removeAllListeners('connection.update');
+    this.sock?.ev.removeAllListeners('creds.update');
+    this.sock?.ws.close(); 
+  } catch (e) {
+    // Ignore errors if it's already dead
+  }
+  }
 
   private bindEvents(): void {
       this.sock.ev.on('creds.update', this.saveCreds);
@@ -167,7 +186,7 @@ export class WhatsAppClient {
   private async handleMessagesUpsert({ messages }: BaileysEventMap['messages.upsert']): Promise<void> {
     
     const msg = messages[0];
-    console.log(msg.key)
+    
     if (!msg.key.fromMe && this.msg_p) {
       
       this.messageQueue.push(msg)
@@ -183,12 +202,12 @@ export class WhatsAppClient {
     {
      try{
        const popmsg=this.messageQueue.shift();
-     await  this.msg_p?.messageparser(popmsg)
+       await  this.msg_p?.messageparser(popmsg)
   
     }
       catch(e)
       {
-          console.error('Error processing message:', e);
+           console.error('Error processing message:', e);
            await this.sleep(5000);
       }
     }

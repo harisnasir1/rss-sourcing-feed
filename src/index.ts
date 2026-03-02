@@ -12,6 +12,7 @@ import "./cronjobs/bufferjobs"
 import "./cronjobs/Groupjobs"
 const app = express();
 const PORT = 4000;
+let whatsapp:WhatsAppClient|null=null;
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
@@ -65,7 +66,7 @@ app.listen(PORT, async () => {
         console.log('✅ MSSQL connected successfully');
 
         // WhatsApp Initialization
-        const whatsapp = new WhatsAppClient();
+         whatsapp = new WhatsAppClient();
 
         try {
           await whatsapp.initialize();
@@ -82,3 +83,29 @@ app.listen(PORT, async () => {
     process.exit(1); // Exit only on PostgreSQL failure
   }
 });
+
+
+
+const gracefulShutdown = async () => {
+ try{
+    if(!whatsapp) return
+  
+    whatsapp.GracefulDisconnect();
+   
+   setTimeout(() => {
+    console.log("Process exiting...");
+    process.exit(0);
+  }, 500);
+ }
+ catch(error){
+ console.error("Error during shutdown:", error);
+    process.exit(1); // Exit with error
+    
+ }
+}
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled rejection at:', promise, 'reason:', reason);
+});
+
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);

@@ -40,7 +40,7 @@ export class Message_processing {
         if (!this.isValidMessage(msg)) return;
         
         const venderifo = await this.extractVendorInfo(msg)
-        console.log("vendor=>",venderifo)
+        
         if (!venderifo) return
 
         
