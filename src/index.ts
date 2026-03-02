@@ -82,3 +82,7 @@ app.listen(PORT, async () => {
     process.exit(1); // Exit only on PostgreSQL failure
   }
 });
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled rejection at:', promise, 'reason:', reason);
+});

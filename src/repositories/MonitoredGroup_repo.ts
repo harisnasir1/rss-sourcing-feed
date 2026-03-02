@@ -77,7 +77,7 @@ export class Monitored_Group_Repo {
         }
     }
 
-    public async GetGroup(groupid: string): Promise<boolean> {
+    public async GetGroup(groupid: string): Promise<boolean|null> {
         try {
             if (!groupid) return false;
             groupid = groupid.split('@')[0]
@@ -89,7 +89,7 @@ export class Monitored_Group_Repo {
         }
         catch (error) {
             console.error('❌ Failed to Get Group:', error);
-            return false;
+            return null;
         }
     }
 
