@@ -101,7 +101,8 @@ export class WhatsAppClient {
         wscontainer.sock=this.sock;
         if(this.groupmanager){
         wscontainer.groupManager=this.groupmanager;
-      this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
+        
+        this.sock.ev.on('messages.upsert', this.handleMessagesUpsert.bind(this));
       }
       else{
         console.log("groupmanager dismounted")
@@ -164,8 +165,11 @@ export class WhatsAppClient {
   }
 
   private async handleMessagesUpsert({ messages }: BaileysEventMap['messages.upsert']): Promise<void> {
+    
     const msg = messages[0];
+    console.log(msg.key)
     if (!msg.key.fromMe && this.msg_p) {
+      
       this.messageQueue.push(msg)
       this.processQueue()
     }
