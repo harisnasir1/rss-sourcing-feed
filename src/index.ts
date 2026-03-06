@@ -16,11 +16,15 @@ let whatsapp:WhatsAppClient|null=null;
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
-   'https://sourcing-feed-six.vercel.app',
-   'https://ai-feed.resellersync.io',
-    'http://localhost:5174'
+  'https://sourcing-feed-six.vercel.app',
+  'https://ai-feed.resellersync.io',
+  'http://localhost:5174',
+  'https://portal.resellersync.io',
+  'https://dev-sell.resellersync.io'
 
 ];
+
+
 app.use(cors({
   origin: (origin, callback) => {
    
@@ -44,6 +48,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
 app.get('/qr.png', (req, res) => {
   res.sendFile('qr.png', { root: '.' });
 });
