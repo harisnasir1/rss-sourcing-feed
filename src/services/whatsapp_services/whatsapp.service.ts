@@ -236,6 +236,18 @@ export class WhatsAppClient {
     await this.initialize();
   }, 5000);
   }
+
+  public   is_connected():boolean{
+
+    try{
+      return !!this.sock?.ws?.isOpen;
+    }
+    catch(err)
+    {
+      return false;
+    }
+
+  }
   
   private sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));

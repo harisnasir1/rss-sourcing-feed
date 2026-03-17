@@ -54,7 +54,9 @@ app.get('/qr.png', (req, res) => {
 });
 app.use("/api",allroutes)
 
-app.listen(PORT, async () => {
+
+
+app.listen(4, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 
   try {
@@ -79,6 +81,7 @@ app.listen(PORT, async () => {
         } catch (whatsappError) {
           console.error('❌ WhatsApp initialization failed:', whatsappError);
           console.log('⚠️ Server running but WhatsApp not connected');
+          
           // Do NOT exit — server must keep running
         }
       }
@@ -89,7 +92,15 @@ app.listen(PORT, async () => {
   }
 });
 
+app.get("/health", (req, res) => {
 
+  const isConnected = whatsapp?.is_connected();
+  if (isConnected) {
+    res.status(200).json({ status: "ok" });
+  } else {
+    res.status(503).json({ status: "down" });
+  }
+});
 
 const gracefulShutdown = async () => {
  try{
