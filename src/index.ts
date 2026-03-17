@@ -53,10 +53,16 @@ app.get('/qr.png', (req, res) => {
   res.sendFile('qr.png', { root: '.' });
 });
 app.use("/api",allroutes)
+app.get("/health", (req, res) => {
 
-
-
-app.listen(4, async () => {
+  const isConnected = whatsapp?.is_connected();
+  if (isConnected) {
+    res.status(200).json({ status: "ok" });
+  } else {
+    res.status(503).json({ status: "down" });
+  }
+});
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 
   try {
@@ -92,15 +98,7 @@ app.listen(4, async () => {
   }
 });
 
-app.get("/health", (req, res) => {
 
-  const isConnected = whatsapp?.is_connected();
-  if (isConnected) {
-    res.status(200).json({ status: "ok" });
-  } else {
-    res.status(503).json({ status: "down" });
-  }
-});
 
 const gracefulShutdown = async () => {
  try{
