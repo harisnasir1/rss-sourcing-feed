@@ -297,7 +297,8 @@ export default function App() {
       const res = await fetch(fetchUrl, { headers, signal: fetchAbort.current.signal });
       if (!res.ok) {
         const text = await res.text().catch(() => res.statusText);
-        setError(`Fetch failed: ${res.status} ${text}`);
+        console.error('[feed] fetch failed', res.status, text);
+        setError('maintenance');
         return;
       }
 
@@ -423,8 +424,7 @@ export default function App() {
         return;
       }
       console.error('[feed] fetchItems error', e);
-      const msg = e?.message || String(e);
-      setError(`Network error: ${msg}`);
+      setError('maintenance');
     } finally {
       inFlightRef.current = false;
       if (!silent) setLoading(false);
