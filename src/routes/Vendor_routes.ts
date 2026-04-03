@@ -7,4 +7,7 @@ router.post("/getnumber",authenticateJWT,getvendorphonenumber);
 router.post("/toogleaccess",ToogleVendorAccess);
 router.get("/getallvendors",authenticateJWT,isAdmin,GetAllVendors);
 
+
+router.post("/portal/getnumber",getvendorphonenumber);
+
 export default router
