@@ -73,7 +73,7 @@ export class AI {
 
   return this.groq.chat.completions.create({
 
-    model: "moonshotai/kimi-k2-instruct-0905",
+    model: "openai/gpt-oss-120b",
               messages: [
             {
                  role: "system",
