@@ -1,31 +1,31 @@
-import { Pool, neon, neonConfig } from '@neondatabase/serverless';
-import ws from 'ws';
+import { Pool } from 'pg';
 
-let queryFn: <T = any>(text: string, params?: any[]) => Promise<T[]>;
+// Initialize the pool using the individual environment variables
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: Number(process.env.DB_PORT) || 5432,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
 
-if (process.env.NODE_ENV === 'production') {
-  neonConfig.webSocketConstructor = ws;
-  
-  const pool = new Pool({ 
-     connectionString: process.env.DATABASE_URL,
-     keepAlive: true,
-     max:10,
-     connectionTimeoutMillis: 5000,
-     idleTimeoutMillis: 30000,
-     keepAliveInitialDelayMillis: 10000
-   });
-  pool.query('SELECT 1').then(() => console.log('DB pool warmed')).catch(console.error);
-  
-  queryFn = async <T>(text: string, params?: any[]) => {
-    const result = await pool.query(text, params);
-    return result.rows as T[];
-  };
-} else {
-  const sql = neon(process.env.DATABASE_URL!);
-  queryFn = async <T>(text: string, params?: any[]) => {
-    const result = await sql.query(text, params);
-    return result as T[];
-  };
-}
+// Test the connection immediately on startup
+pool.query('SELECT 1')
+  .then(() => console.log('Successfully connected to Postgres on', process.env.DB_HOST))
+  .catch(err => {
+    console.error('Database connection error details:');
+    console.error('Host:', process.env.DB_HOST);
+    console.error('User:', process.env.DB_USER);
+    console.error('Error:', err.message);
+  });
 
-export const query = queryFn;
+/**
+ * Global query function
+ */
+export const query = async <T = any>(text: string, params?: any[]): Promise<T[]> => {
+  const result = await pool.query(text, params);
+  return result.rows as T[];
+};
