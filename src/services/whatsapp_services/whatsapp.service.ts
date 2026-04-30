@@ -130,7 +130,7 @@ export class WhatsAppClient {
       }
  if (qr) {
       console.log('QR code received, saving to qr.png...');
-      await QRCode.toFile('qr.png', qr);
+      await QRCode.toFile('/tmp/qr.png', qr);
     }
     if (connection === 'close')
        {

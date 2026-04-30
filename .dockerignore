@@ -1,0 +1,7 @@
+node_modules
+.git
+.env
+*.log
+.DS_Store
+list/      # the build output, regenerated inside container
+auth_info/

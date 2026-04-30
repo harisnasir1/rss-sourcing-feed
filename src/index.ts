@@ -6,7 +6,6 @@ import cors from 'cors'
 import {b2bquery} from './utils/db_b2b_connection'
 //file imports 
 import {query} from './utils/db_connection'
-
 import {WhatsAppClient} from './services/whatsapp_services/whatsapp.service'
 import "./cronjobs/bufferjobs"
 import "./cronjobs/Groupjobs"
@@ -49,18 +48,28 @@ app.use(cors({
 
 app.use(express.json());
 
-app.get('/qr.png', (req, res) => {
-  res.sendFile('qr.png', { root: '.' });
-});
 app.use("/api",allroutes)
 app.get("/health", (req, res) => {
-
+ console.log("coming to here")
   const isConnected = whatsapp?.is_connected();
   if (isConnected) {
     res.status(200).json({ status: "ok" });
   } else {
     res.status(503).json({ status: "down" });
   }
+});
+
+app.get('/qr', (req, res) => {
+  res.sendFile('/tmp/qr.png', (err) => {
+    if (err) {
+      console.error('sendFile error:', err);
+      console.error('Error code:', 503);
+      console.error('Error message:', err.message);
+      res.status(500).json({ 
+        error: err.message, 
+      });
+    }
+  });
 });
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
