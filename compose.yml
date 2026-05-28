@@ -9,7 +9,7 @@ services:
       env_file: 
        - .env
       ports:
-       - "4000:4000"
+       - "127.0.0.1:4000:4000"
       restart: always
       mem_limit: 1g
       security_opt:
