@@ -1,0 +1,20 @@
+services:
+   feed-app:
+      build: .
+      user: "node"
+      container_name: feed-source
+      volumes:
+       - ./auth_info:/app/auth_info
+       
+      env_file: 
+       - .env
+      ports:
+       - "4000:4000"
+      restart: always
+      mem_limit: 1g
+      security_opt:
+       - no-new-privileges:true
+      cap_drop:
+       - ALL
+      tmpfs:
+       - /tmp
