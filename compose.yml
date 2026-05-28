@@ -3,6 +3,7 @@ services:
       build: .
       user: "node"
       container_name: feed-source
+      read_only: true
       volumes:
        - ./auth_info:/app/auth_info
        
